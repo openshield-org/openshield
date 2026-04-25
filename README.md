@@ -9,7 +9,7 @@
 
 ---
 
-## 🚨 The Problem
+## The Problem
 
 Enterprise cloud security tools like **Wiz**, **Prisma Cloud**, and **Microsoft Defender for Cloud** cost **$50,000–$500,000/year**.
 
@@ -19,7 +19,7 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ---
 
-## ✅ What OpenShield Does
+## What OpenShield Does
 
 | Feature | Description |
 |---|---|
@@ -32,7 +32,7 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -69,7 +69,7 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 | Layer | Technology | Cost |
 |---|---|---|
@@ -85,7 +85,7 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 openshield/
@@ -114,7 +114,7 @@ openshield/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Clone the repo
@@ -177,18 +177,6 @@ All contributors get credited in our [CONTRIBUTORS.md](CONTRIBUTORS.md).
 ## 📄 License
 
 MIT — free to use, modify, and distribute.
-
----
-
-## 👥 Core Team
-
-| Role | Area |
-|---|---|
-| Architecture & Sentinel | [@yourhandle] |
-| Scanner Engine | [@dev2] |
-| Attack Simulation | [@dev3] |
-| KQL & Detection | [@dev4] |
-| Frontend Dashboard | [@dev5] |
 
 ---
 
