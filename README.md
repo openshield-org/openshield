@@ -23,12 +23,12 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 | Feature | Description |
 |---|---|
-| 🔍 **Misconfiguration Scanner** | Scans your Azure subscription for real security issues — open blobs, weak NSG rules, unencrypted DBs, overprivileged identities |
-| 📋 **Compliance Mapper** | Maps every finding to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 |
-| 🔔 **Drift Detection** | Monitors your environment continuously — alerts when security posture changes |
-| 🔧 **Remediation Playbooks** | Every finding ships with a one-click fix — ARM template, Azure CLI, or Terraform |
-| 📊 **Security Dashboard** | React frontend showing risk score, open findings, compliance posture, and trend over time |
-| 🧠 **Sentinel Integration** | Pushes alerts into Microsoft Sentinel for full SIEM visibility |
+| **Misconfiguration Scanner** | Scans your Azure subscription for real security issues — open blobs, weak NSG rules, unencrypted DBs, overprivileged identities |
+| **Compliance Mapper** | Maps every finding to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 |
+| **Drift Detection** | Monitors your environment continuously — alerts when security posture changes |
+| **Remediation Playbooks** | Every finding ships with a one-click fix — ARM template, Azure CLI, or Terraform |
+| **Security Dashboard** | React frontend showing risk score, open findings, compliance posture, and trend over time |
+| **Sentinel Integration** | Pushes alerts into Microsoft Sentinel for full SIEM visibility |
 
 ---
 
