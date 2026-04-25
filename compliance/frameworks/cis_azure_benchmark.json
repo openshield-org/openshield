@@ -1,0 +1,57 @@
+{
+  "framework": "CIS Microsoft Azure Foundations Benchmark",
+  "version": "2.0.0",
+  "published": "2023-02",
+  "controls": {
+    "AZ-STOR-001": {
+      "control_id": "3.5",
+      "control_name": "Ensure that 'Public access level' is set to Private for blob containers",
+      "description": "Disabling public access level for blob containers prevents anonymous unauthenticated access to Azure Blob storage. This setting eliminates the risk of inadvertent or unauthorized public data exposure."
+    },
+    "AZ-STOR-002": {
+      "control_id": "3.1",
+      "control_name": "Ensure that 'Secure transfer required' is set to 'Enabled'",
+      "description": "Enabling 'Secure transfer required' on a storage account ensures that all requests made to the storage account use HTTPS. Any requests using HTTP are rejected, protecting data in transit from eavesdropping and man-in-the-middle attacks."
+    },
+    "AZ-NET-001": {
+      "control_id": "6.2",
+      "control_name": "Ensure that SSH access from the Internet is evaluated and restricted",
+      "description": "Network security groups should not allow unrestricted SSH access from the internet. Restricting inbound SSH access reduces attack surface and prevents unauthorized access attempts, brute-force attacks, and exploitation of SSH service vulnerabilities."
+    },
+    "AZ-NET-002": {
+      "control_id": "6.3",
+      "control_name": "Ensure that RDP access from the Internet is evaluated and restricted",
+      "description": "Network security groups should not permit unrestricted inbound RDP from the internet. Open RDP ports are a leading cause of ransomware infections and credential-based attacks. Access should be restricted to specific trusted IP ranges or removed in favour of Azure Bastion."
+    },
+    "AZ-IDN-001": {
+      "control_id": "1.23",
+      "control_name": "Ensure That No Custom Subscription Owner Roles Are Created",
+      "description": "Service principals or custom roles should not be assigned the Owner role at subscription scope. The Owner role grants full control including the ability to modify access controls. Assignment should follow the principle of least privilege."
+    },
+    "AZ-IDN-002": {
+      "control_id": "1.2.4",
+      "control_name": "Ensure that 'Multi-Factor Authentication Status' is 'Enabled' for all Privileged Users",
+      "description": "Multi-Factor Authentication requires an individual to present a minimum of two separate forms of authentication before access is granted. MFA should be enforced for all users with administrative privileges via Conditional Access policies."
+    },
+    "AZ-DB-001": {
+      "control_id": "4.3.1",
+      "control_name": "Ensure 'Allow access to Azure services' for PostgreSQL Database Server is disabled",
+      "description": "Disabling public network access on PostgreSQL Database Server prevents public access and reduces the attack surface. Access should be restricted to private networks using VNet service endpoints or private endpoints."
+    },
+    "AZ-DB-002": {
+      "control_id": "4.1.3",
+      "control_name": "Ensure that 'Auditing' Retention is 'greater than 90 days' for SQL servers",
+      "description": "SQL Server audit logs must be enabled and retained for a minimum of 90 days. Enabling auditing provides a record of database events that can be used to detect threats, investigate incidents, and demonstrate compliance."
+    },
+    "AZ-CMP-001": {
+      "control_id": "7.2",
+      "control_name": "Ensure that 'OS disk' are encrypted",
+      "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
+    },
+    "AZ-KV-001": {
+      "control_id": "8.5",
+      "control_name": "Ensure the Key Vault is Recoverable",
+      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
+    }
+  }
+}

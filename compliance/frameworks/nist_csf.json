@@ -1,0 +1,57 @@
+{
+  "framework": "NIST Cybersecurity Framework",
+  "version": "1.1",
+  "published": "2018-04",
+  "controls": {
+    "AZ-STOR-001": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Remote access to data assets is controlled. Unauthenticated public blob access on storage accounts violates access management controls by allowing anonymous access to potentially sensitive data without any form of authentication or authorisation."
+    },
+    "AZ-STOR-002": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data-in-transit is protected",
+      "description": "Data in transit is protected to prevent interception and tampering. Storage accounts that allow HTTP traffic transmit data in plaintext, violating the requirement to protect data in transit through encryption (TLS)."
+    },
+    "AZ-NET-001": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Remote access to systems must be controlled. Allowing unrestricted SSH access from the internet bypasses access management controls and exposes systems to unauthorised remote access, brute-force attacks, and exploitation."
+    },
+    "AZ-NET-002": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Remote access to systems must be managed. Allowing unrestricted RDP access from the internet bypasses access management controls and is a primary vector for ransomware delivery and credential-based attacks on Windows systems."
+    },
+    "AZ-IDN-001": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorisations are managed, incorporating the principles of least privilege and separation of duties",
+      "description": "Access to cloud resources should follow the principle of least privilege. Assigning the Owner role to service principals at subscription scope grants excessive permissions that violate least-privilege and separation-of-duties requirements."
+    },
+    "AZ-IDN-002": {
+      "control_id": "PR.AC-1",
+      "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited for authorised devices, users and processes",
+      "description": "Credentials must be managed to ensure only authorised parties can authenticate. Without MFA enforcement, a single compromised password grants full access to administrator accounts, undermining identity management controls."
+    },
+    "AZ-DB-001": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Database servers should not be reachable from the public internet without restriction. Public network access to PostgreSQL servers removes the network-based access control layer, exposing the database to direct internet-based attacks."
+    },
+    "AZ-DB-002": {
+      "control_id": "DE.CM-7",
+      "control_name": "Monitoring for unauthorised personnel, connections, devices, and software is performed",
+      "description": "Audit logging on SQL servers enables detection of unauthorised access attempts, privilege escalation, and suspicious database activity. Without auditing enabled, security events go undetected and incident investigation is severely limited."
+    },
+    "AZ-CMP-001": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Virtual machines accessible from the internet must have compensating network controls. A VM with a public IP and no NSG has all ports exposed to the internet with no filtering, violating remote access management requirements."
+    },
+    "AZ-KV-001": {
+      "control_id": "PR.IP-4",
+      "control_name": "Backups of information are conducted, maintained, and tested",
+      "description": "Key material in Azure Key Vault must be recoverable after accidental or malicious deletion. Soft delete provides a recoverable state for secrets, keys, and certificates, supporting backup and recovery requirements for critical cryptographic material."
+    }
+  }
+}

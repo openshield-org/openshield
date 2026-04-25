@@ -1,0 +1,57 @@
+{
+  "framework": "ISO/IEC 27001:2013",
+  "version": "2013",
+  "published": "2013-10",
+  "controls": {
+    "AZ-STOR-001": {
+      "control_id": "A.9.4.1",
+      "control_name": "Information access restriction",
+      "description": "Access to information and application system functions shall be restricted in accordance with the access control policy. Enabling public blob access on storage accounts removes all access restrictions and allows any internet user to read stored data without authentication, directly violating this control."
+    },
+    "AZ-STOR-002": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "A policy on the use of cryptographic controls for protection of information shall be developed and implemented. Storage accounts transmitting data over HTTP do not apply encryption in transit, violating the organisation's cryptographic control policy requirement to protect data confidentiality."
+    },
+    "AZ-NET-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Networks shall be managed and controlled to protect information in systems and applications. NSGs permitting unrestricted SSH from the internet represent a failure of network access control, exposing systems to direct internet-based attack with no network-layer filtering."
+    },
+    "AZ-NET-002": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Networks shall be managed and controlled to protect information in systems and applications. NSGs permitting unrestricted RDP from the internet represent a critical network control failure, as RDP is the most commonly exploited protocol for ransomware initial access."
+    },
+    "AZ-IDN-001": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "The allocation and use of privileged access rights shall be restricted and controlled. Assigning the Owner role to service principals at subscription scope grants excessive privileged access rights beyond operational requirements, violating the principle of least privilege and privileged access management controls."
+    },
+    "AZ-IDN-002": {
+      "control_id": "A.9.4.2",
+      "control_name": "Secure log-on procedures",
+      "description": "Where required by the access control policy, access to systems and applications shall be controlled by a secure log-on procedure. Multi-factor authentication is a required component of secure log-on for privileged accounts. Absence of MFA enforcement via Conditional Access violates this control."
+    },
+    "AZ-DB-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Networks shall be managed and controlled to protect information in systems and applications. Database servers with public network access enabled lack the network-level isolation required to protect sensitive data from direct internet exposure and attack."
+    },
+    "AZ-DB-002": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Event logs recording user activities, exceptions, faults and information security events shall be produced, kept and regularly reviewed. Disabling SQL Server auditing means that database access events, failed logins, and schema changes are not logged, making incident detection and forensic investigation impossible."
+    },
+    "AZ-CMP-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Networks shall be managed and controlled to protect information in systems and applications. Virtual machines with public IPs and no Network Security Group have no network-layer access controls, exposing all ports and services to the internet without any filtering."
+    },
+    "AZ-KV-001": {
+      "control_id": "A.17.2.1",
+      "control_name": "Availability of information processing facilities",
+      "description": "Information processing facilities shall be implemented with sufficient redundancy to meet availability requirements. Disabling soft delete on Key Vault removes the ability to recover deleted secrets, keys, and certificates, creating a single point of failure for critical cryptographic material and violating availability and recovery requirements."
+    }
+  }
+}
