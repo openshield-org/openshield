@@ -1,0 +1,17 @@
+// Rule:      Persistent Misconfiguration
+// Tactic:    Persistence
+// Severity:  Medium
+// Run:       Every 24 hours
+
+OpenShieldFindings_CL
+| where TimeGenerated >= ago(7d)
+| where Severity_s in ("Critical", "High", "Medium")
+| summarize
+    ScanCount = dcount(ScanId_s),
+    FirstSeen = min(TimeGenerated),
+    LastSeen  = max(TimeGenerated),
+    DaysOpen  = datetime_diff("day", now(), min(TimeGenerated))
+  by ResourceId, RuleId_s, RuleName_s, Severity_s, ResourceName_s
+| where ScanCount >= 3
+| extend Escalation = iff(ScanCount >= 6, "P1 - Escalate to CISO", "P3 - Assign to team")
+| order by ScanCount desc
