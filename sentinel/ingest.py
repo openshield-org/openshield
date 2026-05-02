@@ -1,5 +1,13 @@
-import base64, datetime, hashlib, hmac, json, os, sys, time
+import base64
+import datetime
+import hashlib
+import hmac
+import json
+import os
+import sys
+import time
 import requests
+
 
 WORKSPACE_ID = os.environ.get("SENTINEL_WORKSPACE_ID", "")
 SHARED_KEY   = os.environ.get("SENTINEL_SHARED_KEY", "")
