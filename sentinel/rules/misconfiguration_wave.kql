@@ -1,0 +1,18 @@
+// Rule:      Misconfiguration Wave
+// Tactic:    Impact / Defence Evasion
+// Severity:  High
+// Run:       Every 2 hours
+// Threshold: 5+ HIGH findings in one scan
+
+let THRESHOLD = 5;
+OpenShieldFindings_CL
+| where TimeGenerated >= ago(2h)
+| where Severity_s in ("High", "Critical")
+| summarize
+    TotalHigh   = count(),
+    UniqueRules = dcount(RuleId_s),
+    TopRules    = make_set(RuleName_s, 5)
+  by ScanId_s, SubscriptionId
+| where TotalHigh >= THRESHOLD
+| extend WaveScore = TotalHigh * UniqueRules
+| order by WaveScore desc
