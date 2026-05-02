@@ -27,11 +27,21 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for vault in azure_client.get_key_vaults():
         props = getattr(vault, "properties", None)
+        if not props:
+            continue
 
-        public_access = getattr(props, "public_network_access", "Enabled")
-        private_endpoints = getattr(props, "private_endpoint_connections", [])
+        public_access = getattr(props, "public_network_access", None)
+        if public_access is None:
+            public_access = getattr(props, "publicNetworkAccess", None)
 
-        if str(public_access).lower() in ("enabled", "true", "1") and not private_endpoints:
+        private_endpoints = getattr(props, "private_endpoint_connections", None)
+        if private_endpoints is None:
+            private_endpoints = getattr(props, "privateEndpointConnections", None)
+
+        is_public = str(public_access).lower() in ("enabled", "true")
+        has_private_endpoint = bool(private_endpoints)
+
+        if is_public and not has_private_endpoint:
             parsed = azure_client.parse_resource_id(vault.id)
 
             findings.append({
