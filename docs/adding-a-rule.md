@@ -230,6 +230,7 @@ SSH brute force attacks are constant — attackers run automated scripts trying 
 
 
 **AZ-NET-002 — NSG allows RDP from internet**
+
 RDP on port 3389 open to 0.0.0.0/0 is one of the most scanned ports on the internet — automated bots find it within minutes of a VM being provisioned. The 2021 Colonial Pipeline attack started with an exposed RDP port and a compromised password. Once an attacker gets in via RDP they have full GUI access to the machine and can move laterally across the entire network.
 
 
