@@ -226,6 +226,7 @@ This is how 38 million records leaked in the 2021 Power Apps breach — blob con
 Any data moving over plain HTTP can be read by anyone on the same network path. This sounds theoretical until you realise most corporate VPNs, shared offices and cloud interconnects are exactly that kind of shared environment. One internal tool uploading customer data over HTTP to Azure storage is all it takes. The fix is one toggle — HTTPS only — but it gets missed constantly.
 
 **AZ-NET-001 — NSG allows SSH from internet**
+
 SSH brute force attacks are constant — attackers run automated scripts trying millions of username and password combinations against any open port 22 they find. In 2023 a university research cluster was compromised through an exposed SSH port, with attackers using it to mine cryptocurrency for three months before detection. Restricting SSH to known IP ranges or using Azure Bastion eliminates this risk entirely.
 
 
