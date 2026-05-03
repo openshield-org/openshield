@@ -225,11 +225,13 @@ This is how 38 million records leaked in the 2021 Power Apps breach — blob con
 **AZ-STOR-002 — Storage account allows unencrypted HTTP**
 Any data moving over plain HTTP can be read by anyone on the same network path. This sounds theoretical until you realise most corporate VPNs, shared offices and cloud interconnects are exactly that kind of shared environment. One internal tool uploading customer data over HTTP to Azure storage is all it takes. The fix is one toggle — HTTPS only — but it gets missed constantly.
 
-**AZ-NET-001 — NSG allows RDP from internet**
-Port 3389 open to the world is basically putting a front door on your VM with a note saying "try your luck." Botnets scan the entire internet for open RDP ports continuously — your VM will be found within minutes of provisioning. The Colonial Pipeline ransomware attack in 2021 started exactly this way. One exposed RDP port, one weak password, game over.
+**AZ-NET-001 — NSG allows SSH from internet**
+SSH brute force attacks are constant — attackers run automated scripts trying millions of username and password combinations against any open port 22 they find. In 2023 a university research cluster was compromised through an exposed SSH port, with attackers using it to mine cryptocurrency for three months before detection. Restricting SSH to known IP ranges or using Azure Bastion eliminates this risk entirely.
 
-**AZ-NET-002 — NSG allows SSH from internet**
-SSH brute forcing never stops. There are always automated scripts hammering port 22 across the entire internet trying username and password combinations from leaked credential lists. A university cluster got owned this way in 2023 and was used for crypto mining for three months before anyone noticed. Lock SSH down to specific IPs or use Azure Bastion — there is no good reason for port 22 to be open to 0.0.0.0/0.
+
+**AZ-NET-002 — NSG allows RDP from internet**
+RDP on port 3389 open to 0.0.0.0/0 is one of the most scanned ports on the internet — automated bots find it within minutes of a VM being provisioned. The 2021 Colonial Pipeline attack started with an exposed RDP port and a compromised password. Once an attacker gets in via RDP they have full GUI access to the machine and can move laterally across the entire network.
+
 
 **AZ-IDN-001 — Overprivileged service principal**
 Contributor at subscription scope means the service principal can touch everything — every VM, every database, every storage account across the whole subscription. The moment that client secret leaks — through a git commit, a build log, a misconfigured app — the attacker has the keys to the kingdom. This exact pattern showed up in the SolarWinds breach. Least privilege is not optional.
