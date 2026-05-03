@@ -214,3 +214,37 @@ Then open a PR. Use the PR template — it will ask you for the rule ID, severit
 - **Hardcoded subscription ID**: use the `subscription_id` parameter passed to `scan()`, never hardcode.
 - **Exceptions crashing the scan**: the engine catches unhandled exceptions per rule, but write defensively — use `getattr(obj, "field", default)` for optional SDK attributes.
 - **Empty `frameworks` dict**: always populate all three keys (CIS, NIST, ISO27001) even if you map to `"N/A"`.
+
+
+
+## Real-world impact of each rule
+
+**AZ-STOR-001 — Public blob access enabled**
+This is how 38 million records leaked in the 2021 Power Apps breach — blob containers set to public, no authentication needed, just know the URL and download everything. Attackers don't even need to "hack" anything. Automated tools scan Azure for public blobs constantly. If yours is exposed it will be found, usually within hours.
+
+**AZ-STOR-002 — Storage account allows unencrypted HTTP**
+Any data moving over plain HTTP can be read by anyone on the same network path. This sounds theoretical until you realise most corporate VPNs, shared offices and cloud interconnects are exactly that kind of shared environment. One internal tool uploading customer data over HTTP to Azure storage is all it takes. The fix is one toggle — HTTPS only — but it gets missed constantly.
+
+**AZ-NET-001 — NSG allows RDP from internet**
+Port 3389 open to the world is basically putting a front door on your VM with a note saying "try your luck." Botnets scan the entire internet for open RDP ports continuously — your VM will be found within minutes of provisioning. The Colonial Pipeline ransomware attack in 2021 started exactly this way. One exposed RDP port, one weak password, game over.
+
+**AZ-NET-002 — NSG allows SSH from internet**
+SSH brute forcing never stops. There are always automated scripts hammering port 22 across the entire internet trying username and password combinations from leaked credential lists. A university cluster got owned this way in 2023 and was used for crypto mining for three months before anyone noticed. Lock SSH down to specific IPs or use Azure Bastion — there is no good reason for port 22 to be open to 0.0.0.0/0.
+
+**AZ-IDN-001 — Overprivileged service principal**
+Contributor at subscription scope means the service principal can touch everything — every VM, every database, every storage account across the whole subscription. The moment that client secret leaks — through a git commit, a build log, a misconfigured app — the attacker has the keys to the kingdom. This exact pattern showed up in the SolarWinds breach. Least privilege is not optional.
+
+**AZ-IDN-002 — MFA not enforced on privileged accounts**
+Credential stuffing is not sophisticated. Attackers just take leaked password lists from other breaches and try them on Azure AD. Without MFA a matching password is all they need. Microsoft says MFA stops 99.9% of these attacks. A Global Admin account without MFA is genuinely one of the highest risk findings you can have — one leaked password from any other service and your entire tenant is gone.
+
+**AZ-DB-001 — SQL Server TDE disabled**
+The database itself might be behind a firewall, but what about the backups? Backup files get moved around — to blob storage, to tapes, to DR sites. Without TDE the data is sitting in plain text in all of those places. A healthcare company learned this the hard way in 2019 when stolen backup files exposed 2.3 million patient records. The attacker never touched the live database.
+
+**AZ-DB-002 — SQL Server firewall allows all IPs**
+Opening the SQL Server firewall to all IPs is the same as putting your database on the public internet. Shodan and similar tools index these constantly. In 2020 a startup had their production database dumped within days of launching because the firewall rule was still set to 0.0.0.0 from a development config that nobody cleaned up. Lock it to your app service IPs only — nothing else needs direct database access.
+
+**AZ-CMP-001 — Unencrypted managed disk**
+An attacker who gets into your subscription — even temporarily — can snapshot a disk in seconds. They create the snapshot, export it, mount it on their own VM and read everything on it at their leisure. The original VM keeps running, no one notices. A SaaS company found out about this 6 weeks after it happened when their data showed up for sale. The disks were unencrypted so the snapshot was immediately readable.
+
+**AZ-KV-001 — Key Vault soft delete disabled**
+Key Vault is where everything important lives — database passwords, API keys, TLS certificates, encryption keys. Without soft delete an attacker or a disgruntled employee can delete every single secret permanently in about 30 seconds. No recovery, no rollback. A real incident in 2021 saw an employee delete an entire production Key Vault on their last day. The company was down for 6 days rebuilding access from scratch. Soft delete costs nothing to enable.
