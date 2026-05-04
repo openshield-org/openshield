@@ -29,6 +29,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
 
     try:
+        # NOTE: This rule creates a NetworkManagementClient directly rather than
+        # going through azure_client. A get_public_ip_addresses() method should be
+        # added to AzureClient in a follow-up PR for consistency.
         from azure.mgmt.network import NetworkManagementClient
         client = NetworkManagementClient(
             azure_client.credential, azure_client.subscription_id
