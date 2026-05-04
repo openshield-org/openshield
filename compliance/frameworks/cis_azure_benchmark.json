@@ -23,6 +23,46 @@
       "control_name": "Ensure that RDP access from the Internet is evaluated and restricted",
       "description": "Network security groups should not permit unrestricted inbound RDP from the internet. Open RDP ports are a leading cause of ransomware infections and credential-based attacks. Access should be restricted to specific trusted IP ranges or removed in favour of Azure Bastion."
     },
+    "AZ-NET-003": {
+      "control_id": "9.3",
+      "control_name": "Ensure that HTTPS access from the Internet is evaluated and restricted",
+      "description": "Network security groups should not allow unrestricted inbound access on port 443 from the internet. Public web services should be fronted by an Application Gateway with WAF rather than exposing port 443 directly via NSG rules."
+    },
+    "AZ-NET-004": {
+      "control_id": "9.2",
+      "control_name": "Ensure that Network Security Groups have rules configured",
+      "description": "Network Security Groups with no custom rules configured provide no meaningful access control and rely entirely on Azure default rules. Explicit rules following least privilege should be defined for all NSGs."
+    },
+    "AZ-NET-005": {
+      "control_id": "9.4",
+      "control_name": "Ensure that DDoS Protection Standard is enabled on all Virtual Networks",
+      "description": "Azure DDoS Protection Standard provides enhanced DDoS mitigation capabilities for Azure resources. Virtual networks hosting production workloads should have DDoS Protection Standard enabled."
+    },
+    "AZ-NET-006": {
+      "control_id": "9.1",
+      "control_name": "Ensure that unassociated public IP addresses are removed",
+      "description": "Public IP addresses not associated with any resource represent unnecessary attack surface and cost. Unassociated public IPs should be deleted or documented and tagged for review."
+    },
+    "AZ-NET-007": {
+      "control_id": "9.6",
+      "control_name": "Ensure that Web Application Firewall is enabled on Application Gateway",
+      "description": "Application Gateway should have Web Application Firewall enabled in Prevention mode. WAF protects web applications from common exploits including OWASP Top 10 vulnerabilities such as SQL injection and cross-site scripting."
+    },
+    "AZ-NET-008": {
+      "control_id": "9.1",
+      "control_name": "Ensure that Load Balancers have backend pools configured",
+      "description": "Load balancers with no backend pool configured are either misconfigured or leftover resources. They represent unnecessary cost and poor resource hygiene and should be removed or configured correctly."
+    },
+    "AZ-NET-009": {
+      "control_id": "9.5",
+      "control_name": "Ensure that VPN gateways use IKEv2",
+      "description": "VPN gateway connections should use IKEv2 rather than the outdated IKEv1 protocol. IKEv2 provides improved authentication, better performance and built-in NAT traversal support compared to IKEv1."
+    },
+    "AZ-NET-010": {
+      "control_id": "9.2",
+      "control_name": "Ensure that all subnets have a Network Security Group attached",
+      "description": "All subnets except gateway subnets should have a Network Security Group attached. Without an NSG at subnet level, resources in the subnet have no network layer access control and are potentially reachable from other subnets or the internet."
+    },
     "AZ-IDN-001": {
       "control_id": "1.23",
       "control_name": "Ensure That No Custom Subscription Owner Roles Are Created",
