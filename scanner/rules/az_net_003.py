@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 RULE_ID = "AZ-NET-003"
 RULE_NAME = "NSG allows unrestricted inbound on port 443"
-SEVERITY = "MEDIUM"
+SEVERITY = "HIGH"
 CATEGORY = "Network"
 FRAMEWORKS = {"CIS": "9.3", "NIST": "SC-7", "ISO27001": "A.13.1.1"}
 DESCRIPTION = (
