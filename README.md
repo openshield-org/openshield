@@ -150,15 +150,29 @@ All contributors get credited in our [CONTRIBUTORS.md](CONTRIBUTORS.md).
 ## 📍 Roadmap
 
 - [x] Project scaffolding
-- [ ] Core scanner engine (Azure SDK integration)
-- [ ] First 10 misconfiguration rules
-- [ ] Flask API + PostgreSQL schema
+- [x] Core scanner engine (Azure SDK integration)
+- [x] 11 scan rules
+- [x] Flask API + PostgreSQL schema
 - [ ] React dashboard MVP
 - [ ] CIS Benchmark compliance mapping
-- [ ] Sentinel alert integration
+- [x] Sentinel alert integration
+- [x] Real-world breach scenarios documented
+- [x] First external contributor PR merged
 - [ ] Remediation playbook library
 - [ ] NIST CSF + ISO 27001 mappings
 - [ ] Multi-cloud support (AWS, GCP)
+
+---
+
+## Contributors
+
+Thanks to everyone who has contributed to OpenShield.
+
+| Contributor | GitHub | Contribution |
+|---|---|---|
+| Vishnu Ajith | @Vishnu2707 | Architecture, core scanner, Sentinel wiring |
+| TFT444 | @TFT444 | Sentinel integration, 8 network rules, breach scenarios |
+| Parth | @parthrohit22 | AZ-KV-002 Key Vault public access rule |
 
 ---
 
