@@ -6,7 +6,11 @@ RULE_ID = "AZ-KV-002"
 RULE_NAME = "Key Vault Allows Public Network Access Without Private Endpoint"
 SEVERITY = "HIGH"
 CATEGORY = "Key Vault"
-FRAMEWORKS = {"CIS": "8.5", "NIST": "AC-17", "ISO27001": "A.13.1.1"}
+FRAMEWORKS = {
+    "CIS": "8.3",
+    "NIST": "AC-17",
+    "ISO27001": "A.13.1.1"
+}
 
 DESCRIPTION = (
     "The Azure Key Vault is accessible over the public internet without a private endpoint configured. "
@@ -30,6 +34,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if not props:
             continue
 
+        # Handle SDK inconsistencies (snake_case vs camelCase)
         public_access = getattr(props, "public_network_access", None)
         if public_access is None:
             public_access = getattr(props, "publicNetworkAccess", None)
@@ -38,8 +43,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if private_endpoints is None:
             private_endpoints = getattr(props, "privateEndpointConnections", None)
 
-        is_public = str(public_access).lower() in ("enabled", "true")
-        has_private_endpoint = bool(private_endpoints)
+        # Normalize values safely
+        is_public = str(public_access).lower() in ("enabled", "true", "1")
+        has_private_endpoint = bool(private_endpoints) and len(private_endpoints) > 0
 
         if is_public and not has_private_endpoint:
             parsed = azure_client.parse_resource_id(vault.id)
