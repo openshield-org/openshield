@@ -6,47 +6,87 @@
     "AZ-STOR-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Remote access to data assets is controlled. Unauthenticated public blob access on storage accounts violates access management controls by allowing anonymous access to potentially sensitive data without any form of authentication or authorisation."
+      "description": "Public blob access enables unauthenticated remote access to storage resources. Disabling public access ensures remote access to storage is managed and authenticated."
     },
     "AZ-STOR-002": {
       "control_id": "PR.DS-2",
       "control_name": "Data-in-transit is protected",
-      "description": "Data in transit is protected to prevent interception and tampering. Storage accounts that allow HTTP traffic transmit data in plaintext, violating the requirement to protect data in transit through encryption (TLS)."
+      "description": "Requiring secure transfer ensures data in transit between clients and Azure Storage is encrypted using HTTPS, protecting against interception and tampering."
     },
     "AZ-NET-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Remote access to systems must be controlled. Allowing unrestricted SSH access from the internet bypasses access management controls and exposes systems to unauthorised remote access, brute-force attacks, and exploitation."
+      "description": "Unrestricted SSH access from the internet allows unmanaged remote access. NSG rules should restrict SSH to known IP ranges to ensure remote access is controlled and monitored."
     },
     "AZ-NET-002": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Remote access to systems must be managed. Allowing unrestricted RDP access from the internet bypasses access management controls and is a primary vector for ransomware delivery and credential-based attacks on Windows systems."
+      "description": "Unrestricted RDP access from the internet allows unmanaged remote access. NSG rules should restrict RDP to known IP ranges or use Azure Bastion to ensure remote access is controlled."
+    },
+    "AZ-NET-003": {
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "description": "Unrestricted inbound access on port 443 from the internet increases the attack surface. Public-facing HTTPS services should be fronted by a WAF-enabled Application Gateway rather than exposed directly via NSG rules."
+    },
+    "AZ-NET-004": {
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "description": "NSGs with no custom rules provide no meaningful boundary protection. Explicit least-privilege rules should be defined to control inbound and outbound traffic at the network perimeter."
+    },
+    "AZ-NET-005": {
+      "control_id": "SC-5",
+      "control_name": "Denial of Service Protection",
+      "description": "Virtual networks without DDoS Protection Standard are vulnerable to volumetric denial of service attacks. DDoS Protection Standard provides enhanced mitigation for production workloads."
+    },
+    "AZ-NET-006": {
+      "control_id": "CM-7",
+      "control_name": "Least Functionality",
+      "description": "Unassociated public IP addresses represent unnecessary functionality and attack surface. Resources that are no longer in use should be removed to maintain least functionality."
+    },
+    "AZ-NET-007": {
+      "control_id": "SI-3",
+      "control_name": "Malicious Code Protection",
+      "description": "Application Gateways without WAF enabled provide no protection against web application attacks including OWASP Top 10 vulnerabilities. WAF in Prevention mode should be enabled on all public-facing Application Gateways."
+    },
+    "AZ-NET-008": {
+      "control_id": "CM-7",
+      "control_name": "Least Functionality",
+      "description": "Load balancers with no backend pool configured serve no function and represent unnecessary resources. Unused resources should be removed to maintain least functionality and reduce cost."
+    },
+    "AZ-NET-009": {
+      "control_id": "SC-8",
+      "control_name": "Transmission Confidentiality and Integrity",
+      "description": "VPN connections using IKEv1 use an outdated protocol with known vulnerabilities. IKEv2 should be used for all VPN gateway connections to ensure transmission confidentiality and integrity."
+    },
+    "AZ-NET-010": {
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "description": "Subnets without NSGs attached have no network layer access control. All production subnets should have NSGs with explicit rules to enforce boundary protection at the subnet level."
     },
     "AZ-IDN-001": {
       "control_id": "PR.AC-4",
-      "control_name": "Access permissions and authorisations are managed, incorporating the principles of least privilege and separation of duties",
-      "description": "Access to cloud resources should follow the principle of least privilege. Assigning the Owner role to service principals at subscription scope grants excessive permissions that violate least-privilege and separation-of-duties requirements."
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Service principals with overly broad permissions violate least privilege. Access permissions should be scoped to the minimum required for the workload to function."
     },
     "AZ-IDN-002": {
-      "control_id": "PR.AC-1",
-      "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited for authorised devices, users and processes",
-      "description": "Credentials must be managed to ensure only authorised parties can authenticate. Without MFA enforcement, a single compromised password grants full access to administrator accounts, undermining identity management controls."
+      "control_id": "PR.AC-7",
+      "control_name": "Users, devices, and other assets are authenticated",
+      "description": "MFA ensures privileged users are strongly authenticated before accessing Azure resources. Without MFA, a compromised password is sufficient for full administrative access."
     },
     "AZ-DB-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Database servers should not be reachable from the public internet without restriction. Public network access to PostgreSQL servers removes the network-based access control layer, exposing the database to direct internet-based attacks."
+      "description": "Public network access to PostgreSQL servers should be disabled. Database access should be restricted to private networks to ensure remote access is managed and controlled."
     },
     "AZ-DB-002": {
-      "control_id": "DE.CM-7",
-      "control_name": "Monitoring for unauthorised personnel, connections, devices, and software is performed",
-      "description": "Audit logging on SQL servers enables detection of unauthorised access attempts, privilege escalation, and suspicious database activity. Without auditing enabled, security events go undetected and incident investigation is severely limited."
+      "control_id": "DE.AE-3",
+      "control_name": "Event data are aggregated and correlated",
+      "description": "SQL Server auditing must be enabled with sufficient retention to support threat detection and incident investigation. Audit logs provide the event data needed to detect and respond to anomalous database activity."
     },
     "AZ-CMP-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Virtual machines accessible from the internet must have compensating network controls. A VM with a public IP and no NSG has all ports exposed to the internet with no filtering, violating remote access management requirements."
+      "description": "Virtual machines with public IPs and no NSG have unrestricted network access. NSGs should be attached to control inbound and outbound traffic and manage remote access to compute resources."
     },
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
