@@ -52,6 +52,11 @@
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
       "description": "Key material in Azure Key Vault must be recoverable after accidental or malicious deletion. Soft delete provides a recoverable state for secrets, keys, and certificates, supporting backup and recovery requirements for critical cryptographic material."
+    },
+    "AZ-STOR-003": {
+      "control_id": "PR.DS-3",
+      "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
+      "description": "Data stored in Azure storage accounts should be subject to formal lifecycle management policies that govern retention, transition, and deletion. Without these policies, stale data accumulates indefinitely and is never formally dispositioned, violating data management and minimisation requirements."
     }
   }
 }
