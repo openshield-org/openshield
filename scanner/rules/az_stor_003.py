@@ -16,7 +16,7 @@ RULE_NAME = "Storage Account Has No Lifecycle Management Policy"
 SEVERITY = "MEDIUM"
 CATEGORY = "Storage"
 FRAMEWORKS = {
-    "CIS":      "3.12",
+    "CIS":      "3.7",
     "NIST":     "PR.DS-3",
     "ISO27001": "A.8.3.1",
 }
