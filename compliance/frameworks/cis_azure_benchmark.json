@@ -92,6 +92,16 @@
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
       "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
+    },
+    "AZ-STOR-003": {
+      "control_id": "3.7",
+      "control_name": "Ensure that storage accounts have lifecycle management policies configured",
+      "description": "Storage accounts without lifecycle management policies retain data indefinitely. This increases storage costs, expands the attack surface through accumulation of stale data, and may violate data retention compliance requirements. Lifecycle policies automate the transition and deletion of blobs based on age and access patterns."
+    },
+    "AZ-KV-002": {
+      "control_id": "8.3",
+      "control_name": "Ensure that public network access to Key Vault is disabled",
+      "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
     }
   }
 }
