@@ -52,6 +52,11 @@
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
       "description": "Information processing facilities shall be implemented with sufficient redundancy to meet availability requirements. Disabling soft delete on Key Vault removes the ability to recover deleted secrets, keys, and certificates, creating a single point of failure for critical cryptographic material and violating availability and recovery requirements."
+    },
+    "AZ-STOR-003": {
+      "control_id": "A.8.3.1",
+      "control_name": "Management of removable media",
+      "description": "ISO 27001 A.8.3.1 requires procedures for the management of removable media in accordance with the classification scheme adopted by the organisation. For cloud storage, this extends to data lifecycle management — organisations must have controls ensuring data is disposed of securely when it is no longer needed. A storage account with no lifecycle policy has no automated disposal mechanism and therefore lacks the procedural control A.8.3.1 requires."
     }
   }
 }
