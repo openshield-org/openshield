@@ -27,20 +27,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect virtual networks without DDoS protection enabled."""
     findings: List[Dict[str, Any]] = []
 
-    try:
-        # NOTE: This rule creates a NetworkManagementClient directly rather than
-        # going through azure_client. A get_virtual_networks() method should be
-        # added to AzureClient in a follow-up PR for consistency.
-        from azure.mgmt.network import NetworkManagementClient
-        client = NetworkManagementClient(
-            azure_client.credential, azure_client.subscription_id
-        )
-        vnets = list(client.virtual_networks.list_all())
-    except Exception as exc:
-        logger.error("Failed to list virtual networks: %s", exc)
-        return findings
-
-    for vnet in vnets:
+    for vnet in azure_client.get_virtual_networks():
         ddos = getattr(vnet, "ddos_protection_plan", None)
         enable_ddos = getattr(vnet, "enable_ddos_protection", False)
         if not ddos and not enable_ddos:
