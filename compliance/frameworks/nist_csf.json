@@ -91,7 +91,12 @@
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
-      "description": "Key Vault soft delete protects against accidental or malicious deletion of secrets, keys and certificates. Without soft delete, deleted vault objects cannot be recovered, causing potential data loss."
+      "description": "Key material in Azure Key Vault must be recoverable after accidental or malicious deletion. Soft delete provides a recoverable state for secrets, keys, and certificates, supporting backup and recovery requirements for critical cryptographic material."
+    },
+    "AZ-STOR-003": {
+      "control_id": "PR.DS-3",
+      "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
+      "description": "NIST CSF PR.DS-3 requires that data assets are managed through their full lifecycle including secure disposal. Storage accounts without a lifecycle management policy have no automated mechanism for expiring or deleting aged data, meaning data subject to disposal requirements persists indefinitely and is never formally retired from the asset inventory."
     }
   }
 }

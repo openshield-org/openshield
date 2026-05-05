@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
+from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.compute import ComputeManagementClient
@@ -58,6 +59,74 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_storage_accounts failed: %s", exc)
             return []
+
+    def get_storage_lifecycle_policy(
+        self, resource_group: str, account_name: str
+    ) -> Optional[bool]:
+        """Check whether a storage account has a lifecycle management policy.
+
+        Three-state return — the calling rule uses strict identity checks
+        (is False / is None) to distinguish these states:
+
+            True  — policy exists and contains at least one enabled rule.
+            False — ResourceNotFoundError: no policy configured (non-compliant).
+            None  — any other error (permissions, network, SDK bug).
+                    Caller must NOT create a finding — skip with a warning
+                    to avoid false positives.
+
+        The StorageManagementClient is created fresh here following the same
+        pattern as every other method in AzureClient (one client per call).
+        The credential is reused from self.credential so no new auth round-
+        trip occurs.
+
+        Args:
+            resource_group: Resource group containing the storage account.
+            account_name:   Name of the storage account.
+
+        Returns:
+            Optional[bool] — True, False, or None as described above.
+        """
+        try:
+            client = StorageManagementClient(self.credential, self.subscription_id)
+            policy = client.management_policies.get(
+                resource_group, account_name, "default"
+            )
+            # A policy shell can exist with an empty rules list —
+            # treat that the same as no policy (non-compliant).
+            rules = getattr(getattr(policy, "policy", None), "rules", None)
+            return bool(rules)
+
+        except ResourceNotFoundError:
+            # Expected path: the account genuinely has no lifecycle policy.
+            # This is the non-compliant condition — return False to flag it.
+            logger.debug(
+                "get_storage_lifecycle_policy(%s): ResourceNotFound — no policy",
+                account_name,
+            )
+            return False
+
+        except HttpResponseError as exc:
+            # 403 = service principal lacks
+            # Microsoft.Storage/storageAccounts/managementPolicies/read.
+            # Return None — cannot determine compliance, do not flag.
+            logger.error(
+                "get_storage_lifecycle_policy(%s) HTTP %s — "
+                "check service principal permissions: %s",
+                account_name,
+                exc.status_code,
+                exc,
+            )
+            return None
+
+        except Exception as exc:
+            # Unexpected failure (network, SDK bug, etc.).
+            # Return None — skip rather than create a false positive.
+            logger.error(
+                "get_storage_lifecycle_policy(%s) unexpected error: %s",
+                account_name,
+                exc,
+            )
+            return None
 
     # ------------------------------------------------------------------ #
     # Network                                                               #
