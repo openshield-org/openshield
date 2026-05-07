@@ -1,0 +1,97 @@
+{
+  "framework": "SOC 2 Type II",
+  "version": "2017",
+  "published": "2017-04",
+  "controls": {
+    "AZ-STOR-001": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access to Information Assets",
+      "description": "Public blob access allows unauthenticated users from outside the network boundary to read storage data without credentials. CC6.6 requires that access from outside the network perimeter is restricted and controlled. Disabling public access enforces this boundary by requiring authentication for all storage operations."
+    },
+    "AZ-STOR-002": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "Allowing unencrypted HTTP traffic to a storage account exposes data in transit to interception and tampering. CC6.7 requires that data transmitted over networks is protected using encryption. Enforcing HTTPS-only ensures all storage traffic is encrypted in transit."
+    },
+    "AZ-NET-001": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "An NSG allowing unrestricted RDP access from the internet permits any external party to attempt remote access to virtual machines. CC6.6 requires that logical access from outside the network boundary is restricted. Limiting RDP to known IP ranges enforces this boundary and eliminates unauthorised remote access attempts."
+    },
+    "AZ-NET-002": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "An NSG allowing unrestricted SSH access from the internet exposes virtual machines to brute force and credential attacks from any external party. CC6.6 requires that access from outside the network perimeter is restricted and controlled. Restricting SSH to known IP ranges or removing it in favour of Azure Bastion enforces this boundary."
+    },
+    "AZ-NET-003": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "An NSG permitting unrestricted inbound access on port 443 from the internet exposes web services to automated scanning and exploitation attempts from any external source. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Public-facing services should be fronted by a WAF-enabled Application Gateway rather than exposed directly."
+    },
+    "AZ-NET-004": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A Network Security Group with no custom rules provides no meaningful boundary control and relies entirely on Azure defaults. CC6.6 requires that logical access from outside the network perimeter is explicitly restricted. Explicit least-privilege rules must be defined to enforce the network boundary."
+    },
+    "AZ-NET-005": {
+      "control_id": "A1.1",
+      "control_name": "Capacity and Performance Monitoring",
+      "description": "Virtual networks without DDoS Protection Standard are vulnerable to volumetric attacks that can exhaust capacity and cause service outages. A1.1 requires that current processing capacity is monitored and resources are available to meet objectives. DDoS Protection Standard ensures network availability is maintained under attack conditions."
+    },
+    "AZ-NET-006": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "Unassociated public IP addresses represent unnecessary exposure on the internet and may indicate leftover resources from decommissioned workloads. CC6.6 requires that the network boundary is tightly controlled with only necessary resources exposed. Removing unassociated public IPs reduces the external attack surface."
+    },
+    "AZ-NET-007": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "An Application Gateway without WAF enabled provides no protection against web application attacks from external sources including OWASP Top 10 vulnerabilities. CC6.6 requires that access from outside the network boundary is controlled and filtered. WAF in Prevention mode enforces application-layer boundary protection for public-facing services."
+    },
+    "AZ-NET-008": {
+      "control_id": "CC8.1",
+      "control_name": "Change Management",
+      "description": "A load balancer with no backend pool configured is either misconfigured or a leftover resource from a decommissioned workload that was not properly cleaned up. CC8.1 requires that infrastructure changes are managed, tracked and that unused resources are removed through a formal process. Removing empty load balancers maintains an accurate and controlled infrastructure state."
+    },
+    "AZ-NET-009": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "VPN gateway connections using IKEv1 use an outdated protocol with known vulnerabilities that weaken the confidentiality and integrity of data transmitted between networks. CC6.7 requires that data transmitted over networks is protected using current secure protocols. Migrating to IKEv2 ensures VPN traffic is protected with a modern and secure key exchange mechanism."
+    },
+    "AZ-NET-010": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A subnet without an NSG attached has no network layer access controls leaving all resources in that subnet reachable from other subnets or the internet with no filtering. CC6.6 requires that logical access from outside the network boundary is restricted. Attaching an NSG with explicit rules enforces boundary protection at the subnet level."
+    },
+    "AZ-IDN-001": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "A service principal with Contributor role at subscription scope has unrestricted ability to create, modify and delete any resource in the environment. CC6.1 requires that logical access to information assets is restricted to authorised users and service accounts with least-privilege permissions. Scoping role assignments to the minimum required resource enforces this control."
+    },
+    "AZ-IDN-002": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "Without MFA enforced on privileged accounts, a single compromised password grants full administrative access to the Azure environment. CC6.1 requires that logical access controls include strong authentication mechanisms. Enforcing MFA via Conditional Access policies ensures privileged access requires multiple factors of authentication."
+    },
+    "AZ-DB-001": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "SQL Server without Transparent Data Encryption stores database files in plain text on disk. CC6.7 requires that data is protected using encryption both in transit and at rest. Enabling TDE ensures database files, backups and transaction logs are encrypted and unreadable without the encryption key."
+    },
+    "AZ-DB-002": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A SQL Server firewall rule allowing all IP addresses makes the database reachable from anywhere on the internet. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Locking the firewall to specific application IP ranges ensures only authorised systems can connect to the database."
+    },
+    "AZ-CMP-001": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A virtual machine with a public IP and no NSG has unrestricted inbound network access from the internet with no filtering in place. CC6.6 requires that logical access from outside the network perimeter is restricted and controlled. Attaching an NSG with explicit rules enforces the network boundary and controls what traffic can reach the VM."
+    },
+    "AZ-KV-001": {
+      "control_id": "A1.2",
+      "control_name": "Environmental Threats and Recovery",
+      "description": "Key Vault without soft delete enabled allows permanent deletion of secrets, keys and certificates with no recovery possible. A1.2 requires that environmental threats to availability are identified and mitigated including protection against accidental or malicious data loss. Enabling soft delete ensures deleted vault objects can be recovered within the retention period."
+    }
+  }
+}
