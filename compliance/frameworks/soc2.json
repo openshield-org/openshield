@@ -13,6 +13,11 @@
       "control_name": "Protects Data in Transit",
       "description": "Allowing unencrypted HTTP traffic to a storage account exposes data in transit to interception and tampering. CC6.7 requires that data transmitted over networks is protected using encryption. Enforcing HTTPS-only ensures all storage traffic is encrypted in transit."
     },
+    "AZ-STOR-003": {
+      "control_id": "CC8.1",
+      "control_name": "Change Management",
+      "description": "A storage account with no lifecycle management policy allows data to accumulate indefinitely with no automatic expiry or tiering. CC8.1 requires that infrastructure and data are managed through formal processes. Implementing a lifecycle policy ensures data retention is controlled and old data is automatically moved or deleted according to organisational policy."
+    },
     "AZ-NET-001": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
@@ -92,6 +97,11 @@
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
       "description": "Key Vault without soft delete enabled allows permanent deletion of secrets, keys and certificates with no recovery possible. A1.2 requires that environmental threats to availability are identified and mitigated including protection against accidental or malicious data loss. Enabling soft delete ensures deleted vault objects can be recovered within the retention period."
+    },
+    "AZ-KV-002": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A Key Vault accessible from the public internet allows any external party to attempt access to secrets, keys and certificates. CC6.6 requires that access from outside the network boundary is restricted and controlled. Locking Key Vault access to private endpoints or specific VNet service endpoints enforces this boundary and protects sensitive credentials from external exposure."
     }
   }
 }
