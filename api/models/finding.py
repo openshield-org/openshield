@@ -20,6 +20,7 @@ FRAMEWORK_FILE_MAP = {
     "cis": "cis_azure_benchmark.json",
     "nist": "nist_csf.json",
     "iso27001": "iso27001.json",
+    "soc2": "soc2.json",
 }
 
 
