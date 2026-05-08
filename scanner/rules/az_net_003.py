@@ -9,7 +9,6 @@ SEVERITY = "HIGH"
 CATEGORY = "Network"
 FRAMEWORKS = {"CIS": "9.3", "NIST": "SC-7", "ISO27001": "A.13.1.1"}
 DESCRIPTION = (
-    DESCRIPTION = (
     "A Network Security Group has an inbound rule allowing unrestricted access "
     "on port 443 from any source (0.0.0.0/0). While HTTPS traffic is encrypted, "
     "exposing port 443 to the entire internet unnecessarily increases the attack "
@@ -17,7 +16,6 @@ DESCRIPTION = (
     "Note: this finding is expected for intentionally public-facing web services. "
     "Review manually before remediating — do not auto-remediate without confirming "
     "the service is not meant to be publicly accessible."
-)
 )
 REMEDIATION = (
     "Restrict the inbound rule on port 443 to known IP ranges or use an "

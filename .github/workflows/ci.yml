@@ -1,0 +1,370 @@
+name: OpenShield CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+
+jobs:
+  ci-checks:
+    name: Run All CI Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout the code ─────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Python ─────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── 3. Install dependencies ───────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── CHECK 1: Python syntax on all rule files ───────────────────────
+      - name: Python syntax check (rule files)
+        id: syntax_check
+        run: |
+          echo "=== Checking Python syntax on scanner/rules/ ==="
+          FAIL=0
+          for f in scanner/rules/az_*.py; do
+            if ! python -m py_compile "$f" 2>&1; then
+              echo "SYNTAX ERROR: $f"
+              FAIL=1
+            else
+              echo "OK: $f"
+            fi
+          done
+          if [ "$FAIL" -eq 1 ]; then
+            echo "One or more rule files have syntax errors."
+            exit 1
+          fi
+
+      # ── CHECK 2: Rule structure validation + RULE_ID uniqueness ──────
+      - name: Rule structure validation
+        id: structure_check
+        run: |
+          echo "=== Validating rule file structure ==="
+          python - <<'PYEOF'
+          import os
+          import importlib.util
+          import sys
+          from collections import defaultdict
+
+          rules_dir = "scanner/rules"
+          required_fields = ["RULE_ID", "SEVERITY", "FRAMEWORKS"]
+          valid_severities = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
+          failures = []
+          seen_ids = defaultdict(list)
+
+          for filename in sorted(os.listdir(rules_dir)):
+              if not filename.startswith("az_") or not filename.endswith(".py"):
+                  continue
+
+              filepath = os.path.join(rules_dir, filename)
+              spec = importlib.util.spec_from_file_location("rule", filepath)
+              mod = importlib.util.module_from_spec(spec)
+
+              try:
+                  spec.loader.exec_module(mod)
+              except Exception as e:
+                  failures.append(f"{filename}: import error — {e}")
+                  continue
+
+              for field in required_fields:
+                  if not hasattr(mod, field):
+                      failures.append(f"{filename}: missing field '{field}'")
+
+              if hasattr(mod, "SEVERITY"):
+                  if mod.SEVERITY not in valid_severities:
+                      failures.append(
+                          f"{filename}: SEVERITY '{mod.SEVERITY}' not in {valid_severities}"
+                      )
+
+              if hasattr(mod, "FRAMEWORKS"):
+                  if not isinstance(mod.FRAMEWORKS, dict) or len(mod.FRAMEWORKS) == 0:
+                      failures.append(f"{filename}: FRAMEWORKS must be a non-empty dict")
+
+              if hasattr(mod, "RULE_ID"):
+                  seen_ids[mod.RULE_ID].append(filename)
+
+          # Two files sharing a RULE_ID silently corrupt scan reports
+          for rule_id, files in seen_ids.items():
+              if len(files) > 1:
+                  failures.append(
+                      f"DUPLICATE RULE_ID '{rule_id}' in: {', '.join(files)}"
+                  )
+
+          if failures:
+              print("RULE STRUCTURE FAILURES:")
+              for f in failures:
+                  print(f"  - {f}")
+              sys.exit(1)
+          else:
+              print(f"All {len(seen_ids)} rule files passed structure validation.")
+          PYEOF
+
+      # ── CHECK 3: Hardcoded credential scan ────────────────────────────
+      - name: Hardcoded credential scan
+        id: cred_scan
+        run: |
+          echo "=== Scanning for hardcoded credentials ==="
+          PATTERNS=(
+            "password\s*="
+            "secret\s*="
+            "api_key\s*="
+            "client_secret\s*="
+            "AZURE_CLIENT_SECRET\s*=\s*['\"][^'\"]\+"
+            "-----BEGIN.*PRIVATE KEY-----"
+            "AccountKey="
+          )
+
+          FAIL=0
+          for pattern in "${PATTERNS[@]}"; do
+            matches=$(grep -rniE "$pattern" \
+              --include="*.py" --include="*.sh" --include="*.json" --include="*.yml" \
+              --exclude-dir=".git" \
+              --exclude-dir="venv" \
+              --exclude="ci.yml" \
+              . 2>/dev/null | \
+              grep -v "\.env" | \
+              grep -v "os\.environ" | \
+              grep -v "os\.getenv" | \
+              grep -v "#" | \
+              grep -v "example" | \
+              grep -v "placeholder" || true)
+
+            if [ -n "$matches" ]; then
+              echo "POTENTIAL CREDENTIAL LEAK — pattern '$pattern':"
+              echo "$matches"
+              FAIL=1
+            fi
+          done
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo "Hardcoded credentials detected. Remove them and use environment variables."
+            exit 1
+          else
+            echo "No hardcoded credentials found."
+          fi
+
+      # ── CHECK 4: Playbook existence + bash syntax ─────────────────────
+      - name: Playbook existence and syntax check
+        id: playbook_check
+        run: |
+          echo "=== Checking playbooks exist and are valid bash ==="
+          FAIL=0
+          for rule_file in scanner/rules/az_*.py; do
+            filename=$(basename "$rule_file" .py)
+            playbook="playbooks/cli/fix_${filename}.sh"
+
+            if [ ! -f "$playbook" ]; then
+              echo "MISSING PLAYBOOK: $playbook (required for $rule_file)"
+              FAIL=1
+            elif ! bash -n "$playbook" 2>&1; then
+              echo "BASH SYNTAX ERROR: $playbook"
+              FAIL=1
+            else
+              echo "OK: $playbook"
+            fi
+          done
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo "Fix the missing or broken playbook(s) before this PR can merge."
+            exit 1
+          fi
+
+      # ── CHECK 5: Compliance JSON validation ───────────────────────────
+      - name: Compliance JSON validation
+        id: json_check
+        run: |
+          echo "=== Validating compliance framework JSON files ==="
+          python - <<'PYEOF'
+          import json
+          import sys
+          import os
+
+          framework_dir = "compliance/frameworks"
+          expected_files = [
+              "cis_azure_benchmark.json",
+              "nist_csf.json",
+              "iso27001.json",
+              "soc2.json",
+          ]
+          failures = []
+
+          for fname in expected_files:
+              fpath = os.path.join(framework_dir, fname)
+
+              if not os.path.exists(fpath):
+                  failures.append(f"MISSING FILE: {fpath}")
+                  continue
+
+              try:
+                  with open(fpath) as f:
+                      data = json.load(f)
+
+                  if not isinstance(data, dict) or len(data) == 0:
+                      failures.append(f"{fname}: must be a non-empty JSON object")
+                      continue
+
+                  n_controls = len(data.get("controls", {}))
+                  print(f"OK: {fname} ({n_controls} controls)")
+
+              except json.JSONDecodeError as e:
+                  failures.append(f"{fname}: invalid JSON — {e}")
+
+          if failures:
+              print("COMPLIANCE JSON FAILURES:")
+              for f in failures:
+                  print(f"  - {f}")
+              sys.exit(1)
+          PYEOF
+
+      # ── CHECK 6: API syntax check ──────────────────────────────────────
+      - name: API syntax check
+        id: api_check
+        run: |
+          echo "=== Checking Python syntax on API files ==="
+          FAIL=0
+          if [ -d "api" ]; then
+            while IFS= read -r -d '' f; do
+              if ! python -m py_compile "$f" 2>&1; then
+                echo "SYNTAX ERROR: $f"
+                FAIL=1
+              else
+                echo "OK: $f"
+              fi
+            done < <(find api/ -name "*.py" -print0)
+          else
+            echo "No api/ directory found — skipping"
+          fi
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo "One or more API files have syntax errors."
+            exit 1
+          fi
+
+      # ── CHECK 7: Compliance JSON ↔ rule file cross-reference ──────────
+      - name: Compliance rule cross-reference
+        id: xref_check
+        run: |
+          echo "=== Cross-referencing compliance controls against rule files ==="
+          python - <<'PYEOF'
+          import json
+          import os
+          import importlib.util
+          import sys
+
+          rules_dir = "scanner/rules"
+          framework_dir = "compliance/frameworks"
+
+          existing_ids = set()
+          for filename in os.listdir(rules_dir):
+              if not filename.startswith("az_") or not filename.endswith(".py"):
+                  continue
+              filepath = os.path.join(rules_dir, filename)
+              spec = importlib.util.spec_from_file_location("rule", filepath)
+              mod = importlib.util.module_from_spec(spec)
+              try:
+                  spec.loader.exec_module(mod)
+                  if hasattr(mod, "RULE_ID"):
+                      existing_ids.add(mod.RULE_ID)
+              except Exception:
+                  pass
+
+          failures = []
+
+          for fname in os.listdir(framework_dir):
+              if not fname.endswith(".json"):
+                  continue
+              fpath = os.path.join(framework_dir, fname)
+              try:
+                  data = json.load(open(fpath))
+              except (json.JSONDecodeError, OSError):
+                  continue
+
+              for rule_id in data.get("controls", {}):
+                  if rule_id not in existing_ids:
+                      failures.append(
+                          f"{fname}: references '{rule_id}' but no matching rule file found"
+                      )
+
+          if failures:
+              print("COMPLIANCE CROSS-REFERENCE FAILURES:")
+              for f in failures:
+                  print(f"  - {f}")
+              print()
+              print("Either add the missing rule file or remove the stale control mapping.")
+              sys.exit(1)
+          else:
+              print(f"All compliance controls map to existing rule files. ({len(existing_ids)} rules checked)")
+          PYEOF
+
+      # ── Final summary — always runs, shows per-check pass/fail ────────
+      - name: CI Summary
+        if: always()
+        env:
+          SYNTAX:    ${{ steps.syntax_check.outcome }}
+          STRUCTURE: ${{ steps.structure_check.outcome }}
+          CREDS:     ${{ steps.cred_scan.outcome }}
+          PLAYBOOK:  ${{ steps.playbook_check.outcome }}
+          JSON:      ${{ steps.json_check.outcome }}
+          API:       ${{ steps.api_check.outcome }}
+          XREF:      ${{ steps.xref_check.outcome }}
+        run: |
+          python - <<'PYEOF'
+          import os
+
+          checks = [
+              ("Python syntax (rule files)",          os.environ["SYNTAX"]),
+              ("Rule structure + RULE_ID uniqueness",  os.environ["STRUCTURE"]),
+              ("Hardcoded credential scan",            os.environ["CREDS"]),
+              ("Playbook existence + bash syntax",     os.environ["PLAYBOOK"]),
+              ("Compliance JSON validation",           os.environ["JSON"]),
+              ("API syntax check",                     os.environ["API"]),
+              ("Compliance vs rule cross-reference",   os.environ["XREF"]),
+          ]
+
+          labels = {
+              "success":   "PASS",
+              "failure":   "FAIL",
+              "skipped":   "SKIP",
+              "cancelled": "CANCELLED",
+          }
+
+          lines = [
+              "## OpenShield CI Results",
+              "",
+              "| Check | Result |",
+              "|---|---|",
+          ]
+
+          all_passed = True
+          for name, outcome in checks:
+              label = labels.get(outcome, outcome.upper())
+              lines.append(f"| {name} | {label} |")
+              if outcome != "success":
+                  all_passed = False
+
+          lines.append("")
+          if all_passed:
+              lines.append("**Result: All checks passed.**")
+          else:
+              lines.append("**Result: One or more checks failed. See the step logs above for details.**")
+
+          summary = "\n".join(lines)
+          print(summary)
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a") as f:
+                  f.write(summary + "\n")
+          PYEOF
