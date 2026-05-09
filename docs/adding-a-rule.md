@@ -17,14 +17,17 @@ Every rule file must have this exact structure:
 ```python
 """AZ-XXXX-000: One-line description of what this rule detects."""
 
+import logging
 from typing import Any, Dict, List
+
+logger = logging.getLogger(__name__)
 
 # ── Required module-level constants ─────────────────────────────────────────
 
 RULE_ID = "AZ-XXXX-000"          # Unique ID. Check existing rules to avoid clashes.
 RULE_NAME = "Human-readable name" # Shown in the dashboard and reports.
 SEVERITY = "HIGH"                 # HIGH | MEDIUM | LOW | INFO
-CATEGORY = "Storage"              # Storage | Network | Identity | Database | Compute | KeyVault
+CATEGORY = "Storage"              # Storage | Network | Identity | Database | Compute | Key Vault
 FRAMEWORKS = {
     "CIS":      "3.5",            # CIS Azure Benchmark control ID
     "NIST":     "PR.AC-3",        # NIST CSF subcategory
@@ -55,19 +58,35 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
 
     for resource in azure_client.get_storage_accounts():  # ← replace with the right method
-        if <condition_that_indicates_a_problem>:
+        resource_id = getattr(resource, "id", "")
+        resource_name = getattr(resource, "name", "")
+        if not resource_id or not resource_name:
+            continue
+
+        allows_public_access = bool(getattr(resource, "allow_blob_public_access", False))
+        status = False if allows_public_access else True
+
+        if status is None:
+            # Could not determine compliance because of permissions,
+            # SDK failure, or another unexpected state. Skip rather than
+            # create a false positive.
+            logger.warning("%s: could not determine status for %s", RULE_ID, resource_name)
+            continue
+
+        if status is False:
             findings.append({
                 "rule_id":       RULE_ID,
                 "rule_name":     RULE_NAME,
                 "severity":      SEVERITY,
                 "category":      CATEGORY,
-                "resource_id":   resource.id,
-                "resource_name": resource.name,
+                "resource_id":   resource_id,
+                "resource_name": resource_name,
                 "resource_type": "Microsoft.Storage/storageAccounts",  # ← update
                 "description":   DESCRIPTION,
                 "remediation":   REMEDIATION,
                 "playbook":      PLAYBOOK,
                 "frameworks":    FRAMEWORKS,
+                "metadata":      {},
             })
 
     return findings
@@ -82,7 +101,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `RULE_ID` | `AZ-[CATEGORY]-[NUMBER]`. Prefix map: STOR, NET, IDN, DB, CMP, KV. Look at existing rules for the next number. |
 | `SEVERITY` | `HIGH` = direct exploitation risk, `MEDIUM` = indirect or partial risk, `LOW` = best practice, `INFO` = informational only |
 | `CATEGORY` | Matches the resource type being scanned |
-| `FRAMEWORKS` | Use real control IDs from each framework. Refer to `compliance/frameworks/` JSON files for examples. |
+| `FRAMEWORKS` | Use real CIS, NIST, and ISO 27001 control IDs. SOC 2 is mapped in `compliance/frameworks/soc2.json`. |
 | `DESCRIPTION` | Focus on WHY it matters — what is the real-world attack scenario? |
 | `REMEDIATION` | Be specific. Name the Azure Portal setting or the exact CLI flag. |
 | `PLAYBOOK` | Path to the matching bash script in `playbooks/cli/`. You must create this file too. |
@@ -95,18 +114,23 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | Method | Returns |
 |---|---|
 | `azure_client.get_storage_accounts()` | List of StorageAccount objects |
+| `azure_client.get_storage_lifecycle_policy(rg, name)` | `True` if a lifecycle policy with rules exists, `False` if no policy exists, `None` if it cannot be checked |
 | `azure_client.get_network_security_groups()` | List of NetworkSecurityGroup objects |
+| `azure_client.get_network_interface(rg, name)` | NetworkInterface or None |
+| `azure_client.get_virtual_networks()` | List of VirtualNetwork objects |
+| `azure_client.get_public_ip_addresses()` | List of PublicIPAddress objects |
 | `azure_client.get_virtual_machines()` | List of VirtualMachine objects |
 | `azure_client.get_postgresql_servers()` | List of Server objects (PostgreSQL single-server) |
 | `azure_client.get_sql_servers()` | List of Server objects (Azure SQL) |
 | `azure_client.get_sql_server_auditing_policy(rg, name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Vault objects (with full properties) |
 | `azure_client.get_service_principals()` | List of RoleAssignment objects for service principals |
-| `azure_client.get_network_interface(rg, name)` | NetworkInterface or None |
 | `azure_client.get_conditional_access_policies()` | List of CA policy dicts from MS Graph |
 | `azure_client.parse_resource_id(id)` | Dict with `resource_group` and `name` |
 
-All methods return an empty list on failure — your scan function never needs to handle SDK exceptions.
+List methods return an empty list on failure. Single-resource methods return `None` when the resource cannot be fetched. Three-state checks, such as `get_storage_lifecycle_policy()`, return `True` for compliant, `False` for non-compliant, and `None` when the scanner cannot determine the state.
+
+When a helper returns `None`, skip the resource and log a warning. Never create a finding from an unknown state.
 
 ---
 
@@ -146,8 +170,7 @@ echo "✅ Remediation complete for $RESOURCE_NAME"
 
 ```bash
 # 1. Set credentials
-cp .env.example .env
-# Fill in your Azure credentials in .env
+# Create a .env file and fill in your Azure credentials
 
 # 2. Load env and run your rule in isolation
 python -c "
@@ -180,6 +203,11 @@ print(json.dumps(result, indent=2))
 
 If your rule maps to controls not yet in the compliance JSON files, add entries to the relevant file(s) in `compliance/frameworks/`:
 
+- `cis_azure_benchmark.json`
+- `nist_csf.json`
+- `iso27001.json`
+- `soc2.json`
+
 ```json
 {
   "controls": {
@@ -205,6 +233,16 @@ git push origin rule/az-xxxx-000-short-description
 
 Then open a PR. Use the PR template — it will ask you for the rule ID, severity, and which frameworks you mapped. A maintainer will review within 48 hours.
 
+Before requesting review, make sure all seven CI checks pass:
+
+- Python syntax on rule files
+- Rule structure validation
+- Hardcoded credential scan
+- Playbook existence and bash syntax
+- Compliance JSON validation
+- API syntax check
+- Compliance rule cross-reference
+
 ---
 
 ## Common Mistakes to Avoid
@@ -213,17 +251,20 @@ Then open a PR. Use the PR template — it will ask you for the rule ID, severit
 - **Missing playbook**: every rule must have a matching `playbooks/cli/fix_*.sh` file.
 - **Hardcoded subscription ID**: use the `subscription_id` parameter passed to `scan()`, never hardcode.
 - **Exceptions crashing the scan**: the engine catches unhandled exceptions per rule, but write defensively — use `getattr(obj, "field", default)` for optional SDK attributes.
-- **Empty `frameworks` dict**: always populate all three keys (CIS, NIST, ISO27001) even if you map to `"N/A"`.
+- **Empty `frameworks` dict**: always populate the CIS, NIST, and ISO27001 keys even if you map to `"N/A"`, and add the SOC 2 mapping in `soc2.json`.
 
 
 
-## Real-world impact of each rule
+## Real-world impact of selected rules
 
 **AZ-STOR-001 — Public blob access enabled**
 This is how 38 million records leaked in the 2021 Power Apps breach — blob containers set to public, no authentication needed, just know the URL and download everything. Attackers don't even need to "hack" anything. Automated tools scan Azure for public blobs constantly. If yours is exposed it will be found, usually within hours.
 
 **AZ-STOR-002 — Storage account allows unencrypted HTTP**
 Any data moving over plain HTTP can be read by anyone on the same network path. This sounds theoretical until you realise most corporate VPNs, shared offices and cloud interconnects are exactly that kind of shared environment. One internal tool uploading customer data over HTTP to Azure storage is all it takes. The fix is one toggle — HTTPS only — but it gets missed constantly.
+
+**AZ-STOR-003 — Storage account has no lifecycle management policy**
+Without lifecycle management, old blobs pile up forever. Backups, exports and stale customer files stay accessible long after the business reason for keeping them has expired. Lifecycle policies give teams a way to tier or delete data automatically instead of relying on someone to remember a cleanup task months later.
 
 **AZ-NET-001 — NSG allows SSH from internet**
 
@@ -241,14 +282,19 @@ Contributor at subscription scope means the service principal can touch everythi
 **AZ-IDN-002 — MFA not enforced on privileged accounts**
 Credential stuffing is not sophisticated. Attackers just take leaked password lists from other breaches and try them on Azure AD. Without MFA a matching password is all they need. Microsoft says MFA stops 99.9% of these attacks. A Global Admin account without MFA is genuinely one of the highest risk findings you can have — one leaked password from any other service and your entire tenant is gone.
 
-**AZ-DB-001 — SQL Server TDE disabled**
-The database itself might be behind a firewall, but what about the backups? Backup files get moved around — to blob storage, to tapes, to DR sites. Without TDE the data is sitting in plain text in all of those places. A healthcare company learned this the hard way in 2019 when stolen backup files exposed 2.3 million patient records. The attacker never touched the live database.
+**AZ-DB-001 — PostgreSQL server allows public network access**
+Public database endpoints get scanned constantly. Even if credentials are strong, a reachable database server gives attackers a place to brute force, exploit, or pressure-test configuration mistakes. PostgreSQL should sit behind private networking unless there is a deliberate, reviewed reason to expose it.
 
-**AZ-DB-002 — SQL Server firewall allows all IPs**
-Opening the SQL Server firewall to all IPs is the same as putting your database on the public internet. Shodan and similar tools index these constantly. In 2020 a startup had their production database dumped within days of launching because the firewall rule was still set to 0.0.0.0 from a development config that nobody cleaned up. Lock it to your app service IPs only — nothing else needs direct database access.
+**AZ-DB-002 — Azure SQL Server auditing disabled**
+When auditing is off, failed logins, schema changes and suspicious database access leave little evidence behind. The incident response team starts with a blank timeline. Enabling auditing gives you the raw event trail needed for investigations and compliance reporting.
 
-**AZ-CMP-001 — Unencrypted managed disk**
-An attacker who gets into your subscription — even temporarily — can snapshot a disk in seconds. They create the snapshot, export it, mount it on their own VM and read everything on it at their leisure. The original VM keeps running, no one notices. A SaaS company found out about this 6 weeks after it happened when their data showed up for sale. The disks were unencrypted so the snapshot was immediately readable.
+**AZ-CMP-001 — VM with public IP and no associated NSG**
+A virtual machine with a public IP and no NSG on its network interface has no explicit network filtering at the NIC boundary. If the workload was meant to be private, this creates a direct path from the internet to the VM. Attach an NSG, restrict inbound rules, or remove the public IP entirely.
 
 **AZ-KV-001 — Key Vault soft delete disabled**
 Key Vault is where everything important lives — database passwords, API keys, TLS certificates, encryption keys. Without soft delete an attacker or a disgruntled employee can delete every single secret permanently in about 30 seconds. No recovery, no rollback. A real incident in 2021 saw an employee delete an entire production Key Vault on their last day. The company was down for 6 days rebuilding access from scratch. Soft delete costs nothing to enable.
+
+**AZ-KV-002 — Key Vault allows public network access**
+Key Vault should be one of the least reachable services in an Azure environment. Public network access does not mean secrets are public, but it does widen the path attackers can use to attempt access. Private endpoints and network restrictions keep secret access inside trusted network boundaries.
+
+For the complete current rule list, see `docs/rules-reference.md`.
