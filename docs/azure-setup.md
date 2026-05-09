@@ -175,6 +175,57 @@ Compliance posture is available through `/api/compliance/cis`, `/api/compliance/
 
 ---
 
+## Azure App Service Deployment
+
+> **Note:** The Flask API is deployed on Render (render.com) rather than Azure App Service F1. Azure App Service F1 sleeps after 20 minutes of inactivity and has a 60 CPU minute per day limit which is not suitable for demo use. See the Render deployment section below for setup instructions.
+
+---
+
+## Render Deployment (Recommended for API)
+
+Render provides a free tier that is better suited for the OpenShield API than Azure App Service F1.
+
+### Steps
+
+1. Create a free account at render.com
+2. Click New → Web Service
+3. Connect your GitHub account and select `openshield-org/openshield`
+4. Configure:
+   - Name: `openshield-api`
+   - Branch: `main`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn api.app:create_app()`
+   - Instance Type: `Free`
+
+5. Add environment variables under Environment:
+
+```
+AZURE_SUBSCRIPTION_ID=your-subscription-id
+AZURE_CLIENT_ID=your-client-id
+AZURE_CLIENT_SECRET=your-client-secret
+AZURE_TENANT_ID=your-tenant-id
+DATABASE_URL=your-postgresql-connection-string
+JWT_SECRET=your-secret-key
+```
+
+6. Create a PostgreSQL database:
+   - Click New → PostgreSQL
+   - Name: `openshield-db`
+   - Copy the Internal Database URL into `DATABASE_URL` above
+
+7. Deploy — Render will build and deploy automatically
+
+8. Your API will be live at:
+   `https://openshield-api.onrender.com`
+
+### Known Limitations
+
+- Free tier spins down after 15 minutes of inactivity
+- First request after spin down takes 30 to 60 seconds
+- Suitable for demo and testing, not production
+
+---
+
 ## Step 8 — Activate the Microsoft Sentinel 90-Day Trial (Optional)
 
 Microsoft Sentinel includes a 90-day free trial for new Log Analytics workspaces.
