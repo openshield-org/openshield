@@ -7,7 +7,7 @@ from api.models.finding import DatabaseManager
 
 compliance_bp = Blueprint("compliance", __name__)
 
-SUPPORTED_FRAMEWORKS = ("cis", "nist", "iso27001")
+SUPPORTED_FRAMEWORKS = ("cis", "nist", "iso27001", "soc2")
 
 
 def _get_db() -> DatabaseManager:
@@ -20,7 +20,7 @@ def _get_db() -> DatabaseManager:
 def get_compliance(framework: str):
     """Return pass/fail compliance breakdown for a framework.
 
-    Supported frameworks: cis, nist, iso27001
+  Supported frameworks: cis, nist, iso27001, soc2
 
     Returns control-level pass/fail status mapped to current open findings.
     """
