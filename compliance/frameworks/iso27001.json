@@ -89,26 +89,13 @@
       "description": "Virtual machines with public IPs and no NSG have unrestricted network access. Network controls should be applied to all compute resources accessible from the internet."
     },
     "AZ-KV-001": {
-<<<<<<< feat/network-rules-expansion
       "control_id": "A.12.3.1",
       "control_name": "Information backup",
       "description": "Key Vault soft delete protects against loss of secrets, keys and certificates. Backup copies of information should be taken and tested regularly in accordance with an agreed backup policy."
     }
-=======
-      "control_id": "A.17.2.1",
-      "control_name": "Availability of information processing facilities",
-      "description": "Information processing facilities shall be implemented with sufficient redundancy to meet availability requirements. Disabling soft delete on Key Vault removes the ability to recover deleted secrets, keys, and certificates, creating a single point of failure for critical cryptographic material and violating availability and recovery requirements."
-    },
-    "AZ-STOR-003": {
-      "control_id": "A.8.3.1",
-      "control_name": "Management of removable media",
-      "description": "Information stored on Azure storage accounts should be subject to formal lifecycle management controls governing retention and disposal. Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism, violating information handling and disposal requirements under this control."
-    },
-    "AZ-KV-002": {
-    "control_id": "A.13.1.1",
-    "control_name": "Network controls",
-    "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive secrets, keys, and certificates to external networks. Access should be restricted to trusted networks using private endpoints or network controls."
-   }
->>>>>>> dev
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive secrets, keys, and certificates to external networks. Access should be restricted to trusted networks using private endpoints or network controls."
+    }
   }
 }
