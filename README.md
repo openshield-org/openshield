@@ -166,19 +166,6 @@ Contributors are credited below.
 
 ---
 
-## Contributors
-
-Thanks to everyone who has contributed to OpenShield.
-
-| Contributor | GitHub | Contribution |
-|---|---|---|
-| Vishnu Ajith | @Vishnu2707 | Architecture, core scanner, API, compliance mappings |
-| Tanvir Farhad | @TFT444 | Sentinel integration, network rules, playbooks, breach scenarios |
-| Parth J Rohit | @parthrohit22 | AZ-KV-002 Key Vault public access rule and playbook |
-| Ritik Sah | @ritiksah141 | AZ-STOR-003 storage lifecycle rule and CI pipeline |
-
----
-
 ## License
 
 MIT — free to use, modify, and distribute.
