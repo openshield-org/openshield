@@ -9,7 +9,7 @@ labels: new-rule, good-first-issue
 **Rule ID:** AZ-XXX-000
 **Rule name:**
 **Severity:** HIGH / MEDIUM / LOW
-**Category:** Storage / Network / Identity / Database / Compute
+**Category:** Storage / Network / Identity / Database / Compute / Key Vault
 
 ## What misconfiguration does it detect?
 
@@ -19,5 +19,6 @@ labels: new-rule, good-first-issue
 - CIS:
 - NIST:
 - ISO 27001:
+- SOC 2:
 
 ## Remediation (how to fix it)?
