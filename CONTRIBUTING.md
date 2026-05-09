@@ -1,26 +1,26 @@
-# 🤝 Contributing to OpenShield
+# Contributing to OpenShield
 
 Welcome! OpenShield is built by the community — students, developers, and security engineers at every level. This guide will get you contributing in under 30 minutes.
 
 ---
 
-## 🧭 What Can I Contribute?
+## What Can I Contribute?
 
 | Contribution Type | Difficulty | Time |
 |---|---|---|
-| New misconfiguration scan rule | ⭐ Beginner | 20–30 min |
-| Remediation playbook (CLI) | ⭐ Beginner | 30 min |
-| Compliance framework mapping | ⭐⭐ Intermediate | 1–2 hrs |
-| New API endpoint | ⭐⭐ Intermediate | 2–4 hrs |
-| Dashboard MVP work | ⭐⭐ Intermediate | 2–4 hrs |
-| KQL detection rule (Sentinel) | ⭐⭐⭐ Advanced | 3–5 hrs |
-| Scanner engine feature | ⭐⭐⭐ Advanced | 4–8 hrs |
+| New misconfiguration scan rule | Beginner | 20–30 min |
+| Remediation playbook (CLI) | Beginner | 30 min |
+| Compliance framework mapping | Intermediate | 1–2 hrs |
+| New API endpoint | Intermediate | 2–4 hrs |
+| Dashboard MVP work | Intermediate | 2–4 hrs |
+| KQL detection rule (Sentinel) | Advanced | 3–5 hrs |
+| Scanner engine feature | Advanced | 4–8 hrs |
 
 **Start with a scan rule — it's the most impactful and beginner-friendly contribution.**
 
 ---
 
-## ⚡ Adding a Scan Rule (The Fastest Way to Contribute)
+## Adding a Scan Rule (The Fastest Way to Contribute)
 
 Every misconfiguration rule is a self-contained Python file in `scanner/rules/`.
 
@@ -111,7 +111,7 @@ az storage account update \
   --resource-group $RESOURCE_GROUP \
   --allow-blob-public-access false
 
-echo "✅ Public blob access disabled for $STORAGE_ACCOUNT"
+echo "Public blob access disabled for $STORAGE_ACCOUNT"
 ```
 
 ### Step 5 — Test Your Rule
@@ -166,7 +166,7 @@ Closes #123
 
 ---
 
-## 📋 Rule ID Convention
+## Rule ID Convention
 
 Use the format: `AZ-[CATEGORY]-[NUMBER]`
 
@@ -208,7 +208,7 @@ Most list methods return an empty list on failure. Methods that fetch one resour
 
 ---
 
-## 🛠️ Local Dev Setup
+## Local Dev Setup
 
 ```bash
 # Python 3.10+
@@ -231,7 +231,7 @@ docker run --name openshield-db \
 
 ---
 
-## 📐 Code Standards
+## Code Standards
 
 - Python: follow PEP8, use type hints where possible
 - Dashboard work: functional React components only, Tailwind for styling when the dashboard app lands
@@ -241,7 +241,7 @@ docker run --name openshield-db \
 
 ---
 
-## 🏅 Recognition
+## Recognition
 
 Every contributor is listed in the README.
 
@@ -252,10 +252,10 @@ If you contribute 3+ rules or a major feature, you get:
 
 ---
 
-## 💬 Need Help?
+## Need Help?
 
 - **Discord:** Join `#openshield-dev` — ask anything, no question is too basic
 - **GitHub Discussions:** For longer technical questions
 - **Issues:** Tag `@core-team` if you're stuck on a PR
 
-We respond within 24 hours. Welcome to the team. 🛡️
+We respond within 24 hours. Welcome to the team.

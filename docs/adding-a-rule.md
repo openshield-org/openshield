@@ -161,7 +161,7 @@ az <service> <resource-type> update \
   --name "$RESOURCE_NAME" \
   --<setting> <value>
 
-echo "✅ Remediation complete for $RESOURCE_NAME"
+echo "Remediation complete for $RESOURCE_NAME"
 ```
 
 ---

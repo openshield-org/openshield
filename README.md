@@ -1,4 +1,4 @@
-# 🛡️ OpenShield
+# OpenShield
 
 > **Open source Cloud Security Posture Management (CSPM) for Azure — built by the community, for the community.**
 
@@ -32,19 +32,19 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
-    A["🌐 React Dashboard MVP\nPlanned frontend"]
-    B["⚙️ Flask REST API\nJWT · CORS · Blueprints"]
-    C["🔍 Scanner Engine\n20 Python rules"]
-    D["☁️ Azure Subscription\nScanned via Azure SDK + Graph"]
-    E["📋 Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
-    F["🗄️ PostgreSQL Database\nFindings · Scans"]
-    G["🔧 Azure CLI Playbooks\n20 remediation scripts"]
-    H["🛡️ sentinel/ingest.py\nNormalise + HMAC upload"]
-    I["📈 Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
+    A["React Dashboard MVP\nPlanned frontend"]
+    B["Flask REST API\nJWT · CORS · Blueprints"]
+    C["Scanner Engine\n20 Python rules"]
+    D["Azure Subscription\nScanned via Azure SDK + Graph"]
+    E["Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
+    F["PostgreSQL Database\nFindings · Scans"]
+    G["Azure CLI Playbooks\n20 remediation scripts"]
+    H["sentinel/ingest.py\nNormalise + HMAC upload"]
+    I["Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
     A -->|REST calls| B
     B -->|trigger scans| C
@@ -130,24 +130,24 @@ FLASK_APP=api/app.py flask run
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We actively welcome contributions from students and developers at all levels.
 
 **Ways to contribute:**
-- 🔍 Add a new misconfiguration scan rule
-- 📋 Add a compliance framework mapping
-- 🔧 Write a remediation playbook
-- 🐛 Fix a bug
-- 📖 Improve documentation
+- Add a new misconfiguration scan rule
+- Add a compliance framework mapping
+- Write a remediation playbook
+- Fix a bug
+- Improve documentation
 
-👉 See [CONTRIBUTING.md](CONTRIBUTING.md) for a full guide — including how to add your first rule in under 30 minutes.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for a full guide — including how to add your first rule in under 30 minutes.
 
 Contributors are credited below.
 
 ---
 
-## 📍 Roadmap
+## Roadmap
 
 - [x] Project scaffolding
 - [x] Core scanner engine (Azure SDK integration)
@@ -166,10 +166,10 @@ Contributors are credited below.
 
 ---
 
-## 📄 License
+## License
 
 MIT — free to use, modify, and distribute.
 
 ---
 
-> Built with ❤️ by security engineers and students who believe cloud security tooling should be accessible to everyone.
+> Built by security engineers and students who believe cloud security tooling should be accessible to everyone.
