@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It continuously scans your Azure subscription against a library of security rules, maps every finding to compliance frameworks (CIS, NIST CSF, ISO 27001), and exposes results via a REST API consumed by a React dashboard.
+OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 20 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API.
 
 ---
 
@@ -10,33 +10,34 @@ OpenShield is a modular, open source Cloud Security Posture Management (CSPM) pl
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                       React Dashboard                            │
-│              (Azure Static Web Apps — Free tier)                 │
+│                 React Dashboard MVP (planned)                    │
+│                    frontend/ scaffold                            │
 └────────────────────────────┬─────────────────────────────────────┘
                              │ HTTPS / JWT
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                    Flask REST API  (api/)                         │
 │                                                                  │
+│  GET  /health                                                    │
 │  GET  /api/findings          GET  /api/score                     │
 │  GET  /api/findings/<id>     GET  /api/compliance/<framework>    │
 │  GET  /api/scans             POST /api/scans/trigger             │
 └───────────┬──────────────────────────────────┬───────────────────┘
             │                                  │
 ┌───────────▼──────────────┐   ┌───────────────▼───────────────────┐
-│     Scanner Engine        │   │     Compliance Mapper              │
+│     Scanner Engine        │   │     Compliance Frameworks          │
 │     (scanner/)            │   │     (compliance/frameworks/)       │
 │                           │   │                                    │
 │  ScanEngine               │   │  cis_azure_benchmark.json          │
 │    └── load_rules()       │   │  nist_csf.json                     │
 │    └── run_scan()         │   │  iso27001.json                     │
+│                           │   │  soc2.json                         │
 └───────────┬───────────────┘   └────────────────────────────────────┘
             │
 ┌───────────▼──────────────────────────────────────────────────────┐
 │                   Rule Modules (scanner/rules/)                   │
 │                                                                   │
-│  az_stor_001.py   az_net_001.py   az_idn_001.py   az_db_001.py  │
-│  az_stor_002.py   az_net_002.py   az_idn_002.py   az_db_002.py  │
-│                   az_cmp_001.py   az_kv_001.py                   │
+│  20 rule files across Storage, Network, Identity, Database,       │
+│  Compute, and Key Vault                                           │
 └───────────┬───────────────────────────────────────────────────────┘
             │ calls
 ┌───────────▼──────────────────────────────────────────────────────┐
@@ -52,10 +53,20 @@ OpenShield is a modular, open source Cloud Security Posture Management (CSPM) pl
 ┌───────────▼──────────────────────────────────────────────────────┐
 │                  Azure Subscription (target)                     │
 └──────────────────────────────────────────────────────────────────┘
-            │
+            │ findings returned to ScanEngine / API
 ┌───────────▼──────────────────────────────────────────────────────┐
 │                 PostgreSQL Database                               │
-│           (findings, scans, rules tables)                        │
+│                 (findings, scans tables)                         │
+└──────────────────────────────────────────────────────────────────┘
+Scan result JSON can also be passed to Sentinel ingestion:
+┌──────────────────────────────────────────────────────────────────┐
+│             Sentinel ingestion (sentinel/ingest.py)               │
+│      input findings JSON → HMAC-sign request → Log Analytics      │
+└────────────────────────────┬─────────────────────────────────────┘
+                             │ Data Collector API
+┌────────────────────────────▼─────────────────────────────────────┐
+│                 Microsoft Sentinel / Log Analytics                │
+│            OpenShieldFindings_CL + KQL analytics rules            │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -90,7 +101,22 @@ result = engine.run_scan()
 
 `run_scan()` iterates through all loaded rule modules, calling `module.scan(azure_client, subscription_id)` for each. Individual rule failures are caught and logged without stopping the scan. The engine collects all findings and returns a structured result dict.
 
-### 4. Finding Schema
+### 4. Current Rule Modules
+
+There are 20 current rule files in `scanner/rules/`.
+
+| Category | Rules |
+|---|---|
+| Storage | AZ-STOR-001 public blob access, AZ-STOR-002 HTTPS-only storage, AZ-STOR-003 lifecycle management policy |
+| Network | AZ-NET-001 SSH from any source, AZ-NET-002 RDP from any source, AZ-NET-003 unrestricted 443, AZ-NET-004 empty NSG, AZ-NET-005 no DDoS protection, AZ-NET-006 unassociated public IP, AZ-NET-007 Application Gateway without WAF, AZ-NET-008 load balancer without backend pool, AZ-NET-009 outdated IKE version, AZ-NET-010 subnet without NSG |
+| Identity | AZ-IDN-001 service principal with Owner role, AZ-IDN-002 no admin MFA via Conditional Access |
+| Database | AZ-DB-001 PostgreSQL public network access, AZ-DB-002 SQL Server auditing disabled |
+| Compute | AZ-CMP-001 VM public IP with no NSG on NIC |
+| Key Vault | AZ-KV-001 soft delete disabled, AZ-KV-002 public network access without private endpoint |
+
+Every rule has a matching Azure CLI playbook in `playbooks/cli/`.
+
+### 5. Finding Schema
 
 Every finding returned by a rule must conform to this schema:
 
@@ -99,7 +125,7 @@ Every finding returned by a rule must conform to this schema:
     "rule_id":       str,   # e.g. "AZ-STOR-001"
     "rule_name":     str,
     "severity":      str,   # HIGH | MEDIUM | LOW | INFO
-    "category":      str,   # Storage | Network | Identity | Database | Compute | KeyVault
+    "category":      str,   # Storage | Network | Identity | Database | Compute | Key Vault
     "resource_id":   str,   # full Azure resource ID
     "resource_name": str,
     "resource_type": str,   # e.g. "Microsoft.Storage/storageAccounts"
@@ -107,10 +133,32 @@ Every finding returned by a rule must conform to this schema:
     "remediation":   str,
     "playbook":      str,   # path to the CLI remediation script
     "frameworks":    dict,  # {"CIS": "3.5", "NIST": "PR.AC-3", "ISO27001": "A.9.4.1"}
+    "metadata":      dict,  # optional rule-specific context
     "detected_at":   str,   # ISO 8601, added by engine
     "scan_id":       str,   # UUID, added by engine
 }
 ```
+
+### 6. AzureClient Surface
+
+Rules should use `scanner/azure_client.py` instead of instantiating SDK clients directly.
+
+| Method | Purpose |
+|---|---|
+| `parse_resource_id(resource_id)` | Parse `resource_group` and `name` from an Azure resource ID |
+| `get_storage_accounts()` | List storage accounts |
+| `get_storage_lifecycle_policy(resource_group, account_name)` | Return `True`, `False`, or `None` for storage lifecycle policy status |
+| `get_network_security_groups()` | List network security groups |
+| `get_network_interface(resource_group, nic_name)` | Fetch one network interface |
+| `get_virtual_networks()` | List virtual networks |
+| `get_public_ip_addresses()` | List public IP addresses |
+| `get_virtual_machines()` | List virtual machines |
+| `get_postgresql_servers()` | List PostgreSQL single-server instances |
+| `get_sql_servers()` | List Azure SQL servers |
+| `get_sql_server_auditing_policy(resource_group, server_name)` | Fetch SQL Server blob auditing policy |
+| `get_key_vaults()` | List Key Vaults |
+| `get_service_principals()` | List service principal role assignments |
+| `get_conditional_access_policies()` | Fetch Conditional Access policies from Microsoft Graph |
 
 ---
 
@@ -132,6 +180,10 @@ GET /api/score
 
 GET /api/compliance/cis
     → db.get_compliance_score("cis") # joins DB findings with CIS JSON
+    → returns per-control pass/fail breakdown
+
+GET /api/compliance/soc2
+    → db.get_compliance_score("soc2") # same flow for SOC 2
     → returns per-control pass/fail breakdown
 ```
 
@@ -158,23 +210,48 @@ Each rule module is a plain Python file — no base class, no registration decor
 
 ## How Sentinel Integration Works
 
-> **Note:** Sentinel push is handled by a separate team. This section documents the integration point.
-
-After `run_scan()` returns, findings can be forwarded to Microsoft Sentinel via the Azure Monitor Ingestion API. The `sentinel/` directory contains the KQL detection rules and the ingestion client configuration.
+Sentinel ingestion is implemented in `sentinel/ingest.py`. It is a standalone script, not an API route and not a DB polling worker.
 
 The flow:
-1. `POST /api/scans/trigger` → scan completes → findings in DB
-2. A Sentinel push worker (separate process or Azure Function) polls the DB for new findings
-3. New findings are batched and sent to a Log Analytics Workspace via `azure-monitor-ingestion`
-4. KQL detection rules in Sentinel fire alerts on HIGH-severity findings
+1. Load a findings JSON file from the first CLI argument, defaulting to `scanner/output/test_findings.json`.
+2. Use the second CLI argument as `scan_id`, or generate one from the current UTC timestamp.
+3. Accept either a raw findings list or an object with a `findings` array.
+4. Normalise each finding into Sentinel-friendly fields such as `RuleId`, `RuleName`, `Severity`, `SeverityScore`, `ResourceId`, and `TimeGenerated`.
+5. HMAC-sign the payload with `SENTINEL_SHARED_KEY`.
+6. POST the records to the Log Analytics Data Collector API.
+7. Query and analytics rules in `sentinel/rules/` operate on `OpenShieldFindings_CL`.
 
-The required environment variable is `SENTINEL_WORKSPACE_ID` (see `.env.example`).
+Required environment variables:
+
+| Variable | Description |
+|---|---|
+| `SENTINEL_WORKSPACE_ID` | Log Analytics workspace customer ID |
+| `SENTINEL_SHARED_KEY` | Primary or secondary shared key for the workspace |
+| `SENTINEL_LOG_TYPE` | Custom log type. Defaults to `OpenShieldFindings` |
+
+---
+
+## CI Pipeline
+
+`.github/workflows/ci.yml` runs on pull requests to `dev` and `main`. It installs Python 3.11 dependencies and runs seven checks:
+
+| # | Check | Purpose |
+|---|---|---|
+| 1 | Python syntax on rule files | Compiles every `scanner/rules/az_*.py` file |
+| 2 | Rule structure validation | Verifies required fields, valid severity values, non-empty `FRAMEWORKS`, and unique `RULE_ID`s |
+| 3 | Hardcoded credential scan | Searches source files for literal secrets and keys |
+| 4 | Playbook existence and bash syntax | Requires a matching `playbooks/cli/fix_<rule>.sh` for every rule and validates it with `bash -n` |
+| 5 | Compliance JSON validation | Confirms CIS, NIST, ISO 27001, and SOC 2 JSON files exist and parse |
+| 6 | API syntax check | Compiles every Python file under `api/` |
+| 7 | Compliance rule cross-reference | Flags compliance JSON entries that reference missing rule files |
+
+The final CI summary step always runs and writes a pass/fail table to the GitHub Actions summary.
 
 ---
 
 ## Configuration
 
-All runtime configuration is provided via environment variables (see `.env.example`):
+All runtime configuration is provided via environment variables:
 
 | Variable | Description |
 |---|---|
@@ -185,3 +262,5 @@ All runtime configuration is provided via environment variables (see `.env.examp
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Secret used to sign/verify API JWTs |
 | `SENTINEL_WORKSPACE_ID` | Log Analytics workspace ID for Sentinel push |
+| `SENTINEL_SHARED_KEY` | Log Analytics workspace shared key for Sentinel ingestion |
+| `SENTINEL_LOG_TYPE` | Custom log name, defaults to `OpenShieldFindings` |
