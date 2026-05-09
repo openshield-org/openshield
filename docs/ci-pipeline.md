@@ -288,7 +288,7 @@ On GitHub Actions the checkout is clean with no `venv/`. Locally, `venv/` contai
 
 ### Why the cross-reference check walks compliance JSONs rather than rule files
 
-The check is designed to catch a deletion scenario: a rule file is removed but its entry in one or more compliance JSONs is not. Walking the JSONs and looking up each referenced rule ID against the set of existing rule files catches stale references. The inverse check — verifying every rule file has a compliance entry — is not enforced because a rule may legitimately not map to every framework.
+The check is designed to catch a deletion scenario: a rule file is removed but its entry in one or more compliance JSONs is not. Walking the JSONs and looking up each referenced rule ID against the set of existing rule files catches stale references. The inverse check — verifying every rule file has a compliance entry — is not enforced by CI, but the current repository convention is to map every rule in CIS, NIST, ISO 27001, and SOC 2.
 
 ---
 
