@@ -152,6 +152,24 @@ class AzureClient:
             logger.error("get_network_interface(%s) failed: %s", nic_name, exc)
             return None
 
+    def get_virtual_networks(self) -> List[Any]:
+        """List all virtual networks in the subscription."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.virtual_networks.list_all())
+        except Exception as exc:
+            logger.error("get_virtual_networks failed: %s", exc)
+            return []
+
+    def get_public_ip_addresses(self) -> List[Any]:
+        """List all public IP addresses in the subscription."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.public_ip_addresses.list_all())
+        except Exception as exc:
+            logger.error("get_public_ip_addresses failed: %s", exc)
+            return []
+
     # ------------------------------------------------------------------ #
     # Compute                                                               #
     # ------------------------------------------------------------------ #
