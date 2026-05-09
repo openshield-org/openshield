@@ -26,7 +26,7 @@ Objective: Confirm findings from scanner reach Log Analytics
 
 Result: PASS
 
-12 findings confirmed in OpenShieldFindings_CL table. Table created automatically on first ingestion. All fields correctly mapped including Severity_s, RuleName_s, ResourceName_s, CisControl_s.
+10 findings confirmed in OpenShieldFindings_CL table. Table created automatically on first ingestion. Fields are mapped by `sentinel/ingest.py`, including Severity_s, RuleName_s, ResourceName_s, CisControl_s, and NistControl_s.
 
 ---
 
@@ -36,15 +36,18 @@ Objective: Rule fires on any HIGH or CRITICAL finding
 
 Result: PASS
 
-7 distinct findings returned:
+10 distinct high or critical findings returned:
 
+- Public blob storage container - High - testblob001
 - Unencrypted managed disk - Critical - vm-disk-001
+- NSG allows RDP from internet - High - nsg-open-rdp
 - NSG allows SSH from internet - High - nsg-open-ssh
 - Key Vault purge protection disabled - High - kv-nopurge
 - SQL Server TDE disabled - High - sql-no-tde
 - App Service HTTP not disabled - High - webapp-http
 - Container registry admin enabled - High - acr-admin
 - Overprivileged service principal - High - sp-contributor
+- Container instance privileged execution - Critical - aci-suspicious
 
 ---
 
@@ -55,11 +58,11 @@ Objective: Rule fires when 5 or more HIGH findings appear in a single scan
 Result: PASS
 
 - Scan ID: scan-openshield-001
-- Total HIGH/CRITICAL findings: 12
+- Total HIGH/CRITICAL findings: 10
 - Unique rules triggered: 10
-- Wave Score: 120
+- Wave Score: 100
 
-Wave score of 120 confirmed. Rule correctly identifies bulk misconfiguration event.
+Wave score of 100 confirmed. Rule correctly identifies bulk misconfiguration event.
 
 ---
 
@@ -122,6 +125,7 @@ pip install requests
 
 Generate test findings:
 
+mkdir -p scanner/output
 python3 sentinel/tests/generate_test_findings.py
 
 Ingest into Sentinel:

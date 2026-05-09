@@ -23,12 +23,12 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 | Feature | Description |
 |---|---|
-| **Misconfiguration Scanner** | Scans your Azure subscription for real security issues — open blobs, weak NSG rules, unencrypted DBs, overprivileged identities |
-| **Compliance Mapper** | Maps every finding to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 |
-| **Drift Detection** | Monitors your environment continuously — alerts when security posture changes |
-| **Remediation Playbooks** | Every finding ships with a one-click fix — ARM template, Azure CLI, or Terraform |
-| **Security Dashboard** | React frontend showing risk score, open findings, compliance posture, and trend over time |
-| **Sentinel Integration** | Pushes alerts into Microsoft Sentinel for full SIEM visibility |
+| **Misconfiguration Scanner** | Runs 20 Azure security rules across storage, network, identity, database, compute, and Key Vault |
+| **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
+| **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, and compliance posture over REST |
+| **Remediation Playbooks** | Every current rule ships with a matching Azure CLI remediation script |
+| **Security Dashboard** | Frontend scaffold is present; the React dashboard MVP is still on the roadmap |
+| **Sentinel Integration** | Normalises findings and pushes them into Microsoft Sentinel via a Log Analytics custom table and KQL analytics rules |
 
 ---
 
@@ -36,37 +36,37 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ```mermaid
 flowchart TD
-    A["🌐 React Dashboard\nAzure Static Web Apps — Free"]
-    B["⚙️ Flask REST API\nAzure App Service F1 — Free"]
-    C["🔍 Scanner Engine\nPython + Azure SDK"]
-    D["📋 Compliance Mapper\nCIS · NIST · ISO 27001"]
-    E["🔧 Remediation Playbooks\nARM · Terraform · CLI"]
-    F["🗄️ PostgreSQL Database\nFindings · Rules · History · Scans"]
-    G["🛡️ Azure Monitor + Sentinel\nReal-time Alerting · SIEM · KQL Rules"]
-    H["☁️ Azure Subscription\nTarget environment scanned via SDK"]
+    A["🌐 React Dashboard MVP\nPlanned frontend"]
+    B["⚙️ Flask REST API\nJWT · CORS · Blueprints"]
+    C["🔍 Scanner Engine\n20 Python rules"]
+    D["☁️ Azure Subscription\nScanned via Azure SDK + Graph"]
+    E["📋 Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
+    F["🗄️ PostgreSQL Database\nFindings · Scans"]
+    G["🔧 Azure CLI Playbooks\n20 remediation scripts"]
+    H["🛡️ sentinel/ingest.py\nNormalise + HMAC upload"]
+    I["📈 Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
     A -->|REST calls| B
-    B --> C
-    B --> D
-    B --> E
-    C --> F
-    D --> F
-    E --> F
-    F --> G
-    C -->|Azure SDK| H
-    G -->|Alerts| A
+    B -->|trigger scans| C
+    B -->|read/write| F
+    B -->|compliance score| E
+    C -->|Azure SDK + Graph| D
+    C -->|findings| F
+    C -->|scan output JSON| H
+    G -->|manual fixes| D
+    H -->|Data Collector API| I
+    I -->|alerts| A
 ```
 
 ## Tech Stack
 
 | Layer | Technology | Cost |
 |---|---|---|
-| Frontend | React + Tailwind CSS | Free |
+| Frontend | Scaffolded dashboard app (React + Tailwind planned) | Free |
 | Backend API | Python + Flask | Free |
 | Database | PostgreSQL | Free (Render/Azure free tier) |
 | Cloud Scanner | Python + Azure SDK | Free |
-| Infrastructure | Azure App Service F1 | Free |
-| Static Hosting | Azure Static Web Apps | Free forever |
+| Remediation | Azure CLI playbooks | Free |
 | SIEM | Microsoft Sentinel | 90-day free trial |
 | CI/CD | GitHub Actions | Free |
 | Repo | GitHub | Free |
@@ -82,19 +82,17 @@ openshield/
 │   ├── engine.py          # Core scanning orchestration
 │   └── azure_client.py    # Azure SDK wrapper
 ├── compliance/            # Framework mapping engine
-│   ├── frameworks/        # CIS, NIST, ISO 27001, SOC 2 mappings
-│   └── mapper.py          # Maps findings to frameworks
+│   └── frameworks/        # CIS, NIST, ISO 27001, SOC 2 mappings
 ├── playbooks/             # Remediation playbooks
-│   ├── arm/               # ARM templates
-│   ├── terraform/         # Terraform fixes
+│   ├── arm/               # Reserved for future ARM templates
+│   ├── terraform/         # Reserved for future Terraform fixes
 │   └── cli/               # Azure CLI scripts
 ├── api/                   # Flask REST API
 │   ├── routes/
 │   └── models/
-├── frontend/              # React dashboard
-│   ├── src/
-│   └── public/
+├── frontend/              # Dashboard scaffold
 ├── sentinel/              # Sentinel integration & KQL rules
+├── .github/workflows/     # CI checks
 ├── docs/                  # Documentation
 ├── CONTRIBUTING.md
 └── README.md
@@ -119,13 +117,15 @@ export AZURE_CLIENT_SECRET=your-client-secret
 export AZURE_TENANT_ID=your-tenant-id
 
 # Run a scan
-python scanner/engine.py --subscription $AZURE_SUBSCRIPTION_ID
+python -c "
+from scanner.engine import ScanEngine
+import json, os
+result = ScanEngine(os.environ['AZURE_SUBSCRIPTION_ID']).run_scan()
+print(json.dumps(result, indent=2))
+"
 
 # Start the API
-cd api && flask run
-
-# Start the dashboard
-cd frontend && npm install && npm run dev
+FLASK_APP=api/app.py flask run
 ```
 
 ---
@@ -143,7 +143,7 @@ We actively welcome contributions from students and developers at all levels.
 
 👉 See [CONTRIBUTING.md](CONTRIBUTING.md) for a full guide — including how to add your first rule in under 30 minutes.
 
-All contributors get credited in our [CONTRIBUTORS.md](CONTRIBUTORS.md).
+Contributors are credited below.
 
 ---
 
@@ -151,15 +151,17 @@ All contributors get credited in our [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 - [x] Project scaffolding
 - [x] Core scanner engine (Azure SDK integration)
-- [x] 11 scan rules
+- [x] 20 scan rules
 - [x] Flask API + PostgreSQL schema
 - [ ] React dashboard MVP
-- [ ] CIS Benchmark compliance mapping
+- [x] CIS Benchmark compliance mapping
+- [x] SOC 2 compliance mapping
 - [x] Sentinel alert integration
 - [x] Real-world breach scenarios documented
 - [x] First external contributor PR merged
-- [ ] Remediation playbook library
-- [ ] NIST CSF + ISO 27001 mappings
+- [x] Azure CLI remediation playbook library
+- [x] NIST CSF + ISO 27001 mappings
+- [x] GitHub Actions CI pipeline
 - [ ] Multi-cloud support (AWS, GCP)
 
 ---
@@ -170,9 +172,10 @@ Thanks to everyone who has contributed to OpenShield.
 
 | Contributor | GitHub | Contribution |
 |---|---|---|
-| Vishnu Ajith | @Vishnu2707 | Architecture, core scanner, Sentinel wiring |
-| TFT444 | @TFT444 | Sentinel integration, 8 network rules, breach scenarios |
-| Parth | @parthrohit22 | AZ-KV-002 Key Vault public access rule |
+| Vishnu Ajith | @Vishnu2707 | Architecture, core scanner, API, compliance mappings |
+| Tanvir Farhad | @TFT444 | Sentinel integration, network rules, playbooks, breach scenarios |
+| Parth J Rohit | @parthrohit22 | AZ-KV-002 Key Vault public access rule and playbook |
+| Ritik Sah | @ritiksah141 | AZ-STOR-003 storage lifecycle rule and CI pipeline |
 
 ---
 

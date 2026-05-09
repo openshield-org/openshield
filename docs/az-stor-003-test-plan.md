@@ -24,6 +24,7 @@ and its remediation playbook. The goal is to confirm:
 | compliance/frameworks/cis_azure_benchmark.json | CIS mapping |
 | compliance/frameworks/nist_csf.json | NIST mapping |
 | compliance/frameworks/iso27001.json | ISO 27001 mapping |
+| compliance/frameworks/soc2.json | SOC 2 mapping |
 
 ---
 
