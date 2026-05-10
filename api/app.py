@@ -119,8 +119,17 @@ def create_app() -> Flask:
     app.register_blueprint(compliance_bp)
 
     # ------------------------------------------------------------------ #
-    # Health check (public)                                                 #
+    # Routes (public)                                                      #
     # ------------------------------------------------------------------ #
+
+    @app.get("/")
+    def index():
+        return jsonify({
+            "message": "Welcome to the OpenShield REST API",
+            "version": "1.0.0",
+            "docs": "/docs",
+            "status": "online"
+        })
 
     @app.get("/health")
     def health():
