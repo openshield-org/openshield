@@ -299,10 +299,8 @@ jobs:
                   continue
               fpath = os.path.join(framework_dir, fname)
               try:
-                  try:
-                      with open(fpath) as f:
-                          data = json.load(f)
-                  except (json.JSONDecodeError, OSError):
+                  with open(fpath) as f:
+                      data = json.load(f)
               except (json.JSONDecodeError, OSError):
                   continue
 
