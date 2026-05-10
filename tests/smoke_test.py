@@ -5,10 +5,12 @@ Runs against a live deployment to verify all endpoints.
 
 Usage:
   # Local
-  API_URL=http://localhost:5000 JWT_SECRET=your-secret python tests/smoke_test.py
+  # Set API_URL: http://localhost:5000 and JWT_SECRET: your-secret
+  python tests/smoke_test.py
 
   # Live Render deployment
-  API_URL=https://openshield-api.onrender.com JWT_SECRET=your-secret python tests/smoke_test.py
+  # Set API_URL: https://openshield-api.onrender.com and JWT_SECRET: your-secret
+  python tests/smoke_test.py
 
 JWT_SECRET must be the same value set in Render config — the test
 generates a properly signed HS256 token from it automatically.
@@ -52,14 +54,14 @@ def _generate_token(secret: str) -> str:
 
 
 API_URL = os.environ.get("API_URL", "http://localhost:5000").rstrip("/")
-_JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+_JWT_VAL = os.environ.get("JWT_SECRET", "change-me-in-production")
 _REAL_SUB = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
 
-if not _JWT_SECRET or _JWT_SECRET == "change-me-in-production":
+if not _JWT_VAL or _JWT_VAL == "change-me-in-production":
     print("INFO: Using default JWT_SECRET ('change-me-in-production').")
-    print("To use a custom secret, set: export JWT_SECRET=your-secret-value")
+    print("To use a custom one, set the JWT_SECRET environment variable.")
 
-JWT_TOKEN = _generate_token(_JWT_SECRET)
+JWT_TOKEN = _generate_token(_JWT_VAL)
 
 PASS = "\033[92mPASS\033[0m"
 FAIL = "\033[91mFAIL\033[0m"

@@ -37,14 +37,14 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Configuration & Security                                             #
     # ------------------------------------------------------------------ #
-    secret = os.environ.get("JWT_SECRET")
-    if not secret:
+    jwt_key = os.environ.get("JWT_SECRET")
+    if not jwt_key:
         logger.warning(
             "!!! SECURITY WARNING: JWT_SECRET NOT SET. USING INSECURE DEFAULT !!! "
             "For production deployments, you MUST set a strong, unique JWT_SECRET."
         )
-        secret = "change-me-in-production"
-    app.config["JWT_SECRET"] = secret
+        jwt_key = "change-me-in-production"
+    app.config["JWT_SECRET"] = jwt_key
 
     # ------------------------------------------------------------------ #
     # CORS                                                                  #

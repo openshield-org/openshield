@@ -38,12 +38,12 @@ jobs:
 
       # ── Secret check (Determines if smoke tests should run) ───────────
       - name: Check for JWT_SECRET
-        id: check_secret
+        id: check_config
         run: |
           if [ -n "${{ secrets.JWT_SECRET }}" ]; then
-            echo "has_secret=true" >> $GITHUB_OUTPUT
+            echo "is_configured=true" >> $GITHUB_OUTPUT
           else
-            echo "has_secret=false" >> $GITHUB_OUTPUT
+            echo "is_configured=false" >> $GITHUB_OUTPUT
           fi
 
       # ── Wait for Render auto-deployment ────────────────────────────────
@@ -92,7 +92,7 @@ jobs:
 
       # ── Smoke tests ────────────────────────────────────────────────────
       - name: Run smoke tests against live deployment
-        if: steps.check_secret.outputs.has_secret == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.check_config.outputs.is_configured == 'true' || github.event_name == 'workflow_dispatch'
         env:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
