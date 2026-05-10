@@ -13,6 +13,11 @@
       "control_name": "Ensure that 'Secure transfer required' is set to 'Enabled'",
       "description": "Enabling 'Secure transfer required' on a storage account ensures that all requests made to the storage account use HTTPS. Any requests using HTTP are rejected, protecting data in transit from eavesdropping and man-in-the-middle attacks."
     },
+    "AZ-STOR-003": {
+      "control_id": "3.7",
+      "control_name": "Ensure that storage accounts have lifecycle management policies configured",
+      "description": "Storage accounts without lifecycle management policies retain data indefinitely. This increases storage costs, expands the attack surface through accumulation of stale data, and may violate data retention compliance requirements. Lifecycle policies automate the transition and deletion of blobs based on age and access patterns."
+    },
     "AZ-NET-001": {
       "control_id": "6.2",
       "control_name": "Ensure that SSH access from the Internet is evaluated and restricted",
@@ -73,6 +78,11 @@
       "control_name": "Ensure that 'Multi-Factor Authentication Status' is 'Enabled' for all Privileged Users",
       "description": "Multi-Factor Authentication requires an individual to present a minimum of two separate forms of authentication before access is granted. MFA should be enforced for all users with administrative privileges via Conditional Access policies."
     },
+    "AZ-IDN-003": {
+      "control_id": "1.15",
+      "control_name": "Ensure that 'Guest users access restrictions' is set to 'Guest user access is restricted to properties and memberships of their own directory objects'",
+      "description": "Restricting guest user access prevents external users from enumerating internal directory objects such as users, groups and other resources. Unrestricted guest access increases the risk of information disclosure and lateral movement by external parties invited into the tenant."
+    },
     "AZ-DB-001": {
       "control_id": "4.3.1",
       "control_name": "Ensure 'Allow access to Azure services' for PostgreSQL Database Server is disabled",
@@ -88,15 +98,15 @@
       "control_name": "Ensure that 'OS disk' are encrypted",
       "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
     },
+    "AZ-CMP-002": {
+      "control_id": "7.2",
+      "control_name": "Ensure that 'OS disk' are encrypted",
+      "description": "Virtual machine OS and data disks should be encrypted using Azure Disk Encryption or server-side encryption with customer-managed keys. Unencrypted disks can be snapshotted and read by an attacker who gains subscription access without needing VM credentials."
+    },
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
       "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
-    },
-    "AZ-STOR-003": {
-      "control_id": "3.7",
-      "control_name": "Ensure that storage accounts have lifecycle management policies configured",
-      "description": "Storage accounts without lifecycle management policies retain data indefinitely. This increases storage costs, expands the attack surface through accumulation of stale data, and may violate data retention compliance requirements. Lifecycle policies automate the transition and deletion of blobs based on age and access patterns."
     },
     "AZ-KV-002": {
       "control_id": "8.3",
