@@ -58,6 +58,19 @@ flowchart TD
     I -->|alerts| A
 ```
 
+## Live API
+
+The OpenShield API is deployed to the Render free tier and is accessible at:
+
+**`https://openshield-api.onrender.com`**
+
+> **Note:** As this is hosted on the Render free tier, the service may spin down after 15 minutes of inactivity. The first request after a spin-down can take 30-60 seconds to complete.
+
+> [!IMPORTANT]
+> **Security Requirement:** For absolute security, any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the environment variables.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology | Cost |

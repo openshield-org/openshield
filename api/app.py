@@ -30,12 +30,21 @@ def create_app() -> Flask:
     - JSON error handlers for 400, 401, 403, 404, and 500
     """
     app = Flask(__name__)
-    app.config["JWT_SECRET"] = os.environ.get("JWT_SECRET", "change-me-in-production")
+
+    # ------------------------------------------------------------------ #
+    # Configuration & Security                                             #
+    # ------------------------------------------------------------------ #
+    secret = os.environ.get("JWT_SECRET")
+    if not secret:
+        logger.warning("!!! SECURITY WARNING: JWT_SECRET NOT SET. USING INSECURE DEFAULT !!!")
+        secret = "change-me-in-production"
+    app.config["JWT_SECRET"] = secret
 
     # ------------------------------------------------------------------ #
     # CORS                                                                  #
     # ------------------------------------------------------------------ #
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     # ------------------------------------------------------------------ #
     # JWT middleware                                                         #
