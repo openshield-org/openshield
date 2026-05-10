@@ -13,6 +13,11 @@
       "control_name": "Policy on the use of cryptographic controls",
       "description": "Requiring secure transfer ensures cryptographic controls are applied to data in transit. A policy on the use of cryptographic controls for protection of information should be developed and implemented."
     },
+    "AZ-STOR-003": {
+      "control_id": "A.8.3.1",
+      "control_name": "Management of removable media",
+      "description": "Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism. Lifecycle management supports formal retention, tiering, and disposal of information assets."
+    },
     "AZ-NET-001": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
@@ -88,15 +93,15 @@
       "control_name": "Network controls",
       "description": "Virtual machines with public IPs and no NSG have unrestricted network access. Network controls should be applied to all compute resources accessible from the internet."
     },
+    "AZ-CMP-002": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "Virtual machine OS and data disks that are not encrypted store data in plain text on disk. A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented for protection of information. Enabling Azure Disk Encryption or server-side encryption with customer-managed keys ensures data at rest on VM disks is protected using cryptographic controls."
+    },
     "AZ-KV-001": {
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
       "description": "Key Vault soft delete protects against loss of secrets, keys and certificates. Without soft delete, deleted vault objects cannot be recovered, reducing availability and recovery options for critical cryptographic material."
-    },
-    "AZ-STOR-003": {
-      "control_id": "A.8.3.1",
-      "control_name": "Management of removable media",
-      "description": "Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism. Lifecycle management supports formal retention, tiering, and disposal of information assets."
     },
     "AZ-KV-002": {
       "control_id": "A.13.1.1",
