@@ -127,8 +127,9 @@ def create_app() -> Flask:
     return app
 
 
+application = create_app()
+
 if __name__ == "__main__":
-    application = create_app()
     application.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000)),

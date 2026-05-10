@@ -74,7 +74,7 @@ jobs:
 
       # ── Smoke tests ────────────────────────────────────────────────────
       - name: Run smoke tests against live deployment
-        if: github.repository == 'ritiksah/openshield' || secrets.JWT_SECRET != ''
+        if: github.repository == 'ritiksah/openshield' || github.event_name == 'workflow_dispatch'
         env:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
