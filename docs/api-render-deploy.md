@@ -70,7 +70,16 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 2.  **Render Web Service (Free Tier)**
     - Connected to your branch.
     - Start Command: `./startup.sh`
-    - Environment Variables set: `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `AZURE_SUBSCRIPTION_ID`.
+    - Environment Variables set: `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `AZURE_SUBSCRIPTION_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`.
+
+### 4.3 Configure GitHub Secrets
+To enable the automated smoke tests in the CI/CD pipeline, you **must** add the following secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
+
+| Secret Name | Purpose |
+|---|---|
+| `JWT_SECRET` | Must match the value set in Render. Used to sign tokens for test requests. |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure Subscription ID. Used to trigger real scans during testing. |
+| `API_URL` | (Optional) Your Render Service URL. Defaults to the main production instance if not set. |
 
 ---
 
