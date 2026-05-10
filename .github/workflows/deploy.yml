@@ -3,8 +3,9 @@ name: Deploy API to Render
 on:
   push:
     branches:
-      - feat/api-deployment  # Triggers only on your test branch
+      - feat/api-deployment  # Triggers only on test branch
       - dev                  # Triggers when merged to dev
+      - main                 # Triggers when merged to main
   workflow_dispatch:   # allows manual trigger from GitHub UI
 
 jobs:
@@ -34,6 +35,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      # ── Secret check (Determines if smoke tests should run) ───────────
+      - name: Check for JWT_SECRET
+        id: check_secret
+        run: |
+          if [ -n "${{ secrets.JWT_SECRET }}" ]; then
+            echo "has_secret=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_secret=false" >> $GITHUB_OUTPUT
+          fi
 
       # ── Wait for Render auto-deployment ────────────────────────────────
       # Render handles the actual physical deployment when you push.
@@ -74,7 +85,7 @@ jobs:
 
       # ── Smoke tests ────────────────────────────────────────────────────
       - name: Run smoke tests against live deployment
-        if: github.repository == 'ritiksah/openshield' || github.event_name == 'workflow_dispatch'
+        if: steps.check_secret.outputs.has_secret == 'true' || github.event_name == 'workflow_dispatch'
         env:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
