@@ -98,6 +98,11 @@
       "control_name": "Ensure that storage accounts have lifecycle management policies configured",
       "description": "Storage accounts without lifecycle management policies retain data indefinitely. This increases storage costs, expands the attack surface through accumulation of stale data, and may violate data retention compliance requirements. Lifecycle policies automate the transition and deletion of blobs based on age and access patterns."
     },
+    "AZ-STOR-004": {
+      "control_id": "3.3",
+      "control_name": "Ensure Storage logging is enabled for Blob, Queue, and Table services for read, write, and delete requests",
+      "description": "Enabling diagnostic logging for Azure Storage blob, queue, and table services records read, write, and delete operations. Without logging, unauthorized access, data exfiltration, or destructive operations on storage services cannot be detected or investigated."
+    },
     "AZ-KV-002": {
       "control_id": "8.3",
       "control_name": "Ensure that public network access to Key Vault is disabled",
