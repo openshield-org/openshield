@@ -39,31 +39,36 @@ def trigger_scan():
     Note: For production use, replace this with an async task queue (e.g.
     Celery or Azure Functions) to avoid request timeouts on large subscriptions.
     """
-    from scanner.engine import ScanEngine  # deferred to avoid import at startup
-
-    body = request.get_json(silent=True) or {}
-    subscription_id = body.get("subscription_id") or os.environ.get(
-        "AZURE_SUBSCRIPTION_ID"
-    )
-
-    if not subscription_id:
-        return jsonify({"error": "subscription_id is required"}), 400
-
-    logger.info("Scan triggered for subscription %s", subscription_id)
-
     try:
-        engine = ScanEngine(subscription_id)
-        result = engine.run_scan()
-    except Exception as exc:
-        logger.error("Scan engine execution failed: %s", exc)
-        return jsonify({"error": "Scan failed", "detail": str(exc)}), 500
+        from scanner.engine import ScanEngine  # deferred to avoid import at startup
 
-    try:
-        db = _get_db()
-        # Note: Table creation is handled at startup; no need to repeat it here.
-        db.save_scan(result)
-    except Exception as exc:
-        logger.error("Failed to save scan result to database: %s", exc)
-        return jsonify({"error": "Database save failed", "detail": str(exc)}), 500
+        body = request.get_json(silent=True) or {}
+        subscription_id = body.get("subscription_id") or os.environ.get(
+            "AZURE_SUBSCRIPTION_ID"
+        )
 
-    return jsonify(result), 201
+        if not subscription_id:
+            return jsonify({"error": "subscription_id is required"}), 400
+
+        logger.info("Scan triggered for subscription %s", subscription_id)
+
+        try:
+            engine = ScanEngine(subscription_id)
+            result = engine.run_scan()
+        except Exception as exc:
+            logger.error("Scan engine execution failed: %s", exc, exc_info=True)
+            return jsonify({"error": "Scan failed", "detail": str(exc)}), 500
+
+        try:
+            db = _get_db()
+            # Note: Table creation is handled at startup; no need to repeat it here.
+            db.save_scan(result)
+        except Exception as exc:
+            logger.error("Failed to save scan result to database: %s", exc, exc_info=True)
+            return jsonify({"error": "Database save failed", "detail": str(exc)}), 500
+
+        return jsonify(result), 201
+
+    except Exception as exc:
+        logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)
+        return jsonify({"error": "Critical route failure", "detail": str(exc)}), 500

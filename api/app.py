@@ -39,22 +39,23 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     secret = os.environ.get("JWT_SECRET")
     if not secret:
-        raise RuntimeError(
-            "JWT_SECRET environment variable is required for secure operation. "
-            "Set it to a strong, unique value (e.g., generated with `openssl rand -hex 32`)."
+        logger.warning(
+            "!!! SECURITY WARNING: JWT_SECRET NOT SET. USING INSECURE DEFAULT !!! "
+            "For production deployments, you MUST set a strong, unique JWT_SECRET."
         )
+        secret = "change-me-in-production"
     app.config["JWT_SECRET"] = secret
 
     # ------------------------------------------------------------------ #
-    allowed_origins_raw = os.environ.get("ALLOWED_ORIGINS")
-    if not allowed_origins_raw:
-        raise RuntimeError(
-            "ALLOWED_ORIGINS environment variable is required. "
-            "Set it to a comma-separated list of allowed origins (e.g., 'http://localhost:3000,https://example.com')."
+    # CORS                                                                  #
+    # ------------------------------------------------------------------ #
+    allowed_origins_raw = os.environ.get("ALLOWED_ORIGINS", "*")
+    if allowed_origins_raw == "*":
+        logger.warning(
+            "!!! SECURITY WARNING: ALLOWED_ORIGINS NOT SET. DEFAULTING TO '*' !!! "
+            "For production deployments, set this to your specific frontend domain(s)."
         )
     allowed_origins = allowed_origins_raw.split(",")
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
-    allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
     CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
     # ------------------------------------------------------------------ #
