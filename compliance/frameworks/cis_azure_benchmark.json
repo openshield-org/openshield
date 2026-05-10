@@ -98,11 +98,6 @@
       "control_name": "Ensure that 'OS disk' are encrypted",
       "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
     },
-    "AZ-CMP-002": {
-      "control_id": "7.2",
-      "control_name": "Ensure that 'OS disk' are encrypted",
-      "description": "Virtual machine OS and data disks should be encrypted using Azure Disk Encryption or server-side encryption with customer-managed keys. Unencrypted disks can be snapshotted and read by an attacker who gains subscription access without needing VM credentials."
-    },
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
