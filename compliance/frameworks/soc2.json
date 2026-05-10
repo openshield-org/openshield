@@ -78,6 +78,11 @@
       "control_name": "Logical Access Security Measures",
       "description": "Without MFA enforced on privileged accounts, a single compromised password grants full administrative access to the Azure environment. CC6.1 requires that logical access controls include strong authentication mechanisms. Enforcing MFA via Conditional Access policies ensures privileged access requires multiple factors of authentication."
     },
+    "AZ-IDN-003": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is restricted to authorised users. Restricting guest invitations to administrators ensures external identity provisioning is formally controlled and authorised."
+    },
     "AZ-DB-001": {
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit",
@@ -92,6 +97,11 @@
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "A virtual machine with a public IP and no NSG has unrestricted inbound network access from the internet with no filtering in place. CC6.6 requires that logical access from outside the network perimeter is restricted and controlled. Attaching an NSG with explicit rules enforces the network boundary and controls what traffic can reach the VM."
+    },
+    "AZ-CMP-002": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit and At Rest",
+      "description": "Virtual machine OS and data disks that are not encrypted store data in plain text. CC6.7 requires that data is protected using encryption. Enabling Azure Disk Encryption or server-side encryption with customer-managed keys ensures disk contents are unreadable without the encryption key even if the disk is snapshotted or physically accessed."
     },
     "AZ-KV-001": {
       "control_id": "A1.2",
