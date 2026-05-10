@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
+from api.models.finding import DatabaseManager
+
 load_dotenv()
 
 logging.basicConfig(
@@ -28,6 +30,7 @@ def create_app() -> Flask:
     - JWT authentication middleware on all non-public routes
     - Blueprints for findings, scans, score, and compliance
     - JSON error handlers for 400, 401, 403, 404, and 500
+    - Global database connection teardown
     """
     app = Flask(__name__)
 
@@ -45,6 +48,22 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
     CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+
+    # ------------------------------------------------------------------ #
+    # Database Management                                                   #
+    # ------------------------------------------------------------------ #
+
+    @app.teardown_appcontext
+    def close_db(error):
+        """Ensure the database connection is closed after the request."""
+        db = g.pop("db_conn", None)
+        if db is not None:
+            try:
+                if hasattr(db, "conn") and db.conn is not None:
+                    db.conn.close()
+                    logger.debug("Database connection closed gracefully")
+            except Exception as exc:
+                logger.error("Error closing database connection: %s", exc)
 
     # ------------------------------------------------------------------ #
     # JWT middleware                                                         #

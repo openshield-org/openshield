@@ -14,6 +14,21 @@ logger = logging.getLogger(__name__)
 RULES_DIR = Path(__file__).parent / "rules"
 
 
+def make_serializable(data: Any) -> Any:
+    """Recursively convert non-serializable objects (datetime, etc) to strings."""
+    if isinstance(data, dict):
+        return {k: make_serializable(v) for k, v in data.items()}
+    if isinstance(data, list):
+        return [make_serializable(i) for i in data]
+    if isinstance(data, datetime):
+        return data.isoformat()
+    if hasattr(data, "as_dict"):  # Handle Azure SDK models
+        return make_serializable(data.as_dict())
+    if hasattr(data, "__dict__"):
+        return make_serializable(data.__dict__)
+    return data
+
+
 class ScanEngine:
     """Orchestrates Azure CSPM scans against a target subscription.
 
@@ -96,11 +111,7 @@ class ScanEngine:
 
         completed_at = datetime.now(timezone.utc).isoformat()
 
-        logger.info(
-            "Scan %s complete — %d total finding(s)", scan_id, len(findings)
-        )
-
-        return {
+        result = {
             "scan_id": scan_id,
             "subscription_id": self.subscription_id,
             "started_at": started_at,
@@ -108,3 +119,9 @@ class ScanEngine:
             "total_findings": len(findings),
             "findings": findings,
         }
+
+        logger.info(
+            "Scan %s complete — %d total finding(s). Normalising results...", scan_id, len(findings)
+        )
+
+        return make_serializable(result)

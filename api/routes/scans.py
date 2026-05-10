@@ -2,7 +2,7 @@
 
 import logging
 import os
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
 
@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db() -> DatabaseManager:
-    db = DatabaseManager(os.environ["DATABASE_URL"])
-    db.connect()
-    return db
+    if "db_conn" not in g:
+        g.db_conn = DatabaseManager(os.environ["DATABASE_URL"])
+        g.db_conn.connect()
+    return g.db_conn
 
 
 @scans_bp.get("/api/scans")
