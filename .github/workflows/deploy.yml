@@ -51,8 +51,8 @@ jobs:
       # We just pause the Action to let Render's servers finish building.
       - name: Wait for app to initialise
         run: |
-          echo "Waiting 60 seconds for Render to build and start the app..."
-          sleep 60
+          echo "Waiting 120 seconds for Render to build and start the app..."
+          sleep 120
 
       # ── Health gate ────────────────────────────────────────────────────
       - name: Health gate check
