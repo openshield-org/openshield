@@ -19,9 +19,13 @@ def _get_db() -> DatabaseManager:
 @scans_bp.get("/api/scans")
 def list_scans():
     """Return all historical scan results ordered by most recent first."""
-    db = _get_db()
-    scans = db.get_scans()
-    return jsonify({"count": len(scans), "scans": scans})
+    try:
+        db = _get_db()
+        scans = db.get_scans()
+        return jsonify({"count": len(scans), "scans": scans})
+    except Exception as exc:
+        logger.error("Failed to list scans: %s", exc)
+        return jsonify({"error": "Failed to retrieve scans", "detail": str(exc)}), 500
 
 
 @scans_bp.post("/api/scans/trigger")
@@ -50,11 +54,15 @@ def trigger_scan():
         engine = ScanEngine(subscription_id)
         result = engine.run_scan()
     except Exception as exc:
-        logger.error("Scan failed: %s", exc)
+        logger.error("Scan engine execution failed: %s", exc)
         return jsonify({"error": "Scan failed", "detail": str(exc)}), 500
 
-    db = _get_db()
-    db.create_tables()
-    db.save_scan(result)
+    try:
+        db = _get_db()
+        # Note: Table creation is handled at startup; no need to repeat it here.
+        db.save_scan(result)
+    except Exception as exc:
+        logger.error("Failed to save scan result to database: %s", exc)
+        return jsonify({"error": "Database save failed", "detail": str(exc)}), 500
 
     return jsonify(result), 201
