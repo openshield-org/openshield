@@ -98,11 +98,6 @@
       "control_name": "Remote access is managed",
       "description": "Virtual machines with public IPs and no NSG have unrestricted network access. NSGs should be attached to control inbound and outbound traffic and manage remote access to compute resources."
     },
-    "AZ-CMP-002": {
-      "control_id": "PR.DS-1",
-      "control_name": "Data-at-rest is protected",
-      "description": "Virtual machine OS and data disks that are not encrypted with Azure Disk Encryption or customer-managed keys store data in plain text. PR.DS-1 requires that data at rest is protected. Enabling disk encryption ensures that disk contents are unreadable without the encryption key even if the disk is snapshotted or physically accessed."
-    },
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
