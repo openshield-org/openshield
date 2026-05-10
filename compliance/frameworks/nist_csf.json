@@ -102,6 +102,11 @@
       "control_id": "PR.DS-3",
       "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
       "description": "NIST CSF PR.DS-3 requires that data assets are managed through their full lifecycle including secure disposal. Storage accounts without a lifecycle management policy have no automated mechanism for expiring or deleting aged data, meaning data subject to disposal requirements persists indefinitely and is never formally retired from the asset inventory."
+    },
+    "AZ-KV-003": {
+      "control_id": "DE.CM-7",
+      "control_name": "Monitoring for unauthorized personnel, connections, devices, and software is performed",
+      "description": "Azure Key Vault diagnostic logs should be enabled to monitor and detect unauthorized access attempts, abnormal usage patterns, and suspicious operations involving sensitive cryptographic material."
     }
   }
 }

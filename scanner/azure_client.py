@@ -12,6 +12,7 @@ from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
 from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +230,25 @@ class AzureClient:
             return list(client.vaults.list_by_subscription())
         except Exception as exc:
             logger.error("get_key_vaults failed: %s", exc)
+            return []
+
+    # ------------------------------------------------------------------ #
+    # Monitoring                                                            #
+    # ------------------------------------------------------------------ #
+
+    def get_diagnostic_settings(self, resource_id: str) -> List[Any]:
+        """List diagnostic settings configured for a resource."""
+        try:
+            client = MonitorManagementClient(
+                self.credential, self.subscription_id
+            )
+            return list(client.diagnostic_settings.list(resource_id))
+        except Exception as exc:
+            logger.error(
+                "get_diagnostic_settings(%s) failed: %s",
+                resource_id,
+                exc,
+            )
             return []
 
     # ------------------------------------------------------------------ #
