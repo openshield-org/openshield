@@ -53,6 +53,7 @@ def _generate_token(secret: str) -> str:
 
 API_URL = os.environ.get("API_URL", "http://localhost:5000").rstrip("/")
 _JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-production")
+_REAL_SUB = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
 
 if not _JWT_SECRET or _JWT_SECRET == "change-me-in-production":
     print("INFO: Using default JWT_SECRET ('change-me-in-production').")
@@ -189,15 +190,21 @@ test(
     "GET", "/api/scans",
     lambda s, b: s == 200,
 )
+
+# Prepare body with real subscription ID if available
+scan_body = {"subscription_id": _REAL_SUB} if _REAL_SUB else {}
+
 test(
     "TC-13 POST /api/scans/trigger returns 200, 201 or 202",
     "POST", "/api/scans/trigger",
     lambda s, b: s in (200, 201, 202),
+    body=scan_body,
 )
 test(
     "TC-14 POST /api/scans/trigger returns scan_id or job_id",
     "POST", "/api/scans/trigger",
     lambda s, b: any(k in b for k in ("scan_id", "job_id", "id", "message")),
+    body=scan_body,
 )
 
 # ── TC-15 to TC-17: Compliance endpoints ──────────────────────────────────

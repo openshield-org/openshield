@@ -70,7 +70,7 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 2.  **Render Web Service (Free Tier)**
     - Connected to your branch.
     - Start Command: `./startup.sh`
-    - Environment Variables set: `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`.
+    - Environment Variables set: `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `AZURE_SUBSCRIPTION_ID`.
 
 ---
 
@@ -97,7 +97,7 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 ### Part 2: API Smoke Tests (Executed via `smoke_test.py`)
 
 Run the following command against the live URL to execute these tests:
-`API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> python tests/smoke_test.py`
+`API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> AZURE_SUBSCRIPTION_ID=<sub-id> python tests/smoke_test.py`
 
 #### Health Check
 * **TC-01:** GET `/health` returns HTTP 200.

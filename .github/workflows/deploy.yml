@@ -96,6 +96,7 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" && -z "${{ secrets.JWT_SECRET }}" ]]; then
             echo "ERROR: Cannot run smoke tests on main branch without JWT_SECRET configured"
