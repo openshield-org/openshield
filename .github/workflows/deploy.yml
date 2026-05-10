@@ -81,7 +81,14 @@ jobs:
 
           echo "HEALTH GATE FAILED after $MAX_RETRIES attempts"
           echo "Note: If you haven't set up Render for this fork, this is expected."
-          exit 0 # Don't fail the build if infra isn't set up
+          # Only allow failure on feature branches; fail on main/dev
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "ERROR: Health check failed on protected branch. Deployment verification required."
+            exit 1
+          else
+            echo "Allowing health check failure on feature branch (infra may not be set up)"
+            exit 0
+          fi
 
       # ── Smoke tests ────────────────────────────────────────────────────
       - name: Run smoke tests against live deployment
@@ -90,5 +97,9 @@ jobs:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
         run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" && -z "${{ secrets.JWT_SECRET }}" ]]; then
+            echo "ERROR: Cannot run smoke tests on main branch without JWT_SECRET configured"
+            exit 1
+          fi
           echo "Running smoke tests against: $API_URL"
           python tests/smoke_test.py
