@@ -6,7 +6,7 @@
 #
 # Prerequisites:
 #   - Azure CLI logged in with a Global Administrator or User Administrator role
-#   - Microsoft Graph PowerShell or az rest permissions
+#   - Microsoft Graph or az rest permissions
 
 set -e
 
@@ -20,7 +20,7 @@ az rest \
     "allowInvitesFrom": "adminsAndGuestInviters"
   }'
 
-echo "✅ Guest invitation policy updated."
-echo "   allowInvitesFrom is now set to: adminsAndGuestInviters"
-echo "⚠️  Only users assigned to the Guest Inviter role or admins can now invite external users."
-echo "⚠️  Review existing guest accounts to ensure they are still required."
+echo "Remediation complete."
+echo "allowInvitesFrom is now set to: adminsAndGuestInviters"
+echo "Only users assigned to the Guest Inviter role or admins can now invite external users."
+echo "Review existing guest accounts to ensure they are still required."
