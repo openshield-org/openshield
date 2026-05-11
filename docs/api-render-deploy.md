@@ -52,6 +52,15 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 | `.github/workflows/deploy.yml` | Flexible GitHub Actions workflow (optional smoke tests) |
 | `tests/smoke_test.py` | 23-case functional test suite with default secret support |
 | `.git/hooks/pre-commit` | Local Git hook enforcing syntax checks and local smoke tests |
+| `requirements.txt` | Pinned runtime dependencies — see dependency notes below |
+
+### 3.1 Dependency Notes
+
+| Package | Status | Reason |
+|---|---|---|
+| `msrest==0.7.1` | Kept (explicit pin) | Transitive dependency of `azure-mgmt-rdbms`, `azure-mgmt-sql`, and `azure-mgmt-storage`. These SDK packages have not fully migrated to `azure-core`. Without an explicit pin, Render's clean pip install can resolve a mismatched version and break scan execution. |
+| `msrestazure` | Removed | Not required by any installed package and never imported in the codebase. |
+| `six` | Removed | Python 2/3 compatibility shim with no dependents in the package tree. Has no place in a Python 3.11 project. |
 
 ---
 

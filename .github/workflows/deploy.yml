@@ -3,9 +3,9 @@ name: Deploy API to Render
 on:
   push:
     branches:
-      - feat/api-deployment  # Triggers only on test branch
-      - dev                  # Triggers when merged to dev
-      - main                 # Triggers when merged to main
+      - feat/api-deployment
+      - dev
+      - main
   workflow_dispatch:   # allows manual trigger from GitHub UI
 
 jobs:
