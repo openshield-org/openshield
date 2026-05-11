@@ -34,6 +34,6 @@ az vm encryption show \
   --resource-group "$RESOURCE_GROUP" \
   --name "$VM_NAME"
 
-echo "✅ Disk encryption enabled on all volumes for VM '$VM_NAME'."
-echo "⚠️  The VM may restart during the encryption process."
-echo "⚠️  Encryption of large disks can take several hours to complete."
+echo "Disk encryption enabled on all volumes for VM '$VM_NAME'."
+echo "The VM may restart during the encryption process."
+echo "Encryption of large disks can take several hours to complete."
