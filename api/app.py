@@ -65,7 +65,7 @@ def create_app() -> Flask:
     @app.teardown_appcontext
     def close_db(error):
         """Ensure the database connection is closed after the request."""
-        db = g.pop("db_conn", None)
+        db = g.pop("db", None)
         if db is not None:
             try:
                 if hasattr(db, "conn") and db.conn is not None:
