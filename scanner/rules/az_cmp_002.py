@@ -26,6 +26,32 @@ PLAYBOOK = "playbooks/cli/fix_az_cmp_002.sh"
 logger = logging.getLogger(__name__)
 
 
+def _disk_needs_flagging(managed_disk: Any) -> bool:
+    """Return True only if the disk uses platform-managed encryption.
+
+    Azure platform-managed encryption (EncryptionAtRestWithPlatformKey) is the
+    default for all managed disks and does not satisfy CIS 7.2, which requires
+    customer-managed keys (CMK) or Azure Disk Encryption (ADE).
+
+    Disks using EncryptionAtRestWithCustomerKey or
+    EncryptionAtRestWithPlatformAndCustomerKeys are compliant and should not
+    be flagged.
+    """
+    if managed_disk is None:
+        return False
+
+    encryption = getattr(managed_disk, "security_profile", None)
+    if encryption is None:
+        encryption = getattr(managed_disk, "encryption", None)
+
+    encryption_type = getattr(encryption, "type", None)
+
+    if encryption_type is None:
+        return False
+
+    return encryption_type == "EncryptionAtRestWithPlatformKey"
+
+
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect virtual machines with unencrypted OS or data disks."""
     findings: List[Dict[str, Any]] = []
@@ -50,23 +76,17 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         # Check OS disk
         os_disk = getattr(storage_profile, "os_disk", None)
         if os_disk:
-            encryption = getattr(os_disk, "managed_disk", None)
-            disk_encryption_set = getattr(
-                encryption, "disk_encryption_set_id", None
-            ) if encryption else None
-            security_profile = getattr(os_disk, "encryption_settings_collection", None)
-            if not disk_encryption_set and not security_profile:
-                unencrypted_disks.append(getattr(os_disk, "name", "os-disk"))
+            managed_disk = getattr(os_disk, "managed_disk", None)
+            if _disk_needs_flagging(managed_disk):
+                unencrypted_disks.append(
+                    getattr(os_disk, "name", "os-disk")
+                )
 
         # Check data disks
         data_disks = getattr(storage_profile, "data_disks", []) or []
         for disk in data_disks:
-            encryption = getattr(disk, "managed_disk", None)
-            disk_encryption_set = getattr(
-                encryption, "disk_encryption_set_id", None
-            ) if encryption else None
-            security_profile = getattr(disk, "encryption_settings_collection", None)
-            if not disk_encryption_set and not security_profile:
+            managed_disk = getattr(disk, "managed_disk", None)
+            if _disk_needs_flagging(managed_disk):
                 unencrypted_disks.append(
                     getattr(disk, "name", f"data-disk-{getattr(disk, 'lun', '?')}")
                 )
