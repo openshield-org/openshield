@@ -43,9 +43,7 @@ def trigger_scan():
         from scanner.engine import ScanEngine  # deferred to avoid import at startup
 
         body = request.get_json(silent=True) or {}
-        subscription_id = body.get("subscription_id") or os.environ.get(
-            "AZURE_SUBSCRIPTION_ID"
-        )
+        subscription_id = body.get("subscription_id")
 
         if not subscription_id:
             return jsonify({"error": "subscription_id is required"}), 400
