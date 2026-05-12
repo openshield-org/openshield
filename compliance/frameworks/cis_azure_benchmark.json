@@ -80,9 +80,9 @@
     },
     "AZ-IDN-003": {
       "control_id": "1.15",
-      "control_name": "Ensure that 'Guest users access restrictions' is set to 'Guest user access is restricted to properties and memberships of their own directory objects'",
-      "description": "Restricting guest user access prevents external users from enumerating internal directory objects such as users, groups and other resources. Unrestricted guest access increases the risk of information disclosure and lateral movement by external parties invited into the tenant."
-    },
+      "control_name": "Ensure that 'Guest invite restrictions' is set to 'Only users assigned to specific admin roles can invite guest users'",
+      "description": "Unrestricted guest user invitation settings allow any member of the organisation to invite external users into the tenant without administrative review. This bypasses centralised approval for external identity provisioning and increases the risk of unauthorised access by inviting untrusted parties."
+   },
     "AZ-DB-001": {
       "control_id": "4.3.1",
       "control_name": "Ensure 'Allow access to Azure services' for PostgreSQL Database Server is disabled",
