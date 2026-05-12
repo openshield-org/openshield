@@ -11,6 +11,7 @@ to the Render free tier. The goal is to confirm:
 - The database is automatically initialized on startup via `init_db`.
 - The pre-commit hook and GitHub Actions CI pipeline gate the code properly.
 - The CI pipeline is **community-friendly**, allowing forks to pass even without custom secrets.
+- Real Azure scan tests are gated behind `RUN_REAL_SCAN=true` so contributor CI never depends on live Azure credentials.
 - All 23 API edge cases (routing, filtering, authentication) function correctly in the live cloud environment.
 
 ---
@@ -26,6 +27,7 @@ To ensure the highest reliability of the deployment while accommodating free-tie
 * **Community-Friendly CI Gate:** The GitHub Action is designed to be zero-friction for contributors.
     * **Optional Smoke Tests:** If `JWT_SECRET` is not set (typical for forks), the smoke test step is gracefully skipped rather than failing the build.
     * **Configurable URL:** The `API_URL` is configurable via GitHub Secrets/Variables, defaulting to the main production instance if not provided.
+    * **Conditional Real Scan Tests:** TC-13 and TC-14 (real Azure scan execution) only run when `RUN_REAL_SCAN=true` and all four Azure credentials are present. This separates API smoke testing from live scan regression testing. Contributor and fork CI always passes safely — real scan validation is reserved for maintainer-controlled deployment pipelines (`dev` and `main` branches).
 
 ### 2.2 Token Generation Method
 * **Dynamic HS256 Signing:** Instead of using a hardcoded dummy string, the test script dynamically generates a real token signed with the environment's `JWT_SECRET`.
@@ -40,6 +42,28 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 * **Core Endpoints (TC-04 to TC-17):** Verifies the actual business logic and JSON structure.
 * **Auth/Security (TC-18 to TC-19):** Confirms the JWT middleware is strictly enforced.
 * **Edge Cases and Resilience (TC-20 to TC-23):** Ensures the app does not crash when given bad input or non-existent routes.
+
+#### Conditional vs Always-Run Tests
+
+| Mode | TC-13 / TC-14 | All others |
+|---|---|---|
+| Contributor / fork (no `RUN_REAL_SCAN`) | `SKIP` — printed with reason, not a failure | Always run |
+| Maintainer deployment (`RUN_REAL_SCAN=true` + Azure credentials) | Run real scan against live subscription | Always run |
+
+Run modes:
+```bash
+# Contributor / local (no Azure credentials needed)
+API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> python tests/smoke_test.py
+
+# Maintainer — full real scan
+API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> \
+  RUN_REAL_SCAN=true \
+  AZURE_SUBSCRIPTION_ID=<sub-id> \
+  AZURE_CLIENT_ID=<client-id> \
+  AZURE_CLIENT_SECRET=<secret> \
+  AZURE_TENANT_ID=<tenant-id> \
+  python tests/smoke_test.py
+```
 
 ---
 
@@ -59,8 +83,6 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 | Package | Status | Reason |
 |---|---|---|
 | `msrest==0.7.1` | Kept (explicit pin) | Transitive dependency of `azure-mgmt-rdbms`, `azure-mgmt-sql`, and `azure-mgmt-storage`. These SDK packages have not fully migrated to `azure-core`. Without an explicit pin, Render's clean pip install can resolve a mismatched version and break scan execution. |
-| `msrestazure` | Removed | Not required by any installed package and never imported in the codebase. |
-| `six` | Removed | Python 2/3 compatibility shim with no dependents in the package tree. Has no place in a Python 3.11 project. |
 
 ---
 
@@ -84,11 +106,16 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 ### 4.3 Configure GitHub Secrets
 To enable the automated smoke tests in the CI/CD pipeline, you **must** add the following secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
 
-| Secret Name | Purpose |
-|---|---|
-| `JWT_SECRET` | Must match the value set in Render. Used to sign tokens for test requests. |
-| `AZURE_SUBSCRIPTION_ID` | Your Azure Subscription ID. Used to trigger real scans during testing. |
-| `API_URL` | (Optional) Your Render Service URL. Defaults to the main production instance if not set. |
+| Secret Name | Required for | Purpose |
+|---|---|---|
+| `JWT_SECRET` | All smoke tests | Must match the value set in Render. Used to sign tokens for test requests. |
+| `API_URL` | All smoke tests (optional) | Your Render Service URL. Defaults to the main production instance if not set. |
+| `AZURE_SUBSCRIPTION_ID` | Real scan tests | Azure Subscription ID passed to the scan trigger endpoint. |
+| `AZURE_CLIENT_ID` | Real scan tests | Service principal client ID for `DefaultAzureCredential`. |
+| `AZURE_CLIENT_SECRET` | Real scan tests | Service principal secret for `DefaultAzureCredential`. |
+| `AZURE_TENANT_ID` | Real scan tests | Azure AD tenant ID for `DefaultAzureCredential`. |
+
+> **Note:** `RUN_REAL_SCAN=true` is set automatically by `deploy.yml` on `dev` and `main` branches. Forks and contributor PRs never set this flag, so TC-13 and TC-14 are always skipped in fork CI regardless of which secrets are present.
 
 ---
 
@@ -106,16 +133,27 @@ To enable the automated smoke tests in the CI/CD pipeline, you **must** add the 
 
 **DP-03 — GitHub Actions CI pipeline passes**
 * **Steps:** Push a commit and monitor the GitHub Actions tab.
-* **Expected:** 
-    * **Main Repo:** Runs all 23 tests and passes.
-    * **Forks:** Health gate may time out if Render isn't configured, but the workflow **will not fail**. It logs a skip message for smoke tests.
+* **Expected:**
+    * **Maintainer repo (`dev`/`main`):** Runs 21 always-on tests + TC-13/TC-14 real scan with `RUN_REAL_SCAN=true`. All 23 pass.
+    * **Contributor / fork:** TC-13 and TC-14 show as `SKIP` with a clear reason. 21/21 non-scan tests pass. Workflow exits green.
 
 ---
 
 ### Part 2: API Smoke Tests (Executed via `smoke_test.py`)
 
-Run the following command against the live URL to execute these tests:
-`API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> AZURE_SUBSCRIPTION_ID=<sub-id> python tests/smoke_test.py`
+Run the following command against the live URL to execute these tests (contributor mode — TC-13/TC-14 skipped):
+```bash
+API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> python tests/smoke_test.py
+```
+
+To run the full 23-case suite including real scan tests (maintainer only):
+```bash
+API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> \
+  RUN_REAL_SCAN=true \
+  AZURE_SUBSCRIPTION_ID=<sub-id> AZURE_CLIENT_ID=<id> \
+  AZURE_CLIENT_SECRET=<secret> AZURE_TENANT_ID=<tenant> \
+  python tests/smoke_test.py
+```
 
 #### Health Check
 * **TC-01:** GET `/health` returns HTTP 200.
@@ -136,8 +174,8 @@ Run the following command against the live URL to execute these tests:
 
 #### Scans Endpoint
 * **TC-12:** GET `/api/scans` returns HTTP 200.
-* **TC-13:** POST `/api/scans/trigger` returns HTTP 200, 201, or 202.
-* **TC-14:** POST `/api/scans/trigger` returns a `scan_id` or `job_id`.
+* **TC-13:** *(Conditional — requires `RUN_REAL_SCAN=true` and Azure credentials)* POST `/api/scans/trigger` returns HTTP 200, 201, or 202. Skipped in contributor/fork CI.
+* **TC-14:** *(Conditional — requires `RUN_REAL_SCAN=true` and Azure credentials)* POST `/api/scans/trigger` returns a `scan_id` or `job_id`. Skipped in contributor/fork CI.
 
 #### Compliance Endpoints
 * **TC-15:** GET `/api/compliance/cis` returns HTTP 200.
@@ -150,7 +188,7 @@ Run the following command against the live URL to execute these tests:
 
 #### General Edge Cases
 * **TC-20:** GET `/nonexistent-endpoint-xyz` returns HTTP 404 (requires auth to pass middleware).
-* **TC-21:** POST `/api/scans/trigger` with an empty JSON body still handles the request gracefully (returns success 201).
+* **TC-21:** POST `/api/scans/trigger` with an empty JSON body returns HTTP 400 (missing `subscription_id`) without crashing.
 * **TC-22:** GET `/api/findings?limit=0` does not crash the server.
 * **TC-23:** All valid endpoint responses include the `application/json` Content-Type.
 
@@ -181,16 +219,17 @@ Render Free Tier Web Services spin down after 15 minutes of inactivity. The Free
 | **TC-10** | `/api/score` returns numeric | Pass | [ ] |
 | **TC-11** | `/api/score` bounded 0-100 | Pass | [ ] |
 | **TC-12** | `/api/scans` returns 200 | Pass | [ ] |
-| **TC-13** | `/api/scans/trigger` works | 200, 201, or 202 | [ ] |
-| **TC-14** | `/api/scans/trigger` returns ID | Pass | [ ] |
+| **TC-13** | `/api/scans/trigger` works | 200/201/202 (Skip in fork CI) | [ ] |
+| **TC-14** | `/api/scans/trigger` returns ID | Pass (Skip in fork CI) | [ ] |
 | **TC-15** | `/api/compliance/cis` works | Pass | [ ] |
 | **TC-16** | `/api/compliance/nist` works | Pass | [ ] |
 | **TC-17** | `/api/compliance/iso27001` works | Pass | [ ] |
 | **TC-18** | Missing auth returns 401 | Pass | [ ] |
 | **TC-19** | Bad token returns 401 | Pass | [ ] |
 | **TC-20** | 404 routing works safely | Pass | [ ] |
-| **TC-21** | Empty body payload handled | Pass (201) | [ ] |
+| **TC-21** | Empty body payload handled | Pass (400) | [ ] |
 | **TC-22** | Limit=0 query handled safely | Pass | [ ] |
 | **TC-23** | Content-Type is JSON | Pass | [ ] |
 
-All 26 checks (3 Pipeline + 23 API) must pass on the main repository before opening the PR.
+**Maintainer repo:** All 26 checks (3 Pipeline + 23 API) must pass before merging to `dev` or `main`.
+**Fork / contributor:** 24 checks (3 Pipeline + 21 API) must pass; TC-13 and TC-14 are expected `SKIP`.

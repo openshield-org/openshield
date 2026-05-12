@@ -3,7 +3,6 @@ name: Deploy API to Render
 on:
   push:
     branches:
-      - feat/api-deployment
       - dev
       - main
   workflow_dispatch:   # allows manual trigger from GitHub UI
@@ -97,6 +96,10 @@ jobs:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          RUN_REAL_SCAN: "true"
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" && -z "${{ secrets.JWT_SECRET }}" ]]; then
             echo "ERROR: Cannot run smoke tests on main branch without JWT_SECRET configured"
