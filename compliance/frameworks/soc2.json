@@ -106,4 +106,7 @@
     "AZ-KV-002": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "A Key Vault accessible from the public internet allows any external party to attempt access to secrets, keys and certificates. CC6.6 requires that access from outside the network boundary is restricted and controlled. Locking Key Vault access to private endpoints o
+      "description": "A Key Vault accessible from the public internet allows any external party to attempt access to secrets, keys and certificates. CC6.6 requires that access from outside the network boundary is restricted and controlled. Locking Key Vault access to private endpoints or specific VNet service endpoints enforces this boundary and protects sensitive credentials from external exposure."
+    }
+  }
+}
