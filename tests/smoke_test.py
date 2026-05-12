@@ -57,6 +57,16 @@ API_URL = os.environ.get("API_URL", "http://localhost:5000").rstrip("/")
 _JWT_VAL = os.environ.get("JWT_SECRET", "change-me-in-production")
 _REAL_SUB = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
 
+# Real scan gate — requires explicit opt-in AND all four Azure credentials.
+# Set RUN_REAL_SCAN=true in maintainer-controlled CI only.
+_RUN_REAL_SCAN = os.environ.get("RUN_REAL_SCAN", "").lower() == "true"
+_AZURE_CREDS_PRESENT = all([
+    os.environ.get("AZURE_SUBSCRIPTION_ID"),
+    os.environ.get("AZURE_CLIENT_ID"),
+    os.environ.get("AZURE_CLIENT_SECRET"),
+    os.environ.get("AZURE_TENANT_ID"),
+])
+
 if not _JWT_VAL or _JWT_VAL == "change-me-in-production":
     print("INFO: Using default JWT_SECRET ('change-me-in-production').")
     print("To use a custom one, set the JWT_SECRET environment variable.")
@@ -65,6 +75,7 @@ JWT_TOKEN = _generate_token(_JWT_VAL)
 
 PASS = "\033[92mPASS\033[0m"
 FAIL = "\033[91mFAIL\033[0m"
+SKIP = "\033[93mSKIP\033[0m"
 
 results = []
 
@@ -113,6 +124,13 @@ def test(name, method, path, check_fn, body=None, auth=True, bad_token=False):
 
     results.append((name, passed))
     return passed
+
+
+def skip(name, reason):
+    """Record a test as skipped — does not count as a failure."""
+    print(f"  [{SKIP}] {name}")
+    print(f"         {reason}")
+    results.append((name, None))
 
 
 # ── TC-01: Health check ────────────────────────────────────────────────────
@@ -193,21 +211,27 @@ test(
     lambda s, b: s == 200,
 )
 
-# Prepare body with real subscription ID if available
-scan_body = {"subscription_id": _REAL_SUB} if _REAL_SUB else {}
-
-test(
-    "TC-13 POST /api/scans/trigger returns 200, 201 or 202",
-    "POST", "/api/scans/trigger",
-    lambda s, b: s in (200, 201, 202),
-    body=scan_body,
-)
-test(
-    "TC-14 POST /api/scans/trigger returns scan_id or job_id",
-    "POST", "/api/scans/trigger",
-    lambda s, b: any(k in b for k in ("scan_id", "job_id", "id", "message")),
-    body=scan_body,
-)
+if _RUN_REAL_SCAN and _AZURE_CREDS_PRESENT:
+    test(
+        "TC-13 POST /api/scans/trigger returns 200, 201 or 202",
+        "POST", "/api/scans/trigger",
+        lambda s, b: s in (200, 201, 202),
+        body={"subscription_id": _REAL_SUB},
+    )
+    test(
+        "TC-14 POST /api/scans/trigger returns scan_id or job_id",
+        "POST", "/api/scans/trigger",
+        lambda s, b: any(k in b for k in ("scan_id", "job_id", "id", "message")),
+        body={"subscription_id": _REAL_SUB},
+    )
+else:
+    _skip_reason = (
+        "Real scan skipped — set RUN_REAL_SCAN=true with all four Azure credentials to enable."
+        if not _RUN_REAL_SCAN
+        else "Real scan skipped — one or more Azure credentials (SUBSCRIPTION_ID, CLIENT_ID, CLIENT_SECRET, TENANT_ID) are missing."
+    )
+    skip("TC-13 POST /api/scans/trigger returns 200, 201 or 202", _skip_reason)
+    skip("TC-14 POST /api/scans/trigger returns scan_id or job_id", _skip_reason)
 
 # ── TC-15 to TC-17: Compliance endpoints ──────────────────────────────────
 print("\n=== Compliance Endpoints ===")
@@ -260,11 +284,20 @@ test(
 
 # ── Summary ────────────────────────────────────────────────────────────────
 print("\n=== Summary ===")
-passed = sum(1 for _, p in results if p)
-total = len(results)
-failed_tests = [name for name, p in results if not p]
+passed      = sum(1 for _, p in results if p is True)
+skipped     = sum(1 for _, p in results if p is None)
+failed_tests = [name for name, p in results if p is False]
+total       = len(results)
 
-print(f"  {passed}/{total} tests passed")
+skip_note = f", {skipped} skipped" if skipped else ""
+print(f"  {passed}/{total - skipped} tests passed{skip_note}")
+
+if skipped:
+    print(f"\n  Skipped tests (not failures):")
+    for name, p in results:
+        if p is None:
+            print(f"    - {name}")
+    print(f"\n  To enable real scan tests: RUN_REAL_SCAN=true with AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID")
 
 if failed_tests:
     print(f"\n  Failed tests:")
