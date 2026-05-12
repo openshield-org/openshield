@@ -101,4 +101,12 @@
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
-      "description": "Key ma
+      "description": "Key material in Azure Key Vault must be recoverable after accidental or malicious deletion. Soft delete provides a recoverable state for secrets, keys, and certificates, supporting backup and recovery requirements for critical cryptographic material."
+    },
+    "AZ-KV-002": {
+      "control_id": "AC-17",
+      "control_name": "Remote access",
+      "description": "Key Vaults that allow public network access expose sensitive secrets, keys, and certificates to remote access attempts from outside trusted networks. Restricting access through private endpoints or trusted networks helps manage remote access paths."
+    }
+  }
+}
