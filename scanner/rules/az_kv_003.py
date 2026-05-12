@@ -13,7 +13,8 @@ CATEGORY = "Key Vault"
 FRAMEWORKS = {
     "CIS": "8.4",
     "NIST": "DE.CM-7",
-    "ISO27001": "A.12.4.1"
+    "ISO27001": "A.12.4.1",
+    "SOC2": "CC7.2"
 }
 
 DESCRIPTION = (
