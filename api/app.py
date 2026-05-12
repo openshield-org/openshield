@@ -63,7 +63,7 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
 
     @app.teardown_appcontext
-    def close_db(error):
+    def close_db(error=None):
         """Ensure the database connection is closed after the request."""
         db = g.pop("db", None)
         if db is not None:
