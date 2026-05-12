@@ -101,7 +101,7 @@
     "AZ-KV-001": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
-      "description": "Key Vault without soft delete enabled allows permanent deletion of secrets, keys and certificates with no recovery possible. A1.2 requires that environmental threats to availability are identified and mitigated including protection against accidental or malicious data loss. Enabling soft delete ensures deleted vault objects can be recovered within the retention period."
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only. CC6.7 requires that data is protected using encryption. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
     },
     "AZ-KV-002": {
       "control_id": "CC6.6",
