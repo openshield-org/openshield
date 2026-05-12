@@ -1,25 +1,25 @@
-"""AZ-CMP-002: Virtual machine without disk encryption enabled."""
+"""AZ-CMP-002: Virtual machine OS or data disk using platform-managed encryption only."""
 
 import logging
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-CMP-002"
-RULE_NAME = "Virtual machine without disk encryption enabled"
+RULE_NAME = "Virtual machine disk not protected by customer-managed key or ADE"
 SEVERITY = "HIGH"
 CATEGORY = "Compute"
-FRAMEWORKS = {"CIS": "7.2", "NIST": "PR.DS-1", "ISO27001": "A.10.1.1"}
+FRAMEWORKS = {"CIS": "7.2", "NIST": "PR.DS-1", "ISO27001": "A.10.1.1", "SOC2": "CC6.7"}
 DESCRIPTION = (
-    "One or more disks attached to this virtual machine are not encrypted "
-    "using Azure Disk Encryption or server-side encryption with a "
-    "customer-managed key. An attacker who gains subscription-level access "
-    "can snapshot an unencrypted disk and mount it on another VM to read "
-    "all data without needing the original VM credentials."
+    "One or more disks attached to this virtual machine are using platform-managed "
+    "encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be "
+    "protected using either Azure Disk Encryption (ADE) or server-side encryption with "
+    "a customer-managed key (CMK). Platform-managed encryption does not give the "
+    "organisation control over the encryption keys."
 )
 REMEDIATION = (
-    "Enable Azure Disk Encryption on all OS and data disks attached to the "
-    "virtual machine. Navigate to: Virtual Machine > Disks > Additional settings "
-    "> Disk encryption. Alternatively, configure server-side encryption with "
-    "customer-managed keys via a Disk Encryption Set."
+    "Configure server-side encryption with a customer-managed key via a Disk Encryption "
+    "Set, or enable Azure Disk Encryption on all OS and data disks. Navigate to: "
+    "Virtual Machine > Disks > Additional settings > Disk encryption set, or use "
+    "az vm encryption enable with a Key Vault."
 )
 PLAYBOOK = "playbooks/cli/fix_az_cmp_002.sh"
 
@@ -53,7 +53,7 @@ def _disk_needs_flagging(managed_disk: Any) -> bool:
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
-    """Detect virtual machines with unencrypted OS or data disks."""
+    """Detect virtual machines whose disks use platform-managed encryption only."""
     findings: List[Dict[str, Any]] = []
 
     for vm in azure_client.get_virtual_machines():
