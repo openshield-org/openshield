@@ -40,13 +40,13 @@ def trigger_scan():
     Celery or Azure Functions) to avoid request timeouts on large subscriptions.
     """
     try:
-        from scanner.engine import ScanEngine  # deferred to avoid import at startup
-
         body = request.get_json(silent=True) or {}
         subscription_id = body.get("subscription_id")
 
         if not subscription_id:
             return jsonify({"error": "subscription_id is required"}), 400
+
+        from scanner.engine import ScanEngine  # deferred — import only after input is validated
 
         logger.info("Scan triggered for subscription %s", subscription_id)
 
