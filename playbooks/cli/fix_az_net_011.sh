@@ -10,13 +10,9 @@ if [[ $# -lt 1 ]]; then
 fi
 
 SUBSCRIPTION_ID="$1"
-RESOURCE_GROUP="NetworkWatcherRG"
 
 echo "Setting subscription..."
 az account set --subscription "$SUBSCRIPTION_ID"
-
-echo "Ensuring resource group exists..."
-az group create --name "$RESOURCE_GROUP" --location eastus --output none 2>/dev/null || true
 
 echo "Fetching regions with resources..."
 RESOURCE_REGIONS=$(az resource list --subscription "$SUBSCRIPTION_ID" \
@@ -31,13 +27,17 @@ while IFS= read -r REGION; do
   if echo "$WATCHED_REGIONS" | grep -qx "$REGION"; then
     echo "  [SKIP] $REGION — already enabled"
   else
-    echo "  [FIX]  $REGION — enabling..."
+    RESOURCE_GROUP="NetworkWatcherRG-${REGION}"
+    echo "  [FIX]  $REGION — creating resource group $RESOURCE_GROUP..."
+    az group create --name "$RESOURCE_GROUP" --location "$REGION" --output none
+    echo "  [FIX]  $REGION — enabling Network Watcher..."
     az network watcher configure \
       --resource-group "$RESOURCE_GROUP" \
       --locations "$REGION" \
       --enabled true \
       --subscription "$SUBSCRIPTION_ID" \
       --output none
+    echo "         Done."
   fi
 done <<< "$RESOURCE_REGIONS"
 
