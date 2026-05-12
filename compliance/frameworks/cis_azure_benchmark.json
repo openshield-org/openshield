@@ -89,9 +89,9 @@
       "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
     },
     "AZ-CMP-002": {
-     "control_id": "7.2",
-     "control_name": "Ensure that 'OS disk' are encrypted",
-     "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be protected using customer-managed keys or Azure Disk Encryption. Platform-managed encryption does not give the organisation control over the encryption keys and does not satisfy this control."
+      "control_id": "7.2",
+      "control_name": "Ensure that 'OS disk' are encrypted",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be protected using customer-managed keys or Azure Disk Encryption. Platform-managed encryption does not give the organisation control over the encryption keys and does not satisfy this control."
     },
     "AZ-KV-001": {
       "control_id": "8.5",
