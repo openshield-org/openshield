@@ -1,112 +1,112 @@
 {
-  "framework": "ISO/IEC 27001:2013",
-  "version": "2013",
-  "published": "2013-10",
+  "framework": "NIST Cybersecurity Framework",
+  "version": "1.1",
+  "published": "2018-04",
   "controls": {
     "AZ-STOR-001": {
-      "control_id": "A.9.4.1",
-      "control_name": "Information access restriction",
-      "description": "Public blob access allows unrestricted access to information stored in Azure Storage. Access to information and application system functions should be restricted in accordance with the access control policy."
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Public blob access enables unauthenticated remote access to storage resources. Disabling public access ensures remote access to storage is managed and authenticated."
     },
     "AZ-STOR-002": {
-      "control_id": "A.10.1.1",
-      "control_name": "Policy on the use of cryptographic controls",
-      "description": "Requiring secure transfer ensures cryptographic controls are applied to data in transit. A policy on the use of cryptographic controls for protection of information should be developed and implemented."
+      "control_id": "PR.DS-2",
+      "control_name": "Data-in-transit is protected",
+      "description": "Requiring secure transfer ensures data in transit between clients and Azure Storage is encrypted using HTTPS, protecting against interception and tampering."
     },
     "AZ-STOR-003": {
-      "control_id": "A.8.3.1",
-      "control_name": "Management of removable media",
-      "description": "Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism. Lifecycle management supports formal retention, tiering, and disposal of information assets."
+      "control_id": "PR.DS-3",
+      "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
+      "description": "NIST CSF PR.DS-3 requires that data assets are managed through their full lifecycle including secure disposal. Storage accounts without a lifecycle management policy have no automated mechanism for expiring or deleting aged data, meaning data subject to disposal requirements persists indefinitely and is never formally retired from the asset inventory."
     },
     "AZ-NET-001": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Unrestricted SSH access from the internet violates network access controls. Networks should be managed and controlled to protect information in systems and applications."
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Unrestricted SSH access from the internet allows unmanaged remote access. NSG rules should restrict SSH to known IP ranges to ensure remote access is controlled and monitored."
     },
     "AZ-NET-002": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Unrestricted RDP access from the internet violates network access controls. Networks should be managed and controlled to protect information in systems and applications."
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Unrestricted RDP access from the internet allows unmanaged remote access. NSG rules should restrict RDP to known IP ranges or use Azure Bastion to ensure remote access is controlled."
     },
     "AZ-NET-003": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Unrestricted inbound access on port 443 from the internet increases exposure. Networks should be managed and controlled with appropriate restrictions on inbound traffic to protect information systems."
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "description": "Unrestricted inbound access on port 443 from the internet increases the attack surface. Public-facing HTTPS services should be fronted by a WAF-enabled Application Gateway rather than exposed directly via NSG rules."
     },
     "AZ-NET-004": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "NSGs with no rules provide no network controls. Networks should be managed and controlled with explicit rules that restrict traffic to what is required for the workload."
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "description": "NSGs with no custom rules provide no meaningful boundary protection. Explicit least-privilege rules should be defined to control inbound and outbound traffic at the network perimeter."
     },
     "AZ-NET-005": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Virtual networks without DDoS protection are vulnerable to availability attacks. Network controls should include protection against denial of service attacks to maintain availability of information systems."
+      "control_id": "SC-5",
+      "control_name": "Denial of Service Protection",
+      "description": "Virtual networks without DDoS Protection Standard are vulnerable to volumetric denial of service attacks. DDoS Protection Standard provides enhanced mitigation for production workloads."
     },
     "AZ-NET-006": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Unassociated public IP addresses represent unnecessary network exposure. Network resources that are no longer required should be removed to minimise the attack surface."
+      "control_id": "CM-7",
+      "control_name": "Least Functionality",
+      "description": "Unassociated public IP addresses represent unnecessary functionality and attack surface. Resources that are no longer in use should be removed to maintain least functionality."
     },
     "AZ-NET-007": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Application Gateways without WAF provide no protection against web application attacks. Network controls should include application layer filtering to protect against common web exploits."
+      "control_id": "SI-3",
+      "control_name": "Malicious Code Protection",
+      "description": "Application Gateways without WAF enabled provide no protection against web application attacks including OWASP Top 10 vulnerabilities. WAF in Prevention mode should be enabled on all public-facing Application Gateways."
     },
     "AZ-NET-008": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Load balancers with no backend pool are unused resources. Unused network resources should be removed as part of regular network hygiene to maintain an accurate and minimal network topology."
+      "control_id": "CM-7",
+      "control_name": "Least Functionality",
+      "description": "Load balancers with no backend pool configured serve no function and represent unnecessary resources. Unused resources should be removed to maintain least functionality and reduce cost."
     },
     "AZ-NET-009": {
-      "control_id": "A.13.2.1",
-      "control_name": "Information transfer policies and procedures",
-      "description": "VPN connections using IKEv1 use an outdated protocol. Information transfer policies should require the use of current secure protocols to protect data in transit between networks."
+      "control_id": "SC-8",
+      "control_name": "Transmission Confidentiality and Integrity",
+      "description": "VPN connections using IKEv1 use an outdated protocol with known vulnerabilities. IKEv2 should be used for all VPN gateway connections to ensure transmission confidentiality and integrity."
     },
     "AZ-NET-010": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Subnets without NSGs have no network layer access controls. All subnets should have NSGs attached with explicit rules to enforce network controls at the subnet boundary."
+      "control_id": "SC-7",
+      "control_name": "Boundary Protection",
+      "description": "Subnets without NSGs attached have no network layer access control. All production subnets should have NSGs with explicit rules to enforce boundary protection at the subnet level."
     },
     "AZ-IDN-001": {
-      "control_id": "A.9.2.3",
-      "control_name": "Management of privileged access rights",
-      "description": "Service principals with overly broad permissions violate privileged access management. The allocation and use of privileged access rights should be restricted and controlled."
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Service principals with overly broad permissions violate least privilege. Access permissions should be scoped to the minimum required for the workload to function."
     },
     "AZ-IDN-002": {
-      "control_id": "A.9.4.2",
-      "control_name": "Secure log-on procedures",
-      "description": "MFA enforces secure log-on for privileged accounts. Where required by the access control policy, access to systems and applications should be controlled by a secure log-on procedure including multi-factor authentication."
+      "control_id": "PR.AC-7",
+      "control_name": "Users, devices, and other assets are authenticated",
+      "description": "MFA ensures privileged users are strongly authenticated before accessing Azure resources. Without MFA, a compromised password is sufficient for full administrative access."
     },
     "AZ-DB-001": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Public network access to PostgreSQL servers should be disabled. Database servers should only be accessible via private network connections with appropriate network controls in place."
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Public network access to PostgreSQL servers should be disabled. Database access should be restricted to private networks to ensure remote access is managed and controlled."
     },
     "AZ-DB-002": {
-      "control_id": "A.12.4.1",
-      "control_name": "Event logging",
-      "description": "SQL Server auditing must be enabled to provide event logs. Event logs recording user activities, exceptions, faults and information security events should be produced, kept and regularly reviewed."
+      "control_id": "DE.AE-3",
+      "control_name": "Event data are aggregated and correlated",
+      "description": "SQL Server auditing must be enabled with sufficient retention to support threat detection and incident investigation. Audit logs provide the event data needed to detect and respond to anomalous database activity."
     },
     "AZ-CMP-001": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Virtual machines with public IPs and no NSG have unrestricted network access. Network controls should be applied to all compute resources accessible from the internet."
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Virtual machines with public IPs and no NSG have unrestricted network access. NSGs should be attached to control inbound and outbound traffic and manage remote access to compute resources."
     },
     "AZ-CMP-002": {
-      "control_id": "A.10.1.1",
-      "control_name": "Policy on the use of cryptographic controls",
-      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+      "control_id": "PR.DS-1",
+      "control_name": "Data-at-rest is protected",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). PR.DS-1 requires that data at rest is protected using appropriate controls. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
     },
     "AZ-KV-001": {
-      "control_id": "A.17.2.1",
-      "control_name": "Availability of information processing facilities",
-      "description": "Key Vault soft delete protects against loss of secrets, keys and certificates. Without soft delete, deleted vault objects cannot be recovered, reducing availability and recovery options for critical cryptographic material."
+      "control_id": "PR.IP-4",
+      "control_name": "Backups of information are conducted, maintained, and tested",
+      "description": "Key material in Azure Key Vault must be recoverable after accidental or malicious deletion. Soft delete provides a recoverable state for secrets, keys, and certificates, supporting backup and recovery requirements for critical cryptographic material."
     },
     "AZ-KV-002": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive secrets, keys, and certificates to external networks. Access should be restricted to trusted networks using private endpoints or network controls."
+      "control_id": "AC-17",
+      "control_name": "Remote access",
+      "description": "Key Vaults that allow public network access expose sensitive secrets, keys, and certificates to remote access attempts from outside trusted networks. Restricting access through private endpoints or trusted networks helps manage remote access paths."
     }
   }
 }
