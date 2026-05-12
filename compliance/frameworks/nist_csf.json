@@ -13,6 +13,11 @@
       "control_name": "Data-in-transit is protected",
       "description": "Requiring secure transfer ensures data in transit between clients and Azure Storage is encrypted using HTTPS, protecting against interception and tampering."
     },
+    "AZ-STOR-003": {
+      "control_id": "PR.DS-3",
+      "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
+      "description": "NIST CSF PR.DS-3 requires that data assets are managed through their full lifecycle including secure disposal. Storage accounts without a lifecycle management policy have no automated mechanism for expiring or deleting aged data, meaning data subject to disposal requirements persists indefinitely and is never formally retired from the asset inventory."
+    },
     "AZ-NET-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
@@ -89,24 +94,11 @@
       "description": "Virtual machines with public IPs and no NSG have unrestricted network access. NSGs should be attached to control inbound and outbound traffic and manage remote access to compute resources."
     },
     "AZ-CMP-002": {
-     "control_id": "PR.DS-1",
-     "control_name": "Data-at-rest is protected",
-    "description": "Virtual machine OS and data disks that are not encrypted with Azure Disk Encryption or customer-managed keys store data in plain text. PR.DS-1 requires that data at rest is protected. Enabling disk encryption ensures that disk contents are unreadable without the encryption key even if the disk is snapshotted or physically accessed."
-   },
+      "control_id": "PR.DS-1",
+      "control_name": "Data-at-rest is protected",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). PR.DS-1 requires that data at rest is protected using appropriate controls. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+    },
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
-      "description": "Key material in Azure Key Vault must be recoverable after accidental or malicious deletion. Soft delete provides a recoverable state for secrets, keys, and certificates, supporting backup and recovery requirements for critical cryptographic material."
-    },
-    "AZ-KV-002": {
-      "control_id": "AC-17",
-      "control_name": "Remote access",
-      "description": "Key Vaults that allow public network access expose sensitive secrets, keys, and certificates to remote access attempts from outside trusted networks. Restricting access through private endpoints or trusted networks helps manage remote access paths."
-    },
-    "AZ-STOR-003": {
-      "control_id": "PR.DS-3",
-      "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
-      "description": "NIST CSF PR.DS-3 requires that data assets are managed through their full lifecycle including secure disposal. Storage accounts without a lifecycle management policy have no automated mechanism for expiring or deleting aged data, meaning data subject to disposal requirements persists indefinitely and is never formally retired from the asset inventory."
-    }
-  }
-}
+      "description": "Key ma
