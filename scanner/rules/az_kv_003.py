@@ -1,6 +1,9 @@
 """AZ-KV-003: Key Vault without diagnostic logging enabled."""
 
+import logging
 from typing import Any, Dict, List
+
+logger = logging.getLogger(__name__)
 
 RULE_ID = "AZ-KV-003"
 RULE_NAME = "Key Vault Without Diagnostic Logging Enabled"
@@ -33,22 +36,17 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
 
     for vault in azure_client.get_key_vaults():
-        settings = azure_client.get_diagnostic_settings(vault.id)
+        status = azure_client.get_diagnostic_settings(vault.id)
 
-        logs_enabled = False
+        if status is None:
+            logger.warning(
+                "%s: could not determine diagnostic settings for %s",
+                RULE_ID,
+                vault.name,
+            )
+            continue
 
-        for setting in settings:
-            logs = getattr(setting, "logs", None) or []
-
-            for log in logs:
-                if getattr(log, "enabled", False):
-                    logs_enabled = True
-                    break
-
-            if logs_enabled:
-                break
-
-        if not settings or not logs_enabled:
+        if status is False:
             parsed = azure_client.parse_resource_id(vault.id)
 
             findings.append({
@@ -66,9 +64,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "metadata": {
                     "resource_group": parsed.get("resource_group", ""),
                     "location": getattr(vault, "location", ""),
-                    "diagnostic_settings_count": len(settings),
                 },
             })
 
     return findings
-

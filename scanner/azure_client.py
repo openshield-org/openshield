@@ -236,20 +236,58 @@ class AzureClient:
     # Monitoring                                                            #
     # ------------------------------------------------------------------ #
 
-    def get_diagnostic_settings(self, resource_id: str) -> List[Any]:
-        """List diagnostic settings configured for a resource."""
+    def get_diagnostic_settings(self, resource_id: str) -> Optional[bool]:
+        """Return diagnostic logging status for a resource.
+
+        Three-state return:
+
+            True  — at least one diagnostic log category is enabled.
+            False — no diagnostic settings exist or all logs are disabled.
+            None  — unable to determine status due to permissions/API failure.
+
+        Returns:
+            Optional[bool] — True, False, or None as described above.
+        """
         try:
             client = MonitorManagementClient(
-                self.credential, self.subscription_id
+                self.credential,
+                self.subscription_id,
             )
-            return list(client.diagnostic_settings.list(resource_id))
+
+            settings = list(
+                client.diagnostic_settings.list(resource_id)
+            )
+
+            if not settings:
+                return False
+
+            for setting in settings:
+                logs = getattr(setting, "logs", [])
+
+                for log in logs:
+                    category = getattr(log, "category", "")
+                    enabled = getattr(log, "enabled", False)
+
+                    if category == "AuditEvent" and enabled:
+                        return True
+            return False
+
+        except HttpResponseError as exc:
+            logger.error(
+                "get_diagnostic_settings(%s) HTTP %s: %s",
+                resource_id,
+                exc.status_code,
+                exc,
+            )
+            return None
+
         except Exception as exc:
             logger.error(
                 "get_diagnostic_settings(%s) failed: %s",
                 resource_id,
                 exc,
             )
-            return []
+            return None
 
     # ------------------------------------------------------------------ #
     # Identity / Authorization                                              #
