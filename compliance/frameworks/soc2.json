@@ -78,6 +78,11 @@
       "control_name": "Logical Access Security Measures",
       "description": "Without MFA enforced on privileged accounts, a single compromised password grants full administrative access to the Azure environment. CC6.1 requires that logical access controls include strong authentication mechanisms. Enforcing MFA via Conditional Access policies ensures privileged access requires multiple factors of authentication."
     },
+    "AZ-IDN-003": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is restricted to authorised users. Restricting guest invitations to administrators ensures external identity provisioning is formally controlled and authorised."
+    },
     "AZ-DB-001": {
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit",
