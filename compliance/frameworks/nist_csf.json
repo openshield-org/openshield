@@ -73,6 +73,11 @@
       "control_name": "Users, devices, and other assets are authenticated",
       "description": "MFA ensures privileged users are strongly authenticated before accessing Azure resources. Without MFA, a compromised password is sufficient for full administrative access."
     },
+    "AZ-IDN-003": {
+      "control_id": "PR.AC-1",
+      "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
+      "description": "Unrestricted guest user invitations allow any organisation member to introduce external identities into the tenant without centralised review. PR.AC-1 requires that identities and credentials are managed and verified. Restricting guest invitations to administrators ensures external identity provisioning is controlled and audited."
+    },
     "AZ-DB-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",

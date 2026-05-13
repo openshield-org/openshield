@@ -73,6 +73,11 @@
       "control_name": "Secure log-on procedures",
       "description": "MFA enforces secure log-on for privileged accounts. Where required by the access control policy, access to systems and applications should be controlled by a secure log-on procedure including multi-factor authentication."
     },
+    "AZ-IDN-003": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "Unrestricted guest user invitations allow any organisation member to register external identities into the tenant without centralised review or approval. A.9.2.1 requires that a formal user registration and de-registration process is implemented. Restricting guest invitations to administrators ensures external identity registration is formally controlled and audited."
+    },
     "AZ-DB-001": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
