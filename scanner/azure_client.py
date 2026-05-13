@@ -11,6 +11,7 @@ from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
 from azure.mgmt.sql import SqlManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.storage import StorageManagementClient
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,83 @@ class AzureClient:
             logger.error(
                 "get_storage_lifecycle_policy(%s) unexpected error: %s",
                 account_name,
+                exc,
+            )
+            return None
+
+    def get_storage_service_logging(
+        self, resource_group: str, account_name: str, service: str
+    ) -> Optional[bool]:
+        """Check Azure Monitor diagnostic settings for a storage service sub-resource.
+
+        Three-state return — the calling rule uses strict identity checks
+        (is False / is None) to distinguish these states:
+
+            True  — at least one diagnostic setting has StorageRead, StorageWrite,
+                    and StorageDelete all enabled (compliant).
+            False — no setting covers all three required categories (non-compliant).
+            None  — permission error or unexpected SDK failure.
+                    Caller must NOT create a finding — skip with a warning
+                    to avoid false positives.
+
+        Args:
+            resource_group: Resource group containing the storage account.
+            account_name:   Name of the storage account.
+            service:        Sub-service to check: "blob", "queue", or "table".
+
+        Returns:
+            Optional[bool] — True, False, or None as described above.
+        """
+        _REQUIRED = {"StorageRead", "StorageWrite", "StorageDelete"}
+        _SERVICE_MAP = {
+            "blob":  "blobServices",
+            "queue": "queueServices",
+            "table": "tableServices",
+        }
+        svc_path = _SERVICE_MAP.get(service)
+        if not svc_path:
+            logger.error(
+                "get_storage_service_logging: unknown service %r — must be "
+                "blob, queue, or table",
+                service,
+            )
+            return None
+
+        resource_uri = (
+            f"/subscriptions/{self.subscription_id}"
+            f"/resourceGroups/{resource_group}"
+            f"/providers/Microsoft.Storage/storageAccounts/{account_name}"
+            f"/{svc_path}/default"
+        )
+        try:
+            client = MonitorManagementClient(self.credential, self.subscription_id)
+            settings = list(client.diagnostic_settings.list(resource_uri))
+            for setting in settings:
+                enabled_categories = {
+                    log.category
+                    for log in (getattr(setting, "logs", None) or [])
+                    if getattr(log, "enabled", False)
+                }
+                if _REQUIRED.issubset(enabled_categories):
+                    return True
+            return False
+
+        except HttpResponseError as exc:
+            logger.error(
+                "get_storage_service_logging(%s/%s) HTTP %s — "
+                "check service principal permissions: %s",
+                account_name,
+                service,
+                exc.status_code,
+                exc,
+            )
+            return None
+
+        except Exception as exc:
+            logger.error(
+                "get_storage_service_logging(%s/%s) unexpected error: %s",
+                account_name,
+                service,
                 exc,
             )
             return None
