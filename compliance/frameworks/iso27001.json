@@ -93,6 +93,11 @@
       "control_name": "Network controls",
       "description": "Virtual machines with public IPs and no NSG have unrestricted network access. Network controls should be applied to all compute resources accessible from the internet."
     },
+    "AZ-CMP-002": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+    },
     "AZ-KV-001": {
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
