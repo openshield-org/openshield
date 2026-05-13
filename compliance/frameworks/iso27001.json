@@ -102,6 +102,11 @@
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive secrets, keys, and certificates to external networks. Access should be restricted to trusted networks using private endpoints or network controls."
+    },
+    "AZ-KV-003": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Event logs recording user activities, exceptions, faults, and information security events should be produced and retained for Azure Key Vault operations. Diagnostic logging enables monitoring and forensic investigation of access to secrets, keys, and certificates."
     }
   }
 }

@@ -102,6 +102,11 @@
       "control_id": "8.3",
       "control_name": "Ensure that public network access to Key Vault is disabled",
       "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
+    },
+    "AZ-KV-003": {
+      "control_id": "8.4",
+      "control_name": "Ensure that diagnostic logging is enabled for Key Vault",
+      "description": "Diagnostic logging should be enabled for Azure Key Vault to record access and operations involving secrets, keys, and certificates. Without logging, unauthorized access attempts and malicious operations cannot be effectively detected or investigated."
     }
   }
 }
