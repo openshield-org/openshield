@@ -1,0 +1,109 @@
+name: Deploy API to Render
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:   # allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── Dependency caching ─────────────────────────────────────────────
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── Secret check (Determines if smoke tests should run) ───────────
+      - name: Check for JWT_SECRET
+        id: check_config
+        run: |
+          if [ -n "${{ secrets.JWT_SECRET }}" ]; then
+            echo "is_configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_configured=false" >> $GITHUB_OUTPUT
+          fi
+
+      # ── Wait for Render auto-deployment ────────────────────────────────
+      # Render handles the actual physical deployment when you push.
+      # We just pause the Action to let Render's servers finish building.
+      - name: Wait for app to initialise
+        run: |
+          echo "Waiting 120 seconds for Render to build and start the app..."
+          sleep 120
+
+      # ── Health gate ────────────────────────────────────────────────────
+      - name: Health gate check
+        id: health_gate
+        env:
+          # Use secret URL if provided, otherwise fallback to default
+          API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
+        run: |
+          MAX_RETRIES=5
+          RETRY_DELAY=15
+          URL="${API_URL}/health"
+
+          echo "Pinging health gate at: $URL"
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Health check attempt $i of $MAX_RETRIES..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30) || true
+
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "Health check passed (HTTP $HTTP_STATUS)"
+              exit 0
+            fi
+
+            echo "Got HTTP $HTTP_STATUS — retrying in ${RETRY_DELAY}s..."
+            sleep $RETRY_DELAY
+          done
+
+          echo "HEALTH GATE FAILED after $MAX_RETRIES attempts"
+          echo "Note: If you haven't set up Render for this fork, this is expected."
+          # Only allow failure on feature branches; fail on main/dev
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "ERROR: Health check failed on protected branch. Deployment verification required."
+            exit 1
+          else
+            echo "Allowing health check failure on feature branch (infra may not be set up)"
+            exit 0
+          fi
+
+      # ── Smoke tests ────────────────────────────────────────────────────
+      - name: Run smoke tests against live deployment
+        if: steps.check_config.outputs.is_configured == 'true' || github.event_name == 'workflow_dispatch'
+        env:
+          API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          RUN_REAL_SCAN: "true"
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" && -z "${{ secrets.JWT_SECRET }}" ]]; then
+            echo "ERROR: Cannot run smoke tests on main branch without JWT_SECRET configured"
+            exit 1
+          fi
+          echo "Running smoke tests against: $API_URL"
+          python tests/smoke_test.py

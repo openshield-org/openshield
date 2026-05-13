@@ -80,10 +80,16 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def connect(self) -> None:
-        """Open a persistent database connection."""
+        """Open a persistent database connection and set the search path."""
         self.conn = psycopg2.connect(self.dsn)
+        self.conn.autocommit = True  # Set to True for schema management
+        with self.conn.cursor() as cur:
+            # Ensure the openshield schema exists and is preferred in the search path.
+            # This avoids 'permission denied for schema public' in restricted environments.
+            cur.execute("CREATE SCHEMA IF NOT EXISTS openshield;")
+            cur.execute("SET search_path TO openshield, public;")
         self.conn.autocommit = False
-        logger.info("Database connection established")
+        logger.info("Database connection established (schema: openshield)")
 
     def _get_conn(self) -> Any:
         if self.conn is None or self.conn.closed:
@@ -93,6 +99,10 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
     # Schema                                                                #
     # ------------------------------------------------------------------ #
+
+    def init_db(self) -> None:
+        """Alias for create_tables to match startup script expectations."""
+        self.create_tables()
 
     def create_tables(self) -> None:
         """Create the findings, scans, and rules tables if they do not exist."""

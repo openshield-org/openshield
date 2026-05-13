@@ -34,7 +34,13 @@ jobs:
         run: |
           echo "=== Checking Python syntax on scanner/rules/ ==="
           FAIL=0
-          for f in scanner/rules/az_*.py; do
+          shopt -s nullglob
+          files=(scanner/rules/az_*.py)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "ERROR: No rule files found matching scanner/rules/az_*.py"
+            exit 1
+          fi
+          for f in "${files[@]}"; do
             if ! python -m py_compile "$f" 2>&1; then
               echo "SYNTAX ERROR: $f"
               FAIL=1
@@ -137,7 +143,7 @@ jobs:
               grep -v "\.env" | \
               grep -v "os\.environ" | \
               grep -v "os\.getenv" | \
-              grep -v "#" | \
+              grep -vE '^\s*#' | \
               grep -v "example" | \
               grep -v "placeholder" || true)
 
@@ -161,7 +167,13 @@ jobs:
         run: |
           echo "=== Checking playbooks exist and are valid bash ==="
           FAIL=0
-          for rule_file in scanner/rules/az_*.py; do
+          shopt -s nullglob
+          files=(scanner/rules/az_*.py)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "ERROR: No rule files found matching scanner/rules/az_*.py"
+            exit 1
+          fi
+          for rule_file in "${files[@]}"; do
             filename=$(basename "$rule_file" .py)
             playbook="playbooks/cli/fix_${filename}.sh"
 
@@ -287,7 +299,8 @@ jobs:
                   continue
               fpath = os.path.join(framework_dir, fname)
               try:
-                  data = json.load(open(fpath))
+                  with open(fpath) as f:
+                      data = json.load(f)
               except (json.JSONDecodeError, OSError):
                   continue
 

@@ -3,6 +3,7 @@
 import importlib.util
 import logging
 import uuid
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
@@ -12,6 +13,34 @@ from scanner.azure_client import AzureClient
 logger = logging.getLogger(__name__)
 
 RULES_DIR = Path(__file__).parent / "rules"
+
+
+def make_serializable(data: Any) -> Any:
+    """Recursively convert non-serializable objects (datetime, etc) to strings."""
+    if data is None:
+        return None
+    if isinstance(data, (str, int, float, bool)):
+        return data
+    if isinstance(data, dict):
+        return {str(k): make_serializable(v) for k, v in data.items()}
+    if isinstance(data, (list, tuple, set)):
+        return [make_serializable(i) for i in data]
+    if isinstance(data, datetime):
+        return data.isoformat()
+    
+    # Handle Azure SDK models and other objects
+    if hasattr(data, "as_dict") and callable(data.as_dict):
+        return make_serializable(data.as_dict())
+    
+    # Fallback to string representation for unknown objects
+    try:
+        # Check if it has a __dict__ but avoid infinite recursion for complex types
+        if hasattr(data, "__dict__") and not str(type(data)).startswith("<class 'azure."):
+            return make_serializable(data.__dict__)
+    except:
+        pass
+        
+    return str(data)
 
 
 class ScanEngine:
@@ -84,7 +113,12 @@ class ScanEngine:
             rule_id = getattr(rule, "RULE_ID", "UNKNOWN")
             try:
                 rule_findings = rule.scan(self.client, self.subscription_id)
+                if not isinstance(rule_findings, list):
+                    logger.warning("Rule %s returned %s instead of list — skipped", rule_id, type(rule_findings))
+                    continue
+                    
                 for finding in rule_findings:
+                    if not isinstance(finding, dict): continue
                     finding.setdefault("detected_at", detected_at)
                     finding.setdefault("scan_id", scan_id)
                 findings.extend(rule_findings)
@@ -92,15 +126,11 @@ class ScanEngine:
                     "Rule %s produced %d finding(s)", rule_id, len(rule_findings)
                 )
             except Exception as exc:
-                logger.error("Rule %s raised an exception: %s", rule_id, exc)
+                logger.error("Rule %s raised an exception: %s", rule_id, exc, exc_info=True)
 
         completed_at = datetime.now(timezone.utc).isoformat()
 
-        logger.info(
-            "Scan %s complete — %d total finding(s)", scan_id, len(findings)
-        )
-
-        return {
+        result = {
             "scan_id": scan_id,
             "subscription_id": self.subscription_id,
             "started_at": started_at,
@@ -108,3 +138,9 @@ class ScanEngine:
             "total_findings": len(findings),
             "findings": findings,
         }
+
+        logger.info(
+            "Scan %s complete — %d total finding(s). Normalising results...", scan_id, len(findings)
+        )
+
+        return make_serializable(result)
