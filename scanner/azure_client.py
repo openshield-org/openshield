@@ -351,3 +351,31 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_conditional_access_policies failed: %s", exc)
             return []
+    def get_regions_with_resources(self) -> List[str]:
+        """List all regions that have at least one resource deployed."""
+        try:
+            from azure.mgmt.resource import ResourceManagementClient
+            client = ResourceManagementClient(self.credential, self.subscription_id)
+            regions = {
+                r.location.lower().replace(" ", "")
+                for r in client.resources.list()
+                if r.location
+            }
+            return list(regions)
+        except Exception as exc:
+            logger.error("get_regions_with_resources failed: %s", exc)
+            return []
+
+    def get_network_watcher_regions(self) -> List[str]:
+        """List all regions that already have Network Watcher enabled."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            regions = {
+                w.location.lower().replace(" ", "")
+                for w in client.network_watchers.list_all()
+                if w.location
+            }
+            return list(regions)
+        except Exception as exc:
+            logger.error("get_network_watcher_regions failed: %s", exc)
+            return []
