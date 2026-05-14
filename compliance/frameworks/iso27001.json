@@ -122,6 +122,11 @@
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
       "description": "Network Watcher must be enabled in all regions where resources are deployed to ensure network events are logged and available for investigation. Event logs recording network activity should be produced and retained to support incident response."
+    },
+    "AZ-DB-003": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "SSL enforcement on PostgreSQL Flexible Server applies cryptographic controls to data in transit. A policy on the use of cryptographic controls for protection of information should be developed and implemented."
     }
   }
 }

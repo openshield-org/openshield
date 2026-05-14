@@ -18,4 +18,4 @@ requests==2.31.0
 pyyaml==6.0.1
 gunicorn==21.2.0
 cryptography==42.0.5
-msrest==0.7.1
+msrest==0.7.1azure-mgmt-postgresqlflexibleserver==1.0.0

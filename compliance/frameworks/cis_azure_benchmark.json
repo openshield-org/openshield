@@ -122,6 +122,11 @@
       "control_id": "6.5",
       "control_name": "Ensure that Network Watcher is enabled in all regions",
       "description": "Network Watcher should be enabled in all regions where Azure resources are deployed. Network Watcher provides network monitoring, diagnostics, and logging capabilities essential for investigating network-level incidents."
+    },
+    "AZ-DB-003": {
+      "control_id": "4.3.6",
+      "control_name": "Ensure SSL connection is enabled for PostgreSQL Flexible Server",
+      "description": "SSL enforcement should be enabled on PostgreSQL Flexible Server to ensure data in transit is encrypted. Without SSL, database connections transmit data in plaintext, exposing it to interception."
     }
   }
 }
