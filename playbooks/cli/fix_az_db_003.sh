@@ -27,13 +27,13 @@ while IFS=$'\t' read -r SERVER_NAME RESOURCE_GROUP; do
   SSL_VALUE=$(az postgres flexible-server parameter show     --resource-group "$RESOURCE_GROUP"     --server-name "$SERVER_NAME"     --name require_secure_transport     --query "value" --output tsv 2>/dev/null || echo "on")
 
   if [[ "${SSL_VALUE,,}" == "off" ]]; then
-    echo "  [FIX] Enabling SSL on $SERVER_NAME..."
+    echo "Enabling SSL on $SERVER_NAME..."
     az postgres flexible-server parameter set       --resource-group "$RESOURCE_GROUP"       --server-name "$SERVER_NAME"       --name require_secure_transport       --value ON       --output none
-    echo "        Done."
+    echo "Done."
   else
-    echo "  [SKIP] $SERVER_NAME — SSL already enabled"
+    echo "$SERVER_NAME already has SSL enabled, skipping."
   fi
 done <<< "$SERVERS"
 
-echo "Done! Verify with:"
+echo "Done. Verify with:"
 echo "  az postgres flexible-server parameter show --name require_secure_transport --server-name <name> --resource-group <rg>"
