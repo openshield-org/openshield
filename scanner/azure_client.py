@@ -13,6 +13,7 @@ from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
 from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +309,63 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_key_vaults failed: %s", exc)
             return []
+
+    # ------------------------------------------------------------------ #
+    # Monitoring                                                            #
+    # ------------------------------------------------------------------ #
+
+    def get_diagnostic_settings(self, resource_id: str) -> Optional[bool]:
+        """Return diagnostic logging status for a resource.
+
+        Three-state return:
+
+            True  — at least one diagnostic log category is enabled.
+            False — no diagnostic settings exist or all logs are disabled.
+            None  — unable to determine status due to permissions/API failure.
+
+        Returns:
+            Optional[bool] — True, False, or None as described above.
+        """
+        try:
+            client = MonitorManagementClient(
+                self.credential,
+                self.subscription_id,
+            )
+
+            settings = list(
+                client.diagnostic_settings.list(resource_id)
+            )
+
+            if not settings:
+                return False
+
+            for setting in settings:
+                logs = getattr(setting, "logs", [])
+
+                for log in logs:
+                    category = getattr(log, "category", "")
+                    enabled = getattr(log, "enabled", False)
+
+                    if category == "AuditEvent" and enabled:
+                        return True
+            return False
+
+        except HttpResponseError as exc:
+            logger.error(
+                "get_diagnostic_settings(%s) HTTP %s: %s",
+                resource_id,
+                exc.status_code,
+                exc,
+            )
+            return None
+
+        except Exception as exc:
+            logger.error(
+                "get_diagnostic_settings(%s) failed: %s",
+                resource_id,
+                exc,
+            )
+            return None
 
     # ------------------------------------------------------------------ #
     # Identity / Authorization                                              #
