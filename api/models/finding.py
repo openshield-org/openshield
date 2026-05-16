@@ -96,6 +96,13 @@ class DatabaseManager:
             self.connect()
         return self.conn
 
+    def close(self) -> None:
+        """Close the database connection."""
+        if self.conn and not self.conn.closed:
+            self.conn.close()
+            self.conn = None
+            logger.debug("Database connection closed")
+
     # ------------------------------------------------------------------ #
     # Schema                                                                #
     # ------------------------------------------------------------------ #

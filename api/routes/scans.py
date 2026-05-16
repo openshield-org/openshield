@@ -11,10 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db() -> DatabaseManager:
-    if "db_conn" not in g:
-        g.db_conn = DatabaseManager(os.environ["DATABASE_URL"])
-        g.db_conn.connect()
-    return g.db_conn
+    if "db" not in g:
+        db_url = os.environ.get("DATABASE_URL")
+        if not db_url:
+            raise RuntimeError("DATABASE_URL environment variable is not set")
+        g.db = DatabaseManager(db_url)
+        g.db.connect()
+    return g.db
 
 
 @scans_bp.get("/api/scans")
@@ -22,8 +25,8 @@ def list_scans():
     """Return all historical scan results ordered by most recent first."""
     try:
         db = _get_db()
-        scans = db.get_scans()
-        return jsonify({"count": len(scans), "scans": scans})
+        result = db.get_scans()
+        return jsonify(result)
     except Exception as exc:
         logger.error("Failed to list scans: %s", exc)
         return jsonify({"error": "Failed to retrieve scans", "detail": str(exc)}), 500
@@ -40,13 +43,18 @@ def trigger_scan():
     Celery or Azure Functions) to avoid request timeouts on large subscriptions.
     """
     try:
+        from scanner.engine import ScanEngine
+    except ImportError:
+        return jsonify({"error": "Scanner module is not available"}), 500
+
+    try:
         body = request.get_json(silent=True) or {}
-        subscription_id = body.get("subscription_id")
+        subscription_id = body.get("subscription_id") or os.environ.get(
+            "AZURE_SUBSCRIPTION_ID"
+        )
 
         if not subscription_id:
             return jsonify({"error": "subscription_id is required"}), 400
-
-        from scanner.engine import ScanEngine  # deferred — import only after input is validated
 
         logger.info("Scan triggered for subscription %s", subscription_id)
 
@@ -57,12 +65,14 @@ def trigger_scan():
             logger.error("Scan engine execution failed: %s", exc, exc_info=True)
             return jsonify({"error": "Scan failed", "detail": str(exc)}), 500
 
+        if not isinstance(result, dict) or "scan_id" not in result:
+            return jsonify({"error": "Invalid scan result returned"}), 500
+
         try:
             db = _get_db()
-            # Note: Table creation is handled at startup; no need to repeat it here.
             db.save_scan(result)
         except Exception as exc:
-            logger.error("Failed to save scan result to database: %s", exc, exc_info=True)
+            logger.error("Failed to save scan result: %s", exc, exc_info=True)
             return jsonify({"error": "Database save failed", "detail": str(exc)}), 500
 
         return jsonify(result), 201
