@@ -330,6 +330,28 @@ class AzureClient:
             logger.error("get_service_principals failed: %s", exc)
             return []
 
+
+    def get_postgresql_flexible_servers(self) -> List[Any]:
+        """List all PostgreSQL Flexible Server instances in the subscription."""
+        try:
+            from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
+            client = FlexClient(self.credential, self.subscription_id)
+            return list(client.servers.list())
+        except Exception as exc:
+            logger.error("get_postgresql_flexible_servers failed: %s", exc)
+            return []
+
+
+    def get_postgresql_flexible_server_parameters(self, resource_group: str, server_name: str) -> List[Any]:
+        """List all configuration parameters for a PostgreSQL Flexible Server."""
+        try:
+            from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
+            client = FlexClient(self.credential, self.subscription_id)
+            return list(client.configurations.list_by_server(resource_group, server_name))
+        except Exception as exc:
+            logger.error("get_postgresql_flexible_server_parameters(%s) failed: %s", server_name, exc)
+            return []
+
     def get_conditional_access_policies(self) -> List[Any]:
         """Fetch Conditional Access policies from the Microsoft Graph API.
 

@@ -122,6 +122,11 @@
       "control_id": "DE.CM-7",
       "control_name": "Monitoring for unauthorized personnel, connections, devices, and software is performed",
       "description": "Network Watcher must be enabled in all active regions to support continuous monitoring of network activity. Without it, unauthorized connections and anomalous network behaviour cannot be detected or investigated."
+    },
+    "AZ-DB-003": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data-in-transit is protected",
+      "description": "SSL enforcement on PostgreSQL Flexible Server ensures data in transit between applications and the database is encrypted. Disabling SSL exposes database traffic to interception and tampering."
     }
   }
 }
