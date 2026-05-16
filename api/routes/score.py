@@ -11,13 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db() -> DatabaseManager:
-    if "db" not in g:
-        db_url = os.environ.get("DATABASE_URL")
-        if not db_url:
-            raise RuntimeError("DATABASE_URL environment variable is not set")
-        g.db = DatabaseManager(db_url)
-        g.db.connect()
-    return g.db
+    if "db_conn" not in g:
+        g.db_conn = DatabaseManager(os.environ["DATABASE_URL"])
+        g.db_conn.connect()
+    return g.db_conn
 
 
 @score_bp.get("/api/score")
@@ -30,8 +27,8 @@ def get_score():
     """
     try:
         db = _get_db()
-        result = db.get_score()
-        return jsonify(result)
+        score = db.get_score()
+        return jsonify({"score": score, "max_score": 100})
     except Exception as exc:
         logger.error("Failed to calculate score: %s", exc)
         return jsonify({"error": "Failed to calculate score", "detail": str(exc)}), 500
