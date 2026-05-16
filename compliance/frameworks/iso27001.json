@@ -73,6 +73,11 @@
       "control_name": "Secure log-on procedures",
       "description": "MFA enforces secure log-on for privileged accounts. Where required by the access control policy, access to systems and applications should be controlled by a secure log-on procedure including multi-factor authentication."
     },
+    "AZ-IDN-003": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "Unrestricted guest user invitations allow any organisation member to register external identities into the tenant without centralised review or approval. A.9.2.1 requires that a formal user registration and de-registration process is implemented. Restricting guest invitations to administrators ensures external identity registration is formally controlled and audited."
+    },
     "AZ-DB-001": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
@@ -88,6 +93,11 @@
       "control_name": "Network controls",
       "description": "Virtual machines with public IPs and no NSG have unrestricted network access. Network controls should be applied to all compute resources accessible from the internet."
     },
+    "AZ-CMP-002": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+    },
     "AZ-KV-001": {
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
@@ -98,15 +108,25 @@
       "control_name": "Management of removable media",
       "description": "Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism. Lifecycle management supports formal retention, tiering, and disposal of information assets."
     },
+    "AZ-STOR-004": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Diagnostic logging must be enabled on Azure Storage blob, queue, and table services to produce event logs for read, write, and delete operations. Event logs recording user activities, exceptions, and information security events should be produced, kept, and regularly reviewed."
+    },
     "AZ-KV-002": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive secrets, keys, and certificates to external networks. Access should be restricted to trusted networks using private endpoints or network controls."
     },
-    "AZ-KV-003": {
+    "AZ-NET-011": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
-      "description": "Event logs recording user activities, exceptions, faults, and information security events should be produced and retained for Azure Key Vault operations. Diagnostic logging enables monitoring and forensic investigation of access to secrets, keys, and certificates."
+      "description": "Network Watcher must be enabled in all regions where resources are deployed to ensure network events are logged and available for investigation. Event logs recording network activity should be produced and retained to support incident response."
+    },
+    "AZ-DB-003": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "SSL enforcement on PostgreSQL Flexible Server applies cryptographic controls to data in transit. A policy on the use of cryptographic controls for protection of information should be developed and implemented."
     }
   }
 }

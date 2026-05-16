@@ -78,6 +78,11 @@
       "control_name": "Logical Access Security Measures",
       "description": "Without MFA enforced on privileged accounts, a single compromised password grants full administrative access to the Azure environment. CC6.1 requires that logical access controls include strong authentication mechanisms. Enforcing MFA via Conditional Access policies ensures privileged access requires multiple factors of authentication."
     },
+    "AZ-IDN-003": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is restricted to authorised users. Restricting guest invitations to administrators ensures external identity provisioning is formally controlled and authorised."
+    },
     "AZ-DB-001": {
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit",
@@ -93,6 +98,11 @@
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "A virtual machine with a public IP and no NSG has unrestricted inbound network access from the internet with no filtering in place. CC6.6 requires that logical access from outside the network perimeter is restricted and controlled. Attaching an NSG with explicit rules enforces the network boundary and controls what traffic can reach the VM."
     },
+    "AZ-CMP-002": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit and At Rest",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+    },
     "AZ-KV-001": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
@@ -103,10 +113,15 @@
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "A Key Vault accessible from the public internet allows any external party to attempt access to secrets, keys and certificates. CC6.6 requires that access from outside the network boundary is restricted and controlled. Locking Key Vault access to private endpoints or specific VNet service endpoints enforces this boundary and protects sensitive credentials from external exposure."
     },
-    "AZ-KV-003": {
+    "AZ-NET-011": {
       "control_id": "CC7.2",
       "control_name": "System monitoring",
-      "description": "Diagnostic logging should be enabled for Azure Key Vault to support monitoring, detection, and investigation of unauthorised access to secrets, keys, and certificates."
+      "description": "Network Watcher must be enabled in all regions where resources are deployed to support continuous system monitoring. Without it, network-level events cannot be detected or investigated, violating the requirement for ongoing monitoring of system components."
+    },
+    "AZ-DB-003": {
+      "control_id": "CC6.1",
+      "control_name": "Logical and physical access controls",
+      "description": "SSL enforcement ensures database connections are encrypted, protecting data in transit from unauthorized access. Disabling SSL undermines logical access controls by exposing database traffic in plaintext."
     }
   }
 }

@@ -73,6 +73,11 @@
       "control_name": "Ensure that 'Multi-Factor Authentication Status' is 'Enabled' for all Privileged Users",
       "description": "Multi-Factor Authentication requires an individual to present a minimum of two separate forms of authentication before access is granted. MFA should be enforced for all users with administrative privileges via Conditional Access policies."
     },
+    "AZ-IDN-003": {
+      "control_id": "1.15",
+      "control_name": "Ensure that 'Guest invite restrictions' is set to 'Only users assigned to specific admin roles can invite guest users'",
+      "description": "Unrestricted guest user invitation settings allow any member of the organisation to invite external users into the tenant without administrative review. This bypasses centralised approval for external identity provisioning and increases the risk of unauthorised access by untrusted parties."
+    },
     "AZ-DB-001": {
       "control_id": "4.3.1",
       "control_name": "Ensure 'Allow access to Azure services' for PostgreSQL Database Server is disabled",
@@ -88,25 +93,40 @@
       "control_name": "Ensure that 'OS disk' are encrypted",
       "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
     },
+    "AZ-CMP-002": {
+      "control_id": "7.2",
+      "control_name": "Ensure that 'OS disk' are encrypted",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be protected using customer-managed keys or Azure Disk Encryption. Platform-managed encryption does not give the organisation control over the encryption keys and does not satisfy this control."
+    },
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
-      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
+      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7\u201390 days), protecting against accidental or malicious deletion."
     },
     "AZ-STOR-003": {
       "control_id": "3.7",
       "control_name": "Ensure that storage accounts have lifecycle management policies configured",
       "description": "Storage accounts without lifecycle management policies retain data indefinitely. This increases storage costs, expands the attack surface through accumulation of stale data, and may violate data retention compliance requirements. Lifecycle policies automate the transition and deletion of blobs based on age and access patterns."
     },
+    "AZ-STOR-004": {
+      "control_id": "3.3",
+      "control_name": "Ensure Storage logging is enabled for Blob, Queue, and Table services for read, write, and delete requests",
+      "description": "Enabling diagnostic logging for Azure Storage blob, queue, and table services records read, write, and delete operations. Without logging, unauthorized access, data exfiltration, or destructive operations on storage services cannot be detected or investigated."
+    },
     "AZ-KV-002": {
       "control_id": "8.3",
       "control_name": "Ensure that public network access to Key Vault is disabled",
       "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
     },
-    "AZ-KV-003": {
-      "control_id": "8.4",
-      "control_name": "Ensure that diagnostic logging is enabled for Key Vault",
-      "description": "Diagnostic logging should be enabled for Azure Key Vault to record access and operations involving secrets, keys, and certificates. Without logging, unauthorized access attempts and malicious operations cannot be effectively detected or investigated."
+    "AZ-NET-011": {
+      "control_id": "6.5",
+      "control_name": "Ensure that Network Watcher is enabled in all regions",
+      "description": "Network Watcher should be enabled in all regions where Azure resources are deployed. Network Watcher provides network monitoring, diagnostics, and logging capabilities essential for investigating network-level incidents."
+    },
+    "AZ-DB-003": {
+      "control_id": "4.3.6",
+      "control_name": "Ensure SSL connection is enabled for PostgreSQL Flexible Server",
+      "description": "SSL enforcement should be enabled on PostgreSQL Flexible Server to ensure data in transit is encrypted. Without SSL, database connections transmit data in plaintext, exposing it to interception."
     }
   }
 }
