@@ -264,6 +264,7 @@ class AzureClient:
             return []
 
 
+
    def get_vm_extensions(self, resource_group: str, vm_name: str) -> Optional[List[Any]]:
         try:
             result = ComputeManagementClient(self.credential, self.subscription_id).virtual_machine_extensions.list(resource_group, vm_name)
