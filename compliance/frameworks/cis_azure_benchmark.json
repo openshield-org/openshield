@@ -98,6 +98,11 @@
       "control_name": "Ensure that 'OS disk' are encrypted",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be protected using customer-managed keys or Azure Disk Encryption. Platform-managed encryption does not give the organisation control over the encryption keys and does not satisfy this control."
     },
+    "AZ-CMP-003": {
+      "control_id": "8.2",
+      "control_name": "Ensure that 'Endpoint protection solution' is installed on VMs",
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CIS 8.2 requires that an approved endpoint protection solution is installed and running on all virtual machines. Without endpoint protection, malware and ransomware can execute without detection."
+    },
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
