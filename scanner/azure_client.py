@@ -240,6 +240,7 @@ class AzureClient:
             logger.error("get_virtual_networks failed: %s", exc)
             return []
 
+    
     def get_public_ip_addresses(self) -> List[Any]:
         """List all public IP addresses in the subscription."""
         try:
