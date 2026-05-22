@@ -262,6 +262,17 @@ class AzureClient:
             logger.error("get_virtual_machines failed: %s", exc)
             return []
 
+
+    def get_vm_extensions(self, resource_group: str, vm_name: str):
+    try:
+        from azure.mgmt.compute import ComputeManagementClient
+        client = ComputeManagementClient(self.credential, self.subscription_id)
+        result = client.virtual_machine_extensions.list(resource_group, vm_name)
+        return list(getattr(result, "value", []) or [])
+    except Exception as exc:
+        logger.error("get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc)
+        return None
+
     # ------------------------------------------------------------------ #
     # Databases                                                             #
     # ------------------------------------------------------------------ #
