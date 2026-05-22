@@ -98,6 +98,11 @@
       "control_name": "Data-at-rest is protected",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). PR.DS-1 requires that data at rest is protected using appropriate controls. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
     },
+    "AZ-CMP-003": {
+      "control_id": "DE.CM-4",
+      "control_name": "Malicious code is detected",
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. DE.CM-4 requires that malicious code is detected on organisational systems. Without endpoint protection, malware and ransomware executing on the VM will not be detected or blocked."
+    },
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
