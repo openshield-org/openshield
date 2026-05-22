@@ -103,6 +103,11 @@
       "control_name": "Protects Data in Transit and At Rest",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
     },
+    "AZ-CMP-003": {
+      "control_id": "CC6.8",
+      "control_name": "Prevents or Detects Unauthorized or Malicious Software",
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorized or malicious software. Without endpoint protection, malicious code executing on the VM will not be detected or blocked."
+    },
     "AZ-KV-001": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
