@@ -203,3 +203,4 @@ Explore the OpenShield learning portal to understand:
 
 👉 [OpenShield Learn](docs/learn/index.html)
 > Built by security engineers and students who believe cloud security tooling should be accessible to everyone.
+Fix 62
