@@ -1,8 +1,13 @@
 # OpenShield
 
-> **Open source Cloud Security Posture Management (CSPM) for Azure — built by the community, for the community.**
+> **Open source Cloud Security Posture Management (CSPM) for Azure - built by the community, for the community.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![CI](https://github.com/openshield-org/openshield/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/openshield-org/openshield/actions/workflows/ci.yml)
+[![Deploy](https://github.com/openshield-org/openshield/actions/workflows/deploy.yml/badge.svg?branch=dev)](https://github.com/openshield-org/openshield/actions/workflows/deploy.yml)
+[![Security Policy](https://img.shields.io/badge/security-policy-green.svg)](.github/SECURITY.md)
+[![OWASP](https://img.shields.io/badge/OWASP-listing%20review-orange.svg)](https://owasp.org)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Good First Issues](https://img.shields.io/github/issues/openshield-org/openshield/good-first-issue)](https://github.com/openshield-org/openshield/issues?q=is%3Aissue+label%3Agood-first-issue)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da)](https://discord.gg/openshield)
