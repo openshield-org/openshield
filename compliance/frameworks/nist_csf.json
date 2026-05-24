@@ -127,6 +127,11 @@
       "control_id": "PR.DS-2",
       "control_name": "Data-in-transit is protected",
       "description": "SSL enforcement on PostgreSQL Flexible Server ensures data in transit between applications and the database is encrypted. Disabling SSL exposes database traffic to interception and tampering."
+    },
+    "AZ-KV-004": {
+      "control_id": "PR.IP-4",
+      "control_name": "Backups of information are conducted, maintained, and tested",
+      "description": "Purge protection ensures that deleted Key Vault objects can be recovered within the retention period and cannot be permanently destroyed before it expires. Without purge protection, backups of cryptographic material may be rendered unrecoverable if an insider or compromised account issues a purge operation during the soft-delete window."
     }
   }
 }

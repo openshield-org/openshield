@@ -9,7 +9,8 @@ CATEGORY = "Key Vault"
 FRAMEWORKS = {
     "CIS": "8.6",
     "NIST": "PR.IP-4",
-    "ISO27001": "A.17.2.1"
+    "ISO27001": "A.17.2.1",
+    "SOC2": "CC9.1"
 }
 DESCRIPTION = (
     "Azure Key Vaults without purge protection enabled allow permanent "
@@ -51,7 +52,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "remediation": REMEDIATION,
                 "playbook": PLAYBOOK,
                 "frameworks": FRAMEWORKS,
-                "metadata": {}
+                "metadata": {"resource_group": resource_group}
             })
 
     return findings
