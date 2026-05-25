@@ -103,6 +103,11 @@
       "control_name": "Malicious code is detected",
       "description": "The virtual machine does not have a recognised endpoint protection extension installed. DE.CM-4 requires that malicious code is detected on organisational systems. Without endpoint protection, malware and ransomware executing on the VM will not be detected or blocked."
     },
+    "AZ-CMP-004": {
+      "control_id": "PR.IP-12",
+      "control_name": "A vulnerability management plan is developed and implemented",
+      "description": "The virtual machine does not have automatic OS patching enabled. PR.IP-12 requires that a vulnerability management plan is developed and implemented. Without automatic patching, known OS vulnerabilities remain unmitigated and exploitable."
+},
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
