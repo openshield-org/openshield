@@ -107,8 +107,7 @@
       "control_id": "8.3",
       "control_name": "Ensure that 'OS patching' is enabled for virtual machines",
       "description": "The virtual machine does not have automatic OS patching enabled. CIS 8.3 requires that OS patches are applied in a timely manner. Unpatched VMs are vulnerable to known exploits targeting unpatched OS vulnerabilities."
-},
-    
+    },  
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
