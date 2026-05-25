@@ -107,7 +107,7 @@
       "control_id": "PR.IP-12",
       "control_name": "A vulnerability management plan is developed and implemented",
       "description": "The virtual machine does not have automatic OS patching enabled. PR.IP-12 requires that a vulnerability management plan is developed and implemented. Without automatic patching, known OS vulnerabilities remain unmitigated and exploitable."
-},
+    },
     "AZ-KV-001": {
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
