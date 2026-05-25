@@ -137,6 +137,11 @@
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
       "description": "Purge protection ensures that deleted Key Vault objects can be recovered within the retention period and cannot be permanently destroyed before it expires. Without purge protection, backups of cryptographic material may be rendered unrecoverable if an insider or compromised account issues a purge operation during the soft-delete window."
+    },
+    "AZ-DB-004": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall permits any Azure-hosted resource to connect to the database remotely without restriction. PR.AC-3 requires that remote access is managed and controlled. Access should be restricted to specific trusted IP ranges or private endpoints to ensure only authorised systems can reach the database."
     }
   }
 }

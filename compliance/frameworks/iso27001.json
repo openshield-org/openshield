@@ -137,6 +137,11 @@
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
       "description": "Purge protection prevents permanent deletion of Azure Key Vault secrets, keys, and certificates during the soft-delete retention period. Without it, cryptographic material can be irrecoverably destroyed, threatening the availability of information processing facilities that depend on those keys and secrets."
+    },
+    "AZ-DB-004": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall bypasses network controls by permitting any Azure-hosted resource to connect to the database server. Networks should be managed and controlled with explicit rules that restrict access to known and trusted sources only."
     }
   }
 }

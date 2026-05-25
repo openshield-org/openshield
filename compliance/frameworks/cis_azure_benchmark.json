@@ -137,6 +137,11 @@
       "control_id": "8.6",
       "control_name": "Ensure that Azure Key Vault Purge Protection is Enabled",
       "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of vaults and their secrets, keys, and certificates during the soft-delete retention period. Even with soft delete enabled, a malicious insider or privileged account can purge vault objects before the retention period expires. Enabling purge protection prevents this by blocking purge operations for the full retention period."
+    },
+    "AZ-DB-004": {
+      "control_id": "4.1.2",
+      "control_name": "Ensure that 'Allow access to Azure services' for SQL Servers is disabled",
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
     }
   }
 }
