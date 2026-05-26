@@ -312,13 +312,26 @@ class AzureClient:
     # Key Vault                                                             #
     # ------------------------------------------------------------------ #
 
-    def get_key_vaults(self) -> List[Any]:
+   def get_key_vaults(self) -> List[Any]:
         """List all Key Vaults in the subscription with full properties."""
         try:
             client = KeyVaultManagementClient(self.credential, self.subscription_id)
             return list(client.vaults.list_by_subscription())
         except Exception as exc:
             logger.error("get_key_vaults failed: %s", exc)
+            return []
+
+    def get_key_vault_certificates(self, vault_name: str) -> List[Any]:
+        """List all certificates in a Key Vault using the Key Vault data plane API."""
+        try:
+            from azure.keyvault.certificates import CertificateClient
+            vault_url = f"https://{vault_name}.vault.azure.net"
+            client = CertificateClient(vault_url=vault_url, credential=self.credential)
+            return list(client.list_properties_of_certificates())
+        except Exception as exc:
+            logger.error(
+                "get_key_vault_certificates(%s) failed: %s", vault_name, exc
+            )
             return []
 
     # ------------------------------------------------------------------ #
