@@ -132,6 +132,11 @@
       "control_id": "CC9.1",
       "control_name": "Risk Mitigation",
       "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of secrets, keys, and certificates during the soft-delete retention period. CC9.1 requires that identified risks are mitigated through controls that reduce the likelihood or impact of risk events. Enabling purge protection mitigates the risk of irrecoverable loss of cryptographic material by preventing purge operations from executing before the retention period expires."
+    },
+    "AZ-KV-005": {
+      "control_id": "CC9.1",
+      "control_name": "Risk Mitigation",
+      "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. CC9.1 requires that identified risks are mitigated through controls that reduce the likelihood or impact of risk events. An expiring certificate without auto-renewal represents an unmitigated operational risk that will cause service outages if not addressed."
     }
   }
 }
