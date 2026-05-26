@@ -137,6 +137,11 @@
       "control_id": "PR.IP-4",
       "control_name": "Backups of information are conducted, maintained, and tested",
       "description": "Purge protection ensures that deleted Key Vault objects can be recovered within the retention period and cannot be permanently destroyed before it expires. Without purge protection, backups of cryptographic material may be rendered unrecoverable if an insider or compromised account issues a purge operation during the soft-delete window."
+    },
+    "AZ-KV-005": {
+      "control_id": "PR.MA-1",
+      "control_name": "Maintenance and repair of organisational assets is performed",
+      "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. PR.MA-1 requires that maintenance of organisational assets is performed and logged. Certificate renewal is a critical maintenance task and failure to renew before expiry causes immediate service disruption."
     }
   }
 }
