@@ -137,6 +137,11 @@
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
       "description": "Purge protection prevents permanent deletion of Azure Key Vault secrets, keys, and certificates during the soft-delete retention period. Without it, cryptographic material can be irrecoverably destroyed, threatening the availability of information processing facilities that depend on those keys and secrets."
+    },
+    "AZ-KV-005": {
+      "control_id": "A.10.1.2",
+      "control_name": "Key management",
+      "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. A.10.1.2 requires that a policy on the use, protection, and lifetime of cryptographic keys is developed and implemented. Certificates approaching expiry without renewal represent a failure in cryptographic key lifecycle management."
     }
   }
 }
