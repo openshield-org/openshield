@@ -137,6 +137,11 @@
       "control_id": "8.6",
       "control_name": "Ensure that Azure Key Vault Purge Protection is Enabled",
       "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of vaults and their secrets, keys, and certificates during the soft-delete retention period. Even with soft delete enabled, a malicious insider or privileged account can purge vault objects before the retention period expires. Enabling purge protection prevents this by blocking purge operations for the full retention period."
+    },
+    "AZ-KV-005": {
+      "control_id": "8.5",
+      "control_name": "Ensure that the expiration date is set on all certificates",
+      "description": "A certificate stored in Azure Key Vault is expiring within 30 days and does not have auto-renewal configured. CIS 8.5 requires that expiration dates are monitored and certificates are renewed before expiry to prevent service outages and broken authentication flows."
     }
   }
 }
