@@ -13,7 +13,7 @@ from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
 from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.storage import StorageManagementClient
-from azure.mgmt.monitor import MonitorManagementClient
+
 
 logger = logging.getLogger(__name__)
 
