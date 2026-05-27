@@ -71,12 +71,12 @@
     "AZ-IDN-002": {
       "control_id": "A.9.4.2",
       "control_name": "Secure log-on procedures",
-      "description": "MFA enforces secure log-on for privileged accounts. Where required by the access control policy, access to systems and applications should be controlled by a secure log-on procedure including multi-factor authentication."
+      "description": "MFA enforces secure log-on for privileged accounts. Where required by the access control policy, access to systems and applications should be controlled by a secure log-on procedure."
     },
     "AZ-IDN-003": {
       "control_id": "A.9.2.1",
       "control_name": "User registration and de-registration",
-      "description": "Unrestricted guest user invitations allow any organisation member to register external identities into the tenant without centralised review or approval. A.9.2.1 requires that a formal user registration and de-registration process is implemented. Restricting guest invitations to administrators ensures external identity registration is formally controlled and audited."
+      "description": "Unrestricted guest user invitations allow any organisation member to register external identities into the tenant without centralised review or approval. A.9.2.1 requires that users and external parties should be registered before access."
     },
     "AZ-DB-001": {
       "control_id": "A.13.1.1",
@@ -86,7 +86,7 @@
     "AZ-DB-002": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
-      "description": "SQL Server auditing must be enabled to provide event logs. Event logs recording user activities, exceptions, faults and information security events should be produced, kept and regularly reviewed."
+      "description": "SQL Server auditing must be enabled to provide event logs. Event logs recording user activities, exceptions, faults and information security events should be produced and kept available."
     },
     "AZ-CMP-001": {
       "control_id": "A.13.1.1",
@@ -96,42 +96,42 @@
     "AZ-CMP-002": {
       "control_id": "A.10.1.1",
       "control_name": "Policy on the use of cryptographic controls",
-      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented."
     },
     "AZ-CMP-003": {
       "control_id": "A.12.2.1",
       "control_name": "Controls against malware",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. A.12.2.1 requires that detection, prevention and recovery controls are implemented to protect against malware. Without endpoint protection, malware executing on the VM will not be detected or prevented."
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. A.12.2.1 requires that detection, prevention and recovery controls are implemented to protect against malware."
     },
     "AZ-KV-001": {
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
-      "description": "Key Vault soft delete protects against loss of secrets, keys and certificates. Without soft delete, deleted vault objects cannot be recovered, reducing availability and recovery options for critical cryptographic material."
+      "description": "Key Vault soft delete protects against loss of secrets, keys and certificates. Without soft delete, deleted vault objects cannot be recovered, reducing availability and recoverability of cryptographic material."
     },
     "AZ-STOR-003": {
       "control_id": "A.8.3.1",
       "control_name": "Management of removable media",
-      "description": "Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism. Lifecycle management supports formal retention, tiering, and disposal of information assets."
+      "description": "Storage accounts without lifecycle policies retain data indefinitely with no automated disposal mechanism. Lifecycle management supports formal retention, tiering, and disposal procedures."
     },
     "AZ-STOR-004": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
-      "description": "Diagnostic logging must be enabled on Azure Storage blob, queue, and table services to produce event logs for read, write, and delete operations. Event logs recording user activities, exceptions, and information security events should be produced, kept, and regularly reviewed."
+      "description": "Diagnostic logging must be enabled on Azure Storage blob, queue, and table services to produce event logs for read, write, and delete operations. Event logs recording user activities should be kept available."
     },
     "AZ-STOR-005": {
       "control_id": "A.17.2.1",
       "control_name": "Availability of information processing facilities",
-      "description": "Storage accounts using LRS or ZRS replication retain data only within a single region, providing no protection against regional outages or disasters. A regional disaster could result in data unavailability or data loss. A.17.2.1 requires that redundancy is implemented to meet availability requirements. Configuring geo-redundant replication (GRS or GZRS) ensures information processing facilities remain available by maintaining a secondary copy of data in a geographically separate region."
+      "description": "Storage accounts using LRS or ZRS replication retain data only within a single region, providing no protection against regional outages or disasters. A regional disaster could result in complete data loss."
     },
     "AZ-KV-002": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive secrets, keys, and certificates to external networks. Access should be restricted to trusted networks using private endpoints or network controls."
+      "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive cryptographic material."
     },
     "AZ-NET-011": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
-      "description": "Network Watcher must be enabled in all regions where resources are deployed to ensure network events are logged and available for investigation. Event logs recording network activity should be produced and retained to support incident response."
+      "description": "Network Watcher must be enabled in all regions where resources are deployed to ensure network events are logged and available for investigation. Event logs recording network activities should be produced and kept available."
     },
     "AZ-DB-003": {
       "control_id": "A.10.1.1",
@@ -147,6 +147,7 @@
       "control_id": "A.10.1.2",
       "control_name": "Key management",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. A.10.1.2 requires that a policy on the use, protection, and lifetime of cryptographic keys is developed and implemented. Certificates approaching expiry without renewal represent a failure in cryptographic key lifecycle management."
+    },
     "AZ-DB-004": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
