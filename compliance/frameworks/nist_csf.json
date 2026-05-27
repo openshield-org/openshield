@@ -147,6 +147,7 @@
       "control_id": "PR.MA-1",
       "control_name": "Maintenance and repair of organisational assets is performed",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. PR.MA-1 requires that maintenance of organisational assets is performed and logged. Certificate renewal is a critical maintenance task and failure to renew before expiry causes immediate service disruption."
+    },
     "AZ-DB-004": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
