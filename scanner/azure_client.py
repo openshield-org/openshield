@@ -13,6 +13,7 @@ from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
 from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +93,14 @@ class AzureClient:
             policy = client.management_policies.get(
                 resource_group, account_name, "default"
             )
+            # A policy shell can exist with an empty rules list —
+            # treat that the same as no policy (non-compliant).
             rules = getattr(getattr(policy, "policy", None), "rules", None)
             return bool(rules)
 
         except ResourceNotFoundError:
+            # Expected path: the account genuinely has no lifecycle policy.
+            # This is the non-compliant condition — return False to flag it.
             logger.debug(
                 "get_storage_lifecycle_policy(%s): ResourceNotFound — no policy",
                 account_name,
@@ -103,6 +108,9 @@ class AzureClient:
             return False
 
         except HttpResponseError as exc:
+            # 403 = service principal lacks
+            # Microsoft.Storage/storageAccounts/managementPolicies/read.
+            # Return None — cannot determine compliance, do not flag.
             logger.error(
                 "get_storage_lifecycle_policy(%s) HTTP %s — "
                 "check service principal permissions: %s",
@@ -113,6 +121,8 @@ class AzureClient:
             return None
 
         except Exception as exc:
+            # Unexpected failure (network, SDK bug, etc.).
+            # Return None — skip rather than create a false positive.
             logger.error(
                 "get_storage_lifecycle_policy(%s) unexpected error: %s",
                 account_name,
@@ -296,9 +306,9 @@ class AzureClient:
             logger.error(
                 "get_sql_server_auditing_policy(%s) failed: %s", server_name, exc
             )
-            return None
 
-    def get_sql_server_firewall_rules(
+
+     def get_sql_server_firewall_rules(
         self, resource_group: str, server_name: str
     ) -> List[Any]:
         """List all firewall rules for an Azure SQL server."""
@@ -310,7 +320,6 @@ class AzureClient:
                 "get_sql_server_firewall_rules(%s) failed: %s", server_name, exc
             )
             return []
-
     # ------------------------------------------------------------------ #
     # Key Vault                                                             #
     # ------------------------------------------------------------------ #
@@ -345,14 +354,21 @@ class AzureClient:
                 self.credential,
                 self.subscription_id,
             )
-            settings = list(client.diagnostic_settings.list(resource_id))
+
+            settings = list(
+                client.diagnostic_settings.list(resource_id)
+            )
+
             if not settings:
                 return False
+
             for setting in settings:
                 logs = getattr(setting, "logs", [])
+
                 for log in logs:
                     category = getattr(log, "category", "")
                     enabled = getattr(log, "enabled", False)
+
                     if category == "AuditEvent" and enabled:
                         return True
             return False
@@ -395,6 +411,7 @@ class AzureClient:
             logger.error("get_service_principals failed: %s", exc)
             return []
 
+
     def get_postgresql_flexible_servers(self) -> List[Any]:
         """List all PostgreSQL Flexible Server instances in the subscription."""
         try:
@@ -404,6 +421,7 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_postgresql_flexible_servers failed: %s", exc)
             return []
+
 
     def get_postgresql_flexible_server_parameters(self, resource_group: str, server_name: str) -> List[Any]:
         """List all configuration parameters for a PostgreSQL Flexible Server."""
@@ -421,7 +439,7 @@ class AzureClient:
         Requires the credential to have 'Policy.Read.All' Graph permission.
         Returns empty list if the permission is not granted or the call fails.
         """
-        import requests
+        import requests  # imported here to keep azure-only paths dependency-free
 
         try:
             token = self.credential.get_token("https://graph.microsoft.com/.default")
@@ -436,7 +454,6 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_conditional_access_policies failed: %s", exc)
             return []
-
     def get_regions_with_resources(self) -> List[str]:
         """List all regions that have at least one resource deployed."""
         try:
