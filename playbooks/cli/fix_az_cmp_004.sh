@@ -4,7 +4,7 @@
 # Usage: ./fix_az_cmp_004.sh <resource-group> <vm-name> [windows|linux]
 # Defaults to windows if OS type is not passed
 
-set -e
+set -euo pipefail
 
 RG=$1
 VM=$2
