@@ -240,7 +240,6 @@ class AzureClient:
             logger.error("get_virtual_networks failed: %s", exc)
             return []
 
-    
     def get_public_ip_addresses(self) -> List[Any]:
         """List all public IP addresses in the subscription."""
         try:
@@ -263,14 +262,19 @@ class AzureClient:
             logger.error("get_virtual_machines failed: %s", exc)
             return []
 
-
-
-   def get_vm_extensions(self, resource_group: str, vm_name: str) -> Optional[List[Any]]:
+    def get_vm_extensions(
+        self, resource_group: str, vm_name: str
+    ) -> Optional[List[Any]]:
+        """List all extensions installed on a virtual machine."""
         try:
-            result = ComputeManagementClient(self.credential, self.subscription_id).virtual_machine_extensions.list(resource_group, vm_name)
+            result = ComputeManagementClient(
+                self.credential, self.subscription_id
+            ).virtual_machine_extensions.list(resource_group, vm_name)
             return list(getattr(result, "value", []) or [])
         except Exception as exc:
-            logger.error("get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc)
+            logger.error(
+                "get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc
+            )
             return None
 
     # ------------------------------------------------------------------ #
@@ -307,6 +311,19 @@ class AzureClient:
                 "get_sql_server_auditing_policy(%s) failed: %s", server_name, exc
             )
             return None
+
+    def get_sql_server_firewall_rules(
+        self, resource_group: str, server_name: str
+    ) -> List[Any]:
+        """List all firewall rules for an Azure SQL server."""
+        try:
+            client = SqlManagementClient(self.credential, self.subscription_id)
+            return list(client.firewall_rules.list_by_server(resource_group, server_name))
+        except Exception as exc:
+            logger.error(
+                "get_sql_server_firewall_rules(%s) failed: %s", server_name, exc
+            )
+            return []
 
     # ------------------------------------------------------------------ #
     # Key Vault                                                             #
@@ -355,21 +372,14 @@ class AzureClient:
                 self.credential,
                 self.subscription_id,
             )
-
-            settings = list(
-                client.diagnostic_settings.list(resource_id)
-            )
-
+            settings = list(client.diagnostic_settings.list(resource_id))
             if not settings:
                 return False
-
             for setting in settings:
                 logs = getattr(setting, "logs", [])
-
                 for log in logs:
                     category = getattr(log, "category", "")
                     enabled = getattr(log, "enabled", False)
-
                     if category == "AuditEvent" and enabled:
                         return True
             return False
@@ -412,7 +422,6 @@ class AzureClient:
             logger.error("get_service_principals failed: %s", exc)
             return []
 
-
     def get_postgresql_flexible_servers(self) -> List[Any]:
         """List all PostgreSQL Flexible Server instances in the subscription."""
         try:
@@ -423,15 +432,20 @@ class AzureClient:
             logger.error("get_postgresql_flexible_servers failed: %s", exc)
             return []
 
-
-    def get_postgresql_flexible_server_parameters(self, resource_group: str, server_name: str) -> List[Any]:
+    def get_postgresql_flexible_server_parameters(
+        self, resource_group: str, server_name: str
+    ) -> List[Any]:
         """List all configuration parameters for a PostgreSQL Flexible Server."""
         try:
             from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
             client = FlexClient(self.credential, self.subscription_id)
             return list(client.configurations.list_by_server(resource_group, server_name))
         except Exception as exc:
-            logger.error("get_postgresql_flexible_server_parameters(%s) failed: %s", server_name, exc)
+            logger.error(
+                "get_postgresql_flexible_server_parameters(%s) failed: %s",
+                server_name,
+                exc,
+            )
             return []
 
     def get_conditional_access_policies(self) -> List[Any]:
@@ -455,6 +469,7 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_conditional_access_policies failed: %s", exc)
             return []
+
     def get_regions_with_resources(self) -> List[str]:
         """List all regions that have at least one resource deployed."""
         try:

@@ -18,6 +18,11 @@
       "control_name": "Change Management",
       "description": "A storage account with no lifecycle management policy allows data to accumulate indefinitely with no automatic expiry or tiering. CC8.1 requires that infrastructure and data are managed through formal processes. Implementing a lifecycle policy ensures data retention is controlled and old data is automatically moved or deleted according to organisational policy."
     },
+    "AZ-STOR-005": {
+      "control_id": "A1.2",
+      "control_name": "Environmental Threats and Recovery",
+      "description": "Storage accounts configured with LRS or ZRS replication do not protect against environmental threats at the regional level. A regional outage or disaster could result in data unavailability or data loss. A1.2 requires that environmental threats to availability are identified and that recovery measures are implemented. Geo-redundant replication (GRS or GZRS) provides a secondary copy of storage data in a separate Azure region, enabling recovery from regional disasters and protecting availability commitments."
+    },
     "AZ-NET-001": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
@@ -137,6 +142,10 @@
       "control_id": "CC9.1",
       "control_name": "Risk Mitigation",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. CC9.1 requires that identified risks are mitigated through controls that reduce the likelihood or impact of risk events. An expiring certificate without auto-renewal represents an unmitigated operational risk that will cause service outages if not addressed."
+    "AZ-DB-004": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the database. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Disabling this setting and replacing it with explicit firewall rules or private endpoints enforces the network boundary and ensures only known and trusted systems can reach the SQL Server."
     }
   }
 }
