@@ -20,3 +20,4 @@ gunicorn==21.2.0
 cryptography==42.0.5
 msrest==0.7.1
 azure-mgmt-postgresqlflexibleservers==1.0.0b1
+azure-keyvault-certificates==4.8.0
