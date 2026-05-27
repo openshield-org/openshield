@@ -49,7 +49,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             auto_updates = getattr(win_config, "enable_automatic_updates", False)
             patch_settings = getattr(win_config, "patch_settings", None)
             patch_mode = getattr(patch_settings, "patch_mode", "") if patch_settings else ""
-           if auto_updates or (patch_mode or "").lower() == "automaticbyplatform":
+            if auto_updates or (patch_mode or "").lower() == "automaticbyplatform":
                 patching_ok = True
 
         linux_config = getattr(os_profile, "linux_configuration", None)
