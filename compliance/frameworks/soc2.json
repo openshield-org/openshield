@@ -21,7 +21,7 @@
     "AZ-STOR-005": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
-      "description": "Storage accounts configured with LRS or ZRS replication do not protect against environmental threats at the regional level. A regional outage or disaster could result in data unavailability or data loss. A1.2 requires that environmental threats to availability are identified and that recovery measures are implemented. Geo-redundant replication (GRS or GZRS) provides a secondary copy of storage data in a separate Azure region, enabling recovery from regional disasters and protecting availability commitments."
+      "description": "Storage accounts configured with LRS or ZRS replication do not protect against environmental threats at the regional level. A regional outage or disaster could result in data loss and service unavailability. Geo-redundant replication is needed to ensure business continuity."
     },
     "AZ-NET-001": {
       "control_id": "CC6.6",
@@ -46,102 +46,103 @@
     "AZ-NET-005": {
       "control_id": "A1.1",
       "control_name": "Capacity and Performance Monitoring",
-      "description": "Virtual networks without DDoS Protection Standard are vulnerable to volumetric attacks that can exhaust capacity and cause service outages. A1.1 requires that current processing capacity is monitored and resources are available to meet objectives. DDoS Protection Standard ensures network availability is maintained under attack conditions."
+      "description": "Virtual networks without DDoS Protection Standard are vulnerable to volumetric attacks that can exhaust capacity and cause service outages. A1.1 requires that current processes and procedures are performed to manage capacity and performance."
     },
     "AZ-NET-006": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "Unassociated public IP addresses represent unnecessary exposure on the internet and may indicate leftover resources from decommissioned workloads. CC6.6 requires that the network boundary is tightly controlled with only necessary resources exposed. Removing unassociated public IPs reduces the external attack surface."
+      "description": "Unassociated public IP addresses represent unnecessary exposure on the internet and may indicate leftover resources from decommissioned workloads. CC6.6 requires that the network boundary is managed to restrict logical access from outside sources. Orphaned public IPs should be removed."
     },
     "AZ-NET-007": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "An Application Gateway without WAF enabled provides no protection against web application attacks from external sources including OWASP Top 10 vulnerabilities. CC6.6 requires that access from outside the network boundary is controlled and filtered. WAF in Prevention mode enforces application-layer boundary protection for public-facing services."
+      "description": "An Application Gateway without WAF enabled provides no protection against web application attacks from external sources including OWASP Top 10 vulnerabilities. CC6.6 requires that access from outside the network boundary is restricted through logical access controls including WAF."
     },
     "AZ-NET-008": {
       "control_id": "CC8.1",
       "control_name": "Change Management",
-      "description": "A load balancer with no backend pool configured is either misconfigured or a leftover resource from a decommissioned workload that was not properly cleaned up. CC8.1 requires that infrastructure changes are managed, tracked and that unused resources are removed through a formal process. Removing empty load balancers maintains an accurate and controlled infrastructure state."
+      "description": "A load balancer with no backend pool configured is either misconfigured or a leftover resource from a decommissioned workload that was not properly cleaned up. CC8.1 requires that infrastructure is managed through formal change management and resource lifecycle procedures."
     },
     "AZ-NET-009": {
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit",
-      "description": "VPN gateway connections using IKEv1 use an outdated protocol with known vulnerabilities that weaken the confidentiality and integrity of data transmitted between networks. CC6.7 requires that data transmitted over networks is protected using current secure protocols. Migrating to IKEv2 ensures VPN traffic is protected with a modern and secure key exchange mechanism."
+      "description": "VPN gateway connections using IKEv1 use an outdated protocol with known vulnerabilities that weaken the confidentiality and integrity of data transmitted between networks. CC6.7 requires that data in transit is protected through encryption using current, secure protocols."
     },
     "AZ-NET-010": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "A subnet without an NSG attached has no network layer access controls leaving all resources in that subnet reachable from other subnets or the internet with no filtering. CC6.6 requires that logical access from outside the network boundary is restricted. Attaching an NSG with explicit rules enforces boundary protection at the subnet level."
+      "description": "A subnet without an NSG attached has no network layer access controls leaving all resources in that subnet reachable from other subnets or the internet with no filtering. CC6.6 requires that access is controlled through network-level restrictions."
     },
     "AZ-IDN-001": {
       "control_id": "CC6.1",
       "control_name": "Logical Access Security Measures",
-      "description": "A service principal with Contributor role at subscription scope has unrestricted ability to create, modify and delete any resource in the environment. CC6.1 requires that logical access to information assets is restricted to authorised users and service accounts with least-privilege permissions. Scoping role assignments to the minimum required resource enforces this control."
+      "description": "A service principal with Contributor role at subscription scope has unrestricted ability to create, modify and delete any resource in the environment. CC6.1 requires that logical access controls restrict authorizations to authenticated and verified users and processes."
     },
     "AZ-IDN-002": {
       "control_id": "CC6.1",
       "control_name": "Logical Access Security Measures",
-      "description": "Without MFA enforced on privileged accounts, a single compromised password grants full administrative access to the Azure environment. CC6.1 requires that logical access controls include strong authentication mechanisms. Enforcing MFA via Conditional Access policies ensures privileged access requires multiple factors of authentication."
+      "description": "Without MFA enforced on privileged accounts, a single compromised password grants full administrative access to the Azure environment. CC6.1 requires that logical access controls are implemented to authenticate and authorise users and processes."
     },
     "AZ-IDN-003": {
       "control_id": "CC6.1",
       "control_name": "Logical Access Security Measures",
-      "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is restricted to authorised users. Restricting guest invitations to administrators ensures external identity provisioning is formally controlled and authorised."
+      "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is controlled and verified through authentication procedures."
     },
     "AZ-DB-001": {
       "control_id": "CC6.7",
-      "control_name": "Protects Data in Transit",
-      "description": "SQL Server without Transparent Data Encryption stores database files in plain text on disk. CC6.7 requires that data is protected using encryption both in transit and at rest. Enabling TDE ensures database files, backups and transaction logs are encrypted and unreadable without the encryption key."
+      "control_name": "Protects Data in Transit and At Rest",
+      "description": "SQL Server without Transparent Data Encryption stores database files in plain text on disk. CC6.7 requires that data is protected using encryption both in transit and at rest against interception and tampering."
     },
     "AZ-DB-002": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "A SQL Server firewall rule allowing all IP addresses makes the database reachable from anywhere on the internet. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Locking the firewall to specific application IP ranges ensures only authorised systems can connect to the database."
+      "description": "A SQL Server firewall rule allowing all IP addresses makes the database reachable from anywhere on the internet. CC6.6 requires that access from outside the network boundary is restricted to authorised sources through explicit firewall rules or private endpoints."
     },
     "AZ-CMP-001": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "A virtual machine with a public IP and no NSG has unrestricted inbound network access from the internet with no filtering in place. CC6.6 requires that logical access from outside the network perimeter is restricted and controlled. Attaching an NSG with explicit rules enforces the network boundary and controls what traffic can reach the VM."
+      "description": "A virtual machine with a public IP and no NSG has unrestricted inbound network access from the internet with no filtering in place. CC6.6 requires that logical access from outside the network boundary is restricted and controlled."
     },
     "AZ-CMP-002": {
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit and At Rest",
-      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed encryption does not give the organisation control over the encryption keys. Customer-managed keys or Azure Disk Encryption are required to satisfy this control."
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed keys lack customer control and audit capabilities needed for compliance."
     },
     "AZ-CMP-003": {
       "control_id": "CC6.8",
       "control_name": "Prevents or Detects Unauthorized or Malicious Software",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorized or malicious software. Without endpoint protection, malicious code executing on the VM will not be detected or blocked."
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorised or malicious software."
     },
     "AZ-KV-001": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
-      "description": "Key Vault without soft delete enabled allows permanent deletion of secrets, keys and certificates with no recovery possible. A1.2 requires that environmental threats to availability are identified and mitigated including protection against accidental or malicious data loss. Enabling soft delete ensures deleted vault objects can be recovered within the retention period."
+      "description": "Key Vault without soft delete enabled allows permanent deletion of secrets, keys and certificates with no recovery possible. A1.2 requires that environmental threats to availability of information systems are addressed through recovery procedures."
     },
     "AZ-KV-002": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "A Key Vault accessible from the public internet allows any external party to attempt access to secrets, keys and certificates. CC6.6 requires that access from outside the network boundary is restricted and controlled. Locking Key Vault access to private endpoints or specific VNet service endpoints enforces this boundary and protects sensitive credentials from external exposure."
+      "description": "A Key Vault accessible from the public internet allows any external party to attempt access to secrets, keys and certificates. CC6.6 requires that access from outside the network boundary is restricted. Network rules should deny public access."
     },
     "AZ-NET-011": {
       "control_id": "CC7.2",
       "control_name": "System monitoring",
-      "description": "Network Watcher must be enabled in all regions where resources are deployed to support continuous system monitoring. Without it, network-level events cannot be detected or investigated, violating the requirement for ongoing monitoring of system components."
+      "description": "Network Watcher must be enabled in all regions where resources are deployed to support continuous system monitoring. Without it, network-level events cannot be detected or investigated, preventing incident response."
     },
     "AZ-DB-003": {
       "control_id": "CC6.1",
       "control_name": "Logical and physical access controls",
-      "description": "SSL enforcement ensures database connections are encrypted, protecting data in transit from unauthorized access. Disabling SSL undermines logical access controls by exposing database traffic in plaintext."
+      "description": "SSL enforcement ensures database connections are encrypted, protecting data in transit from unauthorised access. Disabling SSL undermines logical access controls by exposing credentials and sensitive data to interception."
     },
     "AZ-KV-004": {
       "control_id": "CC9.1",
       "control_name": "Risk Mitigation",
-      "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of secrets, keys, and certificates during the soft-delete retention period. CC9.1 requires that identified risks are mitigated through controls that reduce the likelihood or impact of risk events. Enabling purge protection mitigates the risk of irrecoverable loss of cryptographic material by preventing purge operations from executing before the retention period expires."
+      "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of secrets, keys, and certificates during the soft-delete retention period. CC9.1 requires that identified risks are mitigated through controls that reduce the likelihood or impact of risk events. Enabling purge protection mitigates the risk of irrecoverable loss of cryptographic material."
     },
     "AZ-KV-005": {
       "control_id": "CC9.1",
       "control_name": "Risk Mitigation",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. CC9.1 requires that identified risks are mitigated through controls that reduce the likelihood or impact of risk events. An expiring certificate without auto-renewal represents an unmitigated operational risk that will cause service outages if not addressed."
+    },
     "AZ-DB-004": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
