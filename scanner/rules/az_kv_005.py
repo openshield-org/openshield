@@ -55,7 +55,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     continue
 
                 auto_renew = getattr(cert, "policy", None)
-                lifetime_actions = getattr(auto_renew, "lifetime_actions", []) if auto_renew else []
+                lifetime_actions = (
+                    getattr(auto_renew, "lifetime_actions", []) if auto_renew else []
+                )
                 has_auto_renew = any(
                     getattr(getattr(a, "action", None), "action_type", "").lower()
                     == "autorenew"
