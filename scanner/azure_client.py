@@ -312,7 +312,7 @@ class AzureClient:
     # Key Vault                                                             #
     # ------------------------------------------------------------------ #
 
-   def get_key_vaults(self) -> List[Any]:
+    def get_key_vaults(self) -> List[Any]:
         """List all Key Vaults in the subscription with full properties."""
         try:
             client = KeyVaultManagementClient(self.credential, self.subscription_id)
