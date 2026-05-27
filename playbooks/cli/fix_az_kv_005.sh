@@ -3,7 +3,7 @@
 # Enables auto-renewal on an expiring Key Vault certificate
 # Usage: ./fix_az_kv_005.sh <vault-name> <certificate-name>
 
-set -e
+set -euo pipefail
 
 VAULT=$1
 CERT=$2
