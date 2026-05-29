@@ -1,3 +1,5 @@
+"""AI provider abstraction layer supporting Anthropic, Groq and Gemini."""
+
 import logging
 import requests
 
