@@ -7,12 +7,16 @@ logger = logging.getLogger(__name__)
 
 PROVIDERS = ("anthropic", "groq", "gemini")
 
-ANTHROPIC_MODEL = "claude-3-5-haiku-20241022"
-GROQ_MODEL = "llama-3.1-8b-instant"
-GEMINI_MODEL = "gemini-1.5-flash"
+DEFAULT_MODELS = {
+    "anthropic": "claude-3-5-haiku-20241022",
+    "groq": "llama-3.1-8b-instant",
+    "gemini": "gemini-1.5-flash",
+}
 
 
-def get_completion(provider: str, api_key: str, prompt: str) -> str:
+def get_completion(
+    provider: str, api_key: str, prompt: str, model: str = None
+) -> str:
     provider = provider.lower().strip()
     if provider not in PROVIDERS:
         raise ValueError(
@@ -20,14 +24,17 @@ def get_completion(provider: str, api_key: str, prompt: str) -> str:
         )
     if not api_key or not api_key.strip():
         raise ValueError("api_key is required and cannot be empty")
+
+    resolved_model = model or DEFAULT_MODELS[provider]
+
     if provider == "anthropic":
-        return _anthropic(api_key, prompt)
+        return _anthropic(api_key, prompt, resolved_model)
     if provider == "groq":
-        return _groq(api_key, prompt)
-    return _gemini(api_key, prompt)
+        return _groq(api_key, prompt, resolved_model)
+    return _gemini(api_key, prompt, resolved_model)
 
 
-def _anthropic(api_key: str, prompt: str) -> str:
+def _anthropic(api_key: str, prompt: str, model: str) -> str:
     try:
         resp = requests.post(
             "https://api.anthropic.com/v1/messages",
@@ -37,7 +44,7 @@ def _anthropic(api_key: str, prompt: str) -> str:
                 "content-type": "application/json",
             },
             json={
-                "model": ANTHROPIC_MODEL,
+                "model": model,
                 "max_tokens": 1024,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -56,7 +63,7 @@ def _anthropic(api_key: str, prompt: str) -> str:
         raise RuntimeError(f"Anthropic request failed: {exc}") from exc
 
 
-def _groq(api_key: str, prompt: str) -> str:
+def _groq(api_key: str, prompt: str, model: str) -> str:
     try:
         resp = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -65,7 +72,7 @@ def _groq(api_key: str, prompt: str) -> str:
                 "content-type": "application/json",
             },
             json={
-                "model": GROQ_MODEL,
+                "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 1024,
             },
@@ -84,10 +91,10 @@ def _groq(api_key: str, prompt: str) -> str:
         raise RuntimeError(f"Groq request failed: {exc}") from exc
 
 
-def _gemini(api_key: str, prompt: str) -> str:
+def _gemini(api_key: str, prompt: str, model: str) -> str:
     try:
         resp = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
             params={"key": api_key},
             json={"contents": [{"parts": [{"text": prompt}]}]},
             timeout=30,
