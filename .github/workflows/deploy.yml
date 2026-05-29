@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - main
+      - fix/smoke-test-alignment # For Testing after the codebase changes to algin and test the smoke test workflow
   workflow_dispatch:   # allows manual trigger from GitHub UI
 
 jobs:
