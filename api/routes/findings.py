@@ -5,6 +5,7 @@ import os
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
+from scanner.cve_correlator import enrich_findings
 
 findings_bp = Blueprint("findings", __name__)
 logger = logging.getLogger(__name__)
@@ -22,10 +23,10 @@ def list_findings():
     """Return findings, optionally filtered by severity, category, or rule_id.
 
     Query parameters:
-        severity  — HIGH | MEDIUM | LOW | INFO
-        category  — Storage | Network | Identity | Database | Compute | KeyVault
-        rule_id   — e.g. AZ-STOR-001
-        scan_id   — UUID of a specific scan
+        severity  - HIGH | MEDIUM | LOW | INFO
+        category  - Storage | Network | Identity | Database | Compute | KeyVault
+        rule_id   - e.g. AZ-STOR-001
+        scan_id   - UUID of a specific scan
     """
     try:
         filters = {

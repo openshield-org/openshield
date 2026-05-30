@@ -22,7 +22,7 @@ def _get_db() -> DatabaseManager:
 
 @score_bp.get("/api/score")
 def get_score():
-    """Return the overall security posture score (0–100).
+    """Return the overall security posture score (0-100).
 
     Score calculation:
         Starts at 100. Deducts 10 per HIGH finding, 5 per MEDIUM, 2 per LOW.
@@ -35,3 +35,15 @@ def get_score():
     except Exception as exc:
         logger.error("Failed to calculate score: %s", exc)
         return jsonify({"error": "Failed to calculate score", "detail": str(exc)}), 500
+
+
+@score_bp.get("/api/score/cve-summary")
+def get_cve_summary():
+    """Return high-level CVE summary for the dashboard."""
+    try:
+        db = _get_db()
+        result = db.get_cve_summary()
+        return jsonify(result)
+    except Exception as exc:
+        logger.error("Failed to fetch CVE summary: %s", exc)
+        return jsonify({"error": "Failed to fetch CVE summary", "detail": str(exc)}), 500

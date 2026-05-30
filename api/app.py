@@ -61,6 +61,9 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Database Management                                                   #
     # ------------------------------------------------------------------ #
+    with app.app_context():
+        db = DatabaseManager()
+        db.run_migrations()
 
     @app.teardown_appcontext
     def close_db(error=None):
@@ -162,7 +165,7 @@ def create_app() -> Flask:
         logger.error("Unhandled exception: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
-    logger.info("OpenShield API created — %d blueprints registered", len(app.blueprints))
+    logger.info("OpenShield API created - %d blueprints registered", len(app.blueprints))
     return app
 
 
