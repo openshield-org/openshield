@@ -162,6 +162,11 @@
       "control_id": "CC6.3",
       "control_name": "Role-based access control",
       "description": "PIM provides role-based access control with time-bound activation for privileged roles. Without PIM, admin roles are permanently assigned with no controls, violating the requirement for managed and restricted privileged access."
+    },
+    "AZ-NET-014": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "VNet peering with allowGatewayTransit or useRemoteGateways enabled allows traffic to cross network boundaries through shared gateways, weakening the logical separation between network zones. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Gateway transit on peering connections should be disabled to enforce boundary separation."
     }
   }
 }
