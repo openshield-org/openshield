@@ -98,15 +98,15 @@
       "control_name": "Policy on the use of cryptographic controls",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented."
     },
+    "AZ-CMP-003": {
+      "control_id": "A.12.2.1",
+      "control_name": "Controls against malware",
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. A.12.2.1 requires that detection, prevention and recovery controls are implemented to protect against malware."
+    },
     "AZ-CMP-004": {
       "control_id": "A.12.6.1",
       "control_name": "Management of technical vulnerabilities",
       "description": "The virtual machine does not have automatic OS patching enabled. A.12.6.1 requires that information about technical vulnerabilities is obtained and the organisation's exposure evaluated. Without automatic patching, known OS vulnerabilities remain unmitigated."
-    },
-    "AZ-CMP-003": {
-      "control_id": "A.12.2.1",
-      "control_name": "Controls against malware",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. A.12.2.1 requires that detection, prevention and recovery controls are implemented to protect against malware. Without endpoint protection, malware executing on the VM will not be detected or prevented."
     },
     "AZ-KV-001": {
       "control_id": "A.17.2.1",
@@ -166,12 +166,12 @@
     "AZ-NET-013": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "A virtual network without an Azure Firewall relies on NSGs alone and has no centralized perimeter inspection or logging. A.13.1.1 requires that networks be managed and controlled to protect information in systems and applications. Deploying an Azure Firewall provides stateful inspection, filtering, and logging at the network boundary."
+      "description": "Virtual Networks without an Azure Firewall deployed rely solely on Network Security Groups for perimeter defence. NSGs provide no deep packet inspection, threat intelligence filtering, or centralised traffic logging. Networks should be managed and controlled using a dedicated firewall to inspect and control all inbound and outbound traffic."
     },
     "AZ-NET-014": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "VNet peering connections with gateway transit enabled allow traffic to flow between network segments through shared gateways, potentially bypassing network controls. Networks should be managed and controlled to protect information in systems and applications. Gateway transit on peering connections should be disabled unless explicitly required."
+      "description": "VNet peering connections with allowGatewayTransit or useRemoteGateways enabled allow traffic to flow between network segments through shared gateways, potentially bypassing network controls between zones that should remain isolated. Networks should be managed and controlled with explicit restrictions on gateway transit across peering connections."
     }
   }
 }

@@ -113,6 +113,14 @@
       "control_name": "Protects Data in Transit and At Rest",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed keys lack customer control and audit capabilities needed for compliance."
     },
+<<<<<<< HEAD
+=======
+    "AZ-CMP-003": {
+      "control_id": "CC6.8",
+      "control_name": "Prevents or Detects Unauthorized or Malicious Software",
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorized or malicious software. Without endpoint protection, malicious code executing on the VM will not be detected or blocked."
+    },
+>>>>>>> 9cac326 (feat: add AZ-NET-013 Azure Firewall not enabled on Virtual Network)
     "AZ-CMP-004": {
       "control_id": "CC7.1",
       "control_name": "System Vulnerabilities are Identified and Managed",
@@ -151,7 +159,7 @@
     "AZ-DB-004": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource \u2014 including services from other tenants \u2014 to connect to the database. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Disabling this setting and replacing it with explicit firewall rules or private endpoints enforces the network boundary and ensures only known and trusted systems can reach the SQL Server."
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the database. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Disabling this setting and replacing it with explicit firewall rules or private endpoints enforces the network boundary and ensures only known and trusted systems can reach the SQL Server."
     },
     "AZ-IDN-004": {
       "control_id": "CC6.3",

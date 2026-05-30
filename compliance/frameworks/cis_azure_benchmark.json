@@ -107,11 +107,11 @@
       "control_id": "8.3",
       "control_name": "Ensure that 'OS patching' is enabled for virtual machines",
       "description": "The virtual machine does not have automatic OS patching enabled. CIS 8.3 requires that OS patches are applied in a timely manner. Unpatched VMs are vulnerable to known exploits targeting unpatched OS vulnerabilities."
-    },  
+    },
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
-      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7\u201390 days), protecting against accidental or malicious deletion."
+      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
     },
     "AZ-STOR-003": {
       "control_id": "3.7",
@@ -151,7 +151,7 @@
     "AZ-DB-004": {
       "control_id": "4.1.2",
       "control_name": "Ensure that 'Allow access to Azure services' for SQL Servers is disabled",
-      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource \u2014 including services from other tenants \u2014 to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
     },
     "AZ-IDN-004": {
       "control_id": "1.14",
