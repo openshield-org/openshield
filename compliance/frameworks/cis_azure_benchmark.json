@@ -148,10 +148,25 @@
       "control_name": "Ensure that Azure Key Vault Purge Protection is Enabled",
       "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of vaults and their secrets, keys, and certificates during the soft-delete retention period. Even with soft delete enabled, a malicious insider or privileged account can purge vault objects before the retention period expires. Enabling purge protection prevents this by blocking purge operations for the full retention period."
     },
+    "AZ-DB-004": {
+      "control_id": "4.1.2",
+      "control_name": "Ensure that 'Allow access to Azure services' for SQL Servers is disabled",
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource \u2014 including services from other tenants \u2014 to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
+    },
+    "AZ-IDN-004": {
+      "control_id": "1.14",
+      "control_name": "Ensure that 'Privileged Identity Management' is used to manage privileged access",
+      "description": "Privileged Identity Management provides time-based and approval-based role activation to mitigate the risk of excessive, unnecessary, or misused access permissions on resources. Without PIM, admin roles are permanently assigned with no just-in-time controls or approval workflows."
+    },
     "AZ-KV-005": {
       "control_id": "8.5",
       "control_name": "Ensure that the expiration date is set on all certificates",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days and does not have auto-renewal configured. CIS 8.5 requires that expiration dates are monitored and certificates are renewed before expiry to prevent service outages and broken authentication flows."
+    },
+    "AZ-NET-014": {
+      "control_id": "6.4",
+      "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
+      "description": "VNet peering connections with allowGatewayTransit or useRemoteGateways enabled allow traffic to route between network segments through shared gateways. This can break network segmentation and enable lateral movement between zones that should remain isolated. Peering connections should be reviewed and gateway transit disabled unless explicitly required and documented."
     }
   }
 }

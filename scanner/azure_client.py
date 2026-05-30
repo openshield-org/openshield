@@ -240,7 +240,6 @@ class AzureClient:
             logger.error("get_virtual_networks failed: %s", exc)
             return []
 
-    
     def get_public_ip_addresses(self) -> List[Any]:
         """List all public IP addresses in the subscription."""
         try:
@@ -248,6 +247,24 @@ class AzureClient:
             return list(client.public_ip_addresses.list_all())
         except Exception as exc:
             logger.error("get_public_ip_addresses failed: %s", exc)
+            return []
+
+    def get_azure_firewalls(self, resource_group: str) -> List[Any]:
+        """List all Azure Firewalls in a resource group."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.azure_firewalls.list(resource_group))
+        except Exception as exc:
+            logger.error("get_azure_firewalls(%s) failed: %s", resource_group, exc)
+            return []
+
+    def get_vnet_peerings(self, resource_group: str, vnet_name: str) -> List[Any]:
+        """List all peering connections for a Virtual Network."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.virtual_network_peerings.list(resource_group, vnet_name))
+        except Exception as exc:
+            logger.error("get_vnet_peerings(%s) failed: %s", vnet_name, exc)
             return []
 
     # ------------------------------------------------------------------ #

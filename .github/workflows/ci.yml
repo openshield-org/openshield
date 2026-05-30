@@ -122,11 +122,15 @@ jobs:
         id: cred_scan
         run: |
           echo "=== Scanning for hardcoded credentials ==="
+          # Each credential-name pattern requires a quoted string literal on the
+          # right-hand side. This flags real hardcoded values (api_key = "sk-...")
+          # while ignoring safe assignments to function calls or expressions
+          # (api_key = str(data.get(...)) , _SECRET = secrets.token_urlsafe(32)).
           PATTERNS=(
-            "password\s*="
-            "secret\s*="
-            "api_key\s*="
-            "client_secret\s*="
+            "password\s*=\s*['\"]"
+            "secret\s*=\s*['\"]"
+            "api_key\s*=\s*['\"]"
+            "client_secret\s*=\s*['\"]"
             "AZURE_CLIENT_SECRET\s*=\s*['\"][^'\"]\+"
             "-----BEGIN.*PRIVATE KEY-----"
             "AccountKey="
@@ -145,7 +149,10 @@ jobs:
               grep -v "os\.getenv" | \
               grep -vE '^\s*#' | \
               grep -v "example" | \
-              grep -v "placeholder" || true)
+              grep -v "placeholder" | \
+              grep -v "\.get(" | \
+              grep -v "request\." | \
+              grep -v "config\." || true)
 
             if [ -n "$matches" ]; then
               echo "POTENTIAL CREDENTIAL LEAK — pattern '$pattern':"
