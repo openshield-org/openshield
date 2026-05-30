@@ -4,7 +4,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-# Required rule constants
 RULE_ID = "AZ-NET-012"
 RULE_NAME = "NSG Flow Logs Not Enabled"
 SEVERITY = "MEDIUM"
@@ -19,12 +18,12 @@ REMEDIATION = (
     "Run: az network watcher flow-log create --nsg <nsg-name> --enabled true "
     "--storage-account <storage-account-id> --resource-group <rg>"
 )
-PLAYBOOK = "fix_az_net_012.sh"
+PLAYBOOK = "playbooks/cli/fix_az_net_012.sh"
 FRAMEWORKS = {
-    "cis": "6.5",
-    "nist": "DE.CM-1",
-    "iso27001": "A.12.4.1",
-    "soc2": "CC7.2",
+    "CIS": "6.5",
+    "NIST": "DE.CM-1",
+    "ISO27001": "A.12.4.1",
+    "SOC2": "CC7.2",
 }
 
 logger = logging.getLogger(__name__)
@@ -34,9 +33,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Scan all NSGs and check if flow logs are enabled via Network Watcher."""
     findings: List[Dict[str, Any]] = []
 
-    nsgs = azure_client.network_security_groups.list_all()
-
-    for nsg in nsgs:
+    for nsg in azure_client.get_network_security_groups():
         nsg_id = getattr(nsg, "id", "")
         parsed = azure_client.parse_resource_id(nsg_id)
         resource_group = parsed.get("resource_group", "")
@@ -48,9 +45,12 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         flow_log_enabled = False
 
         try:
-            flow_logs = azure_client.flow_logs.list(resource_group)
+            flow_logs = azure_client.get_nsg_flow_logs(resource_group)
             for flow_log in flow_logs:
-                if getattr(flow_log, "target_resource_id", "") == nsg_id and getattr(flow_log, "enabled", False):
+                if (
+                    getattr(flow_log, "target_resource_id", "") == nsg_id
+                    and getattr(flow_log, "enabled", False)
+                ):
                     flow_log_enabled = True
                     break
         except Exception:
