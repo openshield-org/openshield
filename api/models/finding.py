@@ -114,11 +114,19 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def init_db(self) -> None:
-        """Alias for create_tables to match startup script expectations."""
-        self.create_tables()
+        """Alias for run_migrations. Called by startup.sh on every boot.
+
+        Calling this is always safe — run_migrations() handles both fresh
+        databases and existing ones via IF NOT EXISTS guards throughout.
+        """
+        self.run_migrations()
 
     def create_tables(self) -> None:
-        """Create the findings, scans, and rules tables if they do not exist."""
+        """Create the findings, scans, and rules tables if they do not exist.
+
+        Includes all columns — including CVE columns — so fresh databases
+        never need the ALTER TABLE path in run_migrations().
+        """
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute("""
@@ -164,14 +172,30 @@ class DatabaseManager:
         logger.info("Database tables created / verified")
 
     def run_migrations(self) -> None:
-        """Add CVE columns if they don't exist.
-        Safe to call on every startup - uses IF NOT EXISTS.
+        """Ensure the schema is fully current. Safe to call on every startup.
+
+        Calls create_tables() first so the call order never matters — this
+        method is safe whether the database is brand new or has existing data.
+
+        On a fresh database:
+            create_tables() creates all tables including CVE columns.
+            The ALTER TABLE below is a no-op (IF NOT EXISTS).
+
+        On a pre-CVE database (existed before this feature was merged):
+            create_tables() verifies tables exist and skips creation.
+            The ALTER TABLE adds the three CVE columns.
+
+        Concurrent startup safety:
+            Both CREATE TABLE IF NOT EXISTS and ALTER TABLE ADD COLUMN IF NOT
+            EXISTS are atomic at the PostgreSQL catalog level. Two Render
+            instances racing at boot will not error — the second call silently
+            no-ops on whichever statement the first already completed.
         """
+        self.create_tables()
+
         conn = self._get_conn()
         try:
             with conn.cursor() as cur:
-                # Ensure we are in the right schema
-                cur.execute("SET search_path TO openshield, public;")
                 cur.execute("""
                     ALTER TABLE findings
                         ADD COLUMN IF NOT EXISTS cve_references    JSONB   DEFAULT '[]',
@@ -238,7 +262,11 @@ class DatabaseManager:
                     ),
                 )
         conn.commit()
-        logger.info("Saved scan %s with %d findings", scan_result["scan_id"], scan_result["total_findings"])
+        logger.info(
+            "Saved scan %s with %d findings",
+            scan_result["scan_id"],
+            scan_result["total_findings"],
+        )
 
     # ------------------------------------------------------------------ #
     # Read                                                                  #
@@ -313,7 +341,7 @@ class DatabaseManager:
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_findings,
                     COUNT(CASE WHEN exploit_available = TRUE THEN 1 END) as exploit_count,
                     MAX(cvss_score) as max_cvss_score,
@@ -329,7 +357,7 @@ class DatabaseManager:
                 "exploit_count": 0,
                 "max_cvss_score": None,
                 "avg_cvss_score": None,
-                "critical_cve_count": 0
+                "critical_cve_count": 0,
             }
 
         return {
@@ -337,7 +365,7 @@ class DatabaseManager:
             "exploit_count": row[1],
             "max_cvss_score": row[2],
             "avg_cvss_score": round(row[3], 2) if row[3] is not None else None,
-            "critical_cve_count": row[4]
+            "critical_cve_count": row[4],
         }
 
     def get_compliance_score(self, framework: str) -> Dict[str, Any]:
