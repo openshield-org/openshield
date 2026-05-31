@@ -109,7 +109,6 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Blueprints                                                            #
     # ------------------------------------------------------------------ #
-    from api.routes.ai import ai_bp
     from api.routes.compliance import compliance_bp
     from api.routes.findings import findings_bp
     from api.routes.scans import scans_bp
@@ -120,7 +119,6 @@ def create_app() -> Flask:
     app.register_blueprint(scans_bp)
     app.register_blueprint(score_bp)
     app.register_blueprint(compliance_bp)
-    app.register_blueprint(ai_bp)
 
     # ------------------------------------------------------------------ #
     # Routes (public)                                                      #
