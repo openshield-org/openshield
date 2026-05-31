@@ -162,6 +162,11 @@
       "control_id": "PR.AC-4",
       "control_name": "Access permissions and authorizations are managed",
       "description": "PIM ensures privileged access permissions are managed with time-bound activation and approval workflows. Without PIM, permanently assigned admin roles violate the principle of least privilege and increase the blast radius of compromised accounts."
+    },
+    "AZ-NET-014": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "VNet peering with gateway transit enabled allows traffic to cross network boundaries through shared gateways, undermining network segmentation. PR.AC-5 requires that network integrity is protected. Disabling gateway transit on peering connections enforces boundary integrity between network zones."
     }
   }
 }

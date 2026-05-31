@@ -167,6 +167,11 @@
       "control_id": "A.9.2.3",
       "control_name": "Management of privileged access rights",
       "description": "The allocation and use of privileged access rights should be restricted and controlled. PIM enforces just-in-time access with time limits and approval workflows, ensuring privileged access rights are tightly managed and not permanently assigned."
+    },
+    "AZ-NET-014": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "VNet peering connections with gateway transit enabled allow traffic to flow between network segments through shared gateways, potentially bypassing network controls. Networks should be managed and controlled to protect information in systems and applications. Gateway transit on peering connections should be disabled unless explicitly required."
     }
   }
 }
