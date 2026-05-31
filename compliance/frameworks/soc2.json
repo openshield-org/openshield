@@ -18,6 +18,11 @@
       "control_name": "Change Management",
       "description": "A storage account with no lifecycle management policy allows data to accumulate indefinitely with no automatic expiry or tiering. CC8.1 requires that infrastructure and data are managed through formal processes. Implementing a lifecycle policy ensures data retention is controlled and old data is automatically moved or deleted according to organisational policy."
     },
+    "AZ-STOR-004": {
+      "control_id": "CC7.2",
+      "control_name": "System monitoring",
+      "description": "Azure Monitor diagnostic logging must be enabled for all storage account services (blob, queue, table) to ensure that security-relevant events are recorded. CC7.2 requires that the entity monitors the system and takes action to maintain compliance. Without full logging, unauthorized access or data exfiltration attempts may go undetected."
+    },
     "AZ-STOR-005": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
@@ -108,11 +113,6 @@
       "control_name": "Protects Data in Transit and At Rest",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed keys lack customer control and audit capabilities needed for compliance."
     },
-    "AZ-CMP-003": {
-      "control_id": "CC6.8",
-      "control_name": "Prevents or Detects Unauthorized or Malicious Software",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorised or malicious software."
-    },
     "AZ-CMP-004": {
       "control_id": "CC7.1",
       "control_name": "System Vulnerabilities are Identified and Managed",
@@ -172,7 +172,6 @@
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "VNet peering with allowGatewayTransit or useRemoteGateways enabled allows traffic to cross network boundaries through shared gateways, weakening the logical separation between network zones. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Gateway transit on peering connections should be disabled to enforce boundary separation."
-      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the database. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Disabling this setting and replacing it with explicit firewall rules or private endpoints enforces the network boundary and ensures only known and trusted systems can reach the SQL Server."
     }
   }
 }

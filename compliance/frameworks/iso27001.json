@@ -98,11 +98,6 @@
       "control_name": "Policy on the use of cryptographic controls",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented."
     },
-    "AZ-CMP-003": {
-      "control_id": "A.12.2.1",
-      "control_name": "Controls against malware",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. A.12.2.1 requires that detection, prevention and recovery controls are implemented to protect against malware."
-    },
     "AZ-CMP-004": {
       "control_id": "A.12.6.1",
       "control_name": "Management of technical vulnerabilities",

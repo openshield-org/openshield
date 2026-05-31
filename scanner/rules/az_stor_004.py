@@ -15,6 +15,7 @@ FRAMEWORKS = {
     "CIS":      "3.3",
     "NIST":     "DE.CM-7",
     "ISO27001": "A.12.4.1",
+    "SOC2":     "CC7.2",
 }
 DESCRIPTION = (
     "Azure Monitor diagnostic logging is not fully enabled for the {service} "
