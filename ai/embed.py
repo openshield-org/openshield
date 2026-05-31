@@ -1,4 +1,5 @@
-"""Build the OpenShield knowledge base vector store for RAG AI insights."""
+"""Build the OpenShield knowledge base vector store for RAG AI insights"""
+
 
 import importlib.util
 import json
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RULES_DIR = REPO_ROOT / "scanner" / "rules"
 FRAMEWORKS_DIR = REPO_ROOT / "compliance" / "frameworks"
+SKILLS_DIR = REPO_ROOT / "ai" / "knowledge" / "skills"
 VECTORSTORE_DIR = REPO_ROOT / "ai" / "vectorstore"
 COLLECTION_NAME = "openshield"
 
@@ -21,6 +23,29 @@ def _load_rule_module(path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _collect_skill_documents():
+    documents = []
+    if not SKILLS_DIR.exists():
+        logger.warning("Skills directory not found, skipping: %s", SKILLS_DIR)
+        return documents
+    for path in sorted(SKILLS_DIR.rglob("SKILL.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception as exc:
+            logger.warning("Skipping %s: %s", path.name, exc)
+            continue
+        if not text.strip():
+            continue
+        skill_name = path.parent.name
+        documents.append({
+            "id": f"skill-{skill_name}",
+            "text": text,
+            "source": skill_name,
+            "type": "skill",
+        })
+    return documents
 
 
 def _collect_rule_documents():
@@ -80,14 +105,17 @@ def build_vectorstore():
     VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
     client = chromadb.PersistentClient(path=str(VECTORSTORE_DIR))
 
-    # Start clean so a refresh never leaves stale entries behind.
     try:
         client.delete_collection(COLLECTION_NAME)
     except Exception:
         pass
     collection = client.create_collection(COLLECTION_NAME)
 
-    documents = _collect_rule_documents() + _collect_compliance_documents()
+    documents = (
+        _collect_skill_documents()
+        + _collect_rule_documents()
+        + _collect_compliance_documents()
+    )
     if not documents:
         raise RuntimeError("No documents found to embed. Check repo paths.")
 
@@ -102,6 +130,7 @@ def build_vectorstore():
         "Embedded %d documents into '%s'.", len(documents), COLLECTION_NAME
     )
     return len(documents)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
