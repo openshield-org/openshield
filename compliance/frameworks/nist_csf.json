@@ -163,6 +163,11 @@
       "control_name": "Access permissions and authorizations are managed",
       "description": "PIM ensures privileged access permissions are managed with time-bound activation and approval workflows. Without PIM, permanently assigned admin roles violate the principle of least privilege and increase the blast radius of compromised accounts."
     },
+    "AZ-NET-013": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "A virtual network with no Azure Firewall relies on NSGs alone and lacks a centralized perimeter inspection and logging layer. PR.AC-5 requires that network integrity is protected through segregation. Deploying an Azure Firewall enforces inspected, logged traffic flow at the network boundary and strengthens segmentation."
+    },
     "AZ-NET-014": {
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",

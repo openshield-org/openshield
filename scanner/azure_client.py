@@ -67,13 +67,13 @@ class AzureClient:
     ) -> Optional[bool]:
         """Check whether a storage account has a lifecycle management policy.
 
-        Three-state return — the calling rule uses strict identity checks
+        Three-state return - the calling rule uses strict identity checks
         (is False / is None) to distinguish these states:
 
-            True  — policy exists and contains at least one enabled rule.
-            False — ResourceNotFoundError: no policy configured (non-compliant).
-            None  — any other error (permissions, network, SDK bug).
-                    Caller must NOT create a finding — skip with a warning
+            True  - policy exists and contains at least one enabled rule.
+            False - ResourceNotFoundError: no policy configured (non-compliant).
+            None  - any other error (permissions, network, SDK bug).
+                    Caller must NOT create a finding - skip with a warning
                     to avoid false positives.
 
         The StorageManagementClient is created fresh here following the same
@@ -86,23 +86,23 @@ class AzureClient:
             account_name:   Name of the storage account.
 
         Returns:
-            Optional[bool] — True, False, or None as described above.
+            Optional[bool] - True, False, or None as described above.
         """
         try:
             client = StorageManagementClient(self.credential, self.subscription_id)
             policy = client.management_policies.get(
                 resource_group, account_name, "default"
             )
-            # A policy shell can exist with an empty rules list —
+            # A policy shell can exist with an empty rules list -
             # treat that the same as no policy (non-compliant).
             rules = getattr(getattr(policy, "policy", None), "rules", None)
             return bool(rules)
 
         except ResourceNotFoundError:
             # Expected path: the account genuinely has no lifecycle policy.
-            # This is the non-compliant condition — return False to flag it.
+            # This is the non-compliant condition - return False to flag it.
             logger.debug(
-                "get_storage_lifecycle_policy(%s): ResourceNotFound — no policy",
+                "get_storage_lifecycle_policy(%s): ResourceNotFound - no policy",
                 account_name,
             )
             return False
@@ -110,9 +110,9 @@ class AzureClient:
         except HttpResponseError as exc:
             # 403 = service principal lacks
             # Microsoft.Storage/storageAccounts/managementPolicies/read.
-            # Return None — cannot determine compliance, do not flag.
+            # Return None - cannot determine compliance, do not flag.
             logger.error(
-                "get_storage_lifecycle_policy(%s) HTTP %s — "
+                "get_storage_lifecycle_policy(%s) HTTP %s - "
                 "check service principal permissions: %s",
                 account_name,
                 exc.status_code,
@@ -122,7 +122,7 @@ class AzureClient:
 
         except Exception as exc:
             # Unexpected failure (network, SDK bug, etc.).
-            # Return None — skip rather than create a false positive.
+            # Return None - skip rather than create a false positive.
             logger.error(
                 "get_storage_lifecycle_policy(%s) unexpected error: %s",
                 account_name,
@@ -135,14 +135,14 @@ class AzureClient:
     ) -> Optional[bool]:
         """Check Azure Monitor diagnostic settings for a storage service sub-resource.
 
-        Three-state return — the calling rule uses strict identity checks
+        Three-state return - the calling rule uses strict identity checks
         (is False / is None) to distinguish these states:
 
-            True  — at least one diagnostic setting has StorageRead, StorageWrite,
+            True  - at least one diagnostic setting has StorageRead, StorageWrite,
                     and StorageDelete all enabled (compliant).
-            False — no setting covers all three required categories (non-compliant).
-            None  — permission error or unexpected SDK failure.
-                    Caller must NOT create a finding — skip with a warning
+            False - no setting covers all three required categories (non-compliant).
+            None  - permission error or unexpected SDK failure.
+                    Caller must NOT create a finding - skip with a warning
                     to avoid false positives.
 
         Args:
@@ -151,7 +151,7 @@ class AzureClient:
             service:        Sub-service to check: "blob", "queue", or "table".
 
         Returns:
-            Optional[bool] — True, False, or None as described above.
+            Optional[bool] - True, False, or None as described above.
         """
         _REQUIRED = {"StorageRead", "StorageWrite", "StorageDelete"}
         _SERVICE_MAP = {
@@ -162,7 +162,7 @@ class AzureClient:
         svc_path = _SERVICE_MAP.get(service)
         if not svc_path:
             logger.error(
-                "get_storage_service_logging: unknown service %r — must be "
+                "get_storage_service_logging: unknown service %r - must be "
                 "blob, queue, or table",
                 service,
             )
@@ -189,7 +189,7 @@ class AzureClient:
 
         except HttpResponseError as exc:
             logger.error(
-                "get_storage_service_logging(%s/%s) HTTP %s — "
+                "get_storage_service_logging(%s/%s) HTTP %s - "
                 "check service principal permissions: %s",
                 account_name,
                 service,
@@ -257,6 +257,24 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_azure_firewalls(%s) failed: %s", resource_group, exc)
             return []
+
+    def get_all_azure_firewalls(self) -> Optional[List[Any]]:
+        """List all Azure Firewalls in the subscription.
+
+        Three-state return - the calling rule distinguishes these states:
+
+            [...] - successful listing (may be empty: genuinely no firewalls).
+            None  - listing failed (permissions, network, SDK error). The
+                    caller must NOT flag VNets as non-compliant, since it
+                    cannot tell which VNets are protected - skip to avoid
+                    false positives.
+        """
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.azure_firewalls.list_all())
+        except Exception as exc:
+            logger.error("get_all_azure_firewalls failed: %s", exc)
+            return None
 
     def get_vnet_peerings(self, resource_group: str, vnet_name: str) -> List[Any]:
         """List all peering connections for a Virtual Network."""
@@ -378,12 +396,12 @@ class AzureClient:
 
         Three-state return:
 
-            True  — at least one diagnostic log category is enabled.
-            False — no diagnostic settings exist or all logs are disabled.
-            None  — unable to determine status due to permissions/API failure.
+            True  - at least one diagnostic log category is enabled.
+            False - no diagnostic settings exist or all logs are disabled.
+            None  - unable to determine status due to permissions/API failure.
 
         Returns:
-            Optional[bool] — True, False, or None as described above.
+            Optional[bool] - True, False, or None as described above.
         """
         try:
             client = MonitorManagementClient(

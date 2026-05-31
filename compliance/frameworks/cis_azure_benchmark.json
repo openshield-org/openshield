@@ -163,6 +163,11 @@
       "control_name": "Ensure that the expiration date is set on all certificates",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days and does not have auto-renewal configured. CIS 8.5 requires that expiration dates are monitored and certificates are renewed before expiry to prevent service outages and broken authentication flows."
     },
+    "AZ-NET-013": {
+      "control_id": "6.4",
+      "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
+      "description": "Virtual networks should be protected by an Azure Firewall rather than relying on Network Security Groups alone. Azure Firewall provides centralized, stateful traffic inspection, FQDN and threat-intelligence filtering, and network-wide logging that NSGs cannot offer. VNets without an associated Azure Firewall lack a perimeter inspection and logging layer."
+    },
     "AZ-NET-014": {
       "control_id": "6.4",
       "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",

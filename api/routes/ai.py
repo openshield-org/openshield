@@ -41,6 +41,33 @@ def _build_summary_prompt(findings: list) -> str:
     )
 
 
+def _build_question_prompt(sorted_findings: list, question: str) -> str:
+    lines = []
+    for f in sorted_findings:
+        rule_id = f.get("rule_id", "")
+        title = f.get("title", "Untitled")
+        severity = f.get("severity", "UNKNOWN")
+        description = f.get("description", "No description provided.")
+        remediation = f.get("remediation", "No remediation detail provided.")
+        label = f"{rule_id} — {title}" if rule_id else title
+        lines.append(
+            f"- [{severity}] {label}: {description} Remediation: {remediation}"
+        )
+    findings_text = "\n".join(lines)
+    return (
+        "You are a cloud security assistant.\n"
+        "Answer the user's question using only the scan findings provided below.\n"
+        "Do not invent facts or assume scan results that are not listed.\n"
+        "Prioritise high severity, exploitable, and compliance-impacting findings, "
+        "and consider remediation urgency.\n"
+        "Be concise but useful. If the findings are insufficient to answer "
+        "confidently, say what evidence is missing.\n\n"
+        f"Question: {question}\n\n"
+        f"Findings (severity order):\n{findings_text}\n\n"
+        "Answer:"
+    )
+
+
 def _build_remediation_prompt(sorted_findings: list) -> str:
     lines = []
     for f in sorted_findings:
@@ -71,6 +98,7 @@ def insights():
     provider = str(data.get("provider") or "").strip().lower()
     api_key = str(data.get("api_key") or "").strip()
     findings = data.get("findings")
+    question = str(data.get("question") or "").strip()
 
     if not provider:
         return jsonify({"error": "Missing required field: provider"}), 400
@@ -93,11 +121,19 @@ def insights():
     try:
         executive_summary = get_completion(provider, api_key, summary_prompt)
         remediation_plan = get_completion(provider, api_key, remediation_prompt)
+        answer = None
+        if question:
+            question_prompt = _build_question_prompt(sorted_findings, question)
+            answer = get_completion(provider, api_key, question_prompt)
     except Exception:
         logger.warning("AI provider request failed for provider=%s", provider)
         return jsonify({"error": "AI provider request failed"}), 502
 
-    return jsonify({
+    response = {
         "executive_summary": executive_summary,
         "remediation_plan": remediation_plan,
-    })
+    }
+    if question:
+        response["answer"] = answer
+
+    return jsonify(response)
