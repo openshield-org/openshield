@@ -307,6 +307,37 @@ class DatabaseManager:
             row = cur.fetchone()
             return dict(row) if row else None
 
+    def update_cve_fields(self, findings: List[Dict[str, Any]]) -> None:
+        """Persist CVE enrichment fields for existing findings.
+
+        Updates are no-ops for findings without an id.
+        """
+        if not findings:
+            return
+
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            for f in findings:
+                finding_id = f.get("id")
+                if not finding_id:
+                    continue
+                cur.execute(
+                    """
+                    UPDATE findings
+                    SET cve_references = %s,
+                        cvss_score = %s,
+                        exploit_available = %s
+                    WHERE id = %s
+                    """,
+                    (
+                        json.dumps(f.get("cve_references", [])),
+                        f.get("cvss_score"),
+                        f.get("exploit_available", False),
+                        finding_id,
+                    ),
+                )
+        conn.commit()
+
     def get_scans(self) -> List[Dict[str, Any]]:
         """Return all scan records ordered by most recent first."""
         conn = self._get_conn()

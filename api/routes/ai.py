@@ -27,8 +27,9 @@ def severity_rank(finding: dict) -> int:
 def _build_summary_prompt(findings: list) -> str:
     lines = []
     for f in findings:
+        title = f.get("title") or f.get("rule_name") or "Untitled"
         lines.append(
-            f"- [{f.get('severity', 'UNKNOWN')}] {f.get('title', 'Untitled')}: {f.get('description', 'No description provided.')}"
+            f"- [{f.get('severity', 'UNKNOWN')}] {title}: {f.get('description', 'No description provided.')}"
         )
     findings_text = "\n".join(lines)
     return (
@@ -45,7 +46,7 @@ def _build_question_prompt(sorted_findings: list, question: str) -> str:
     lines = []
     for f in sorted_findings:
         rule_id = f.get("rule_id", "")
-        title = f.get("title", "Untitled")
+        title = f.get("title") or f.get("rule_name") or "Untitled"
         severity = f.get("severity", "UNKNOWN")
         description = f.get("description", "No description provided.")
         remediation = f.get("remediation", "No remediation detail provided.")
@@ -72,7 +73,7 @@ def _build_remediation_prompt(sorted_findings: list) -> str:
     lines = []
     for f in sorted_findings:
         rule_id = f.get("rule_id", "")
-        title = f.get("title", "Untitled")
+        title = f.get("title") or f.get("rule_name") or "Untitled"
         severity = f.get("severity", "UNKNOWN")
         remediation = f.get("remediation", "No remediation detail provided.")
         label = f"{rule_id} — {title}" if rule_id else title

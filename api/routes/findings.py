@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db() -> DatabaseManager:
-    if "db_conn" not in g:
-        g.db_conn = DatabaseManager(os.environ["DATABASE_URL"])
-        g.db_conn.connect()
-    return g.db_conn
+    if "db" not in g:
+        g.db = DatabaseManager(os.environ["DATABASE_URL"])
+        g.db.connect()
+    return g.db
 
 
 @findings_bp.get("/api/findings")
@@ -45,6 +45,7 @@ def list_findings():
         ]
         if legacy_findings:
             enrich_findings(legacy_findings)
+            db.update_cve_fields(legacy_findings)
         return jsonify({"count": len(findings), "findings": findings})
     except Exception as exc:
         logger.error("Failed to list findings: %s", exc)
