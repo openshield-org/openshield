@@ -12,6 +12,7 @@ azure-mgmt-authorization==4.0.0
 azure-mgmt-web==7.3.1
 azure-monitor-ingestion==1.0.3
 azure-mgmt-monitor==6.0.0
+azure-mgmt-dns==8.0.0
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 pyjwt==2.8.0

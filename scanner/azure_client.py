@@ -284,6 +284,16 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_vnet_peerings(%s) failed: %s", vnet_name, exc)
             return []
+    def get_dns_zones(self) -> List[Any]:
+        """List all DNS zones in the subscription."""
+        try:
+            from azure.mgmt.dns import DnsManagementClient
+            client = DnsManagementClient(self.credential, self.subscription_id)
+            return list(client.zones.list())
+        except Exception as exc:
+            logger.error("get_dns_zones failed: %s", exc)
+            return []
+        
 
     # ------------------------------------------------------------------ #
     # Compute                                                               #
