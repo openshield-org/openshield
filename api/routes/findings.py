@@ -36,6 +36,15 @@ def list_findings():
         }
         db = _get_db()
         findings = db.get_findings(filters)
+        legacy_findings = [
+            f
+            for f in findings
+            if f.get("cve_references") is None
+            and f.get("cvss_score") is None
+            and f.get("exploit_available") is None
+        ]
+        if legacy_findings:
+            enrich_findings(legacy_findings)
         return jsonify({"count": len(findings), "findings": findings})
     except Exception as exc:
         logger.error("Failed to list findings: %s", exc)

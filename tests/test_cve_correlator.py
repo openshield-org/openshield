@@ -16,7 +16,6 @@ Test classes:
 import unittest
 from unittest.mock import patch
 
-import scanner.nvd_client as nvd_module
 from scanner.nvd_client import _cache
 from scanner.cve_correlator import (
     _get_nvd_keyword,

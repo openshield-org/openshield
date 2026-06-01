@@ -34,19 +34,19 @@ _RULE_CVE_KEYWORD_MAP: dict[str, str] = {
     "AZ-KV":       "Azure Key Vault",
     "AZ-KV-002":   "Azure Key Vault purge protection",
 
-    # Virtual Machines
-    "AZ-VM":       "Azure Virtual Machine",
+    # Compute
+    "AZ-CMP":      "Azure Virtual Machine",
 
     # Network
     "AZ-NET":      "Azure Network Security Group",
     "AZ-NET-001":  "Azure NSG open port",
 
-    # SQL / Database
-    "AZ-SQL":      "Azure SQL Database",
+    # Database
+    "AZ-DB":       "Azure SQL Database",
 
-    # Identity / IAM
-    "AZ-IAM":      "Azure Active Directory",
-    "AZ-IAM-001":  "Azure RBAC privilege escalation",
+    # Identity
+    "AZ-IDN":      "Azure Active Directory",
+    "AZ-IDN-001":  "Azure RBAC privilege escalation",
 
     # App Service
     "AZ-APP":      "Azure App Service",
