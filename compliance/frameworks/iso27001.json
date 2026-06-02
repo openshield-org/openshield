@@ -78,6 +78,31 @@
       "control_name": "User registration and de-registration",
       "description": "Unrestricted guest user invitations allow any organisation member to register external identities into the tenant without centralised review or approval. A.9.2.1 requires that users and external parties should be registered before access."
     },
+        "AZ-IDN-005": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "The allocation and use of privileged access rights must be restricted and controlled. Guest accounts in Entra ID with high privilege roles represent uncontrolled privileged access by external identities. A.9.2.3 requires that the allocation of privileged access rights is controlled through a formal authorisation process and that privileged roles are assigned only to internal accounts with a verified business need."
+    },
+    "AZ-IDN-006": {
+      "control_id": "A.9.4.3",
+      "control_name": "Password management system",
+      "description": "Service principal client secrets with no expiry or older than 90 days violate password management controls. A.9.4.3 requires that password management systems enforce quality and lifecycle requirements including regular rotation. Non-expiring secrets must have an expiry date set and secrets older than 90 days must be rotated immediately."
+    },
+    "AZ-IDN-007": {
+      "control_id": "A.9.4.2",
+      "control_name": "Secure log-on procedures",
+      "description": "Users without MFA registered in Entra ID authenticate with a single factor, which does not meet secure log-on requirements. A.9.4.2 requires that access to systems and applications is controlled by a secure log-on procedure. Multi-factor authentication must be required for all active user accounts to prevent unauthorised access through compromised passwords."
+    },
+    "AZ-IDN-008": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "Custom RBAC roles with wildcard permissions at subscription scope are a form of uncontrolled privileged access that is harder to audit than built-in roles. A.9.2.3 requires that privileged access rights are allocated only through a formal authorisation process and are regularly reviewed. Custom roles with wildcard actions must be narrowed to specific required permissions or removed if unused."
+    },
+    "AZ-IDN-009": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Subscriptions without an activity log alert for role assignment changes fail to generate actionable security events when privileged access is granted. A.12.4.1 requires that event logs recording user activities and security-relevant events are produced and maintained. An activity log alert for Microsoft.Authorization/roleAssignments/write must be configured and routed to a monitored channel."
+    },
     "AZ-DB-001": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
