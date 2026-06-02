@@ -93,6 +93,31 @@
       "control_name": "Logical Access Security Measures",
       "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is controlled and verified through authentication procedures."
     },
+        "AZ-IDN-005": {
+      "control_id": "CC6.3",
+      "control_name": "Role-based access control",
+      "description": "Guest users assigned high privilege roles in Entra ID give external parties administrative control over the Azure tenant. CC6.3 requires that role-based access controls restrict access to authorised internal users based on their responsibilities. Privileged roles must be removed from all guest accounts."
+    },
+    "AZ-IDN-006": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "Service principal client secrets older than 90 days or with no expiry date represent unmanaged credentials that persist beyond their useful life. CC6.1 requires that logical access controls implement authentication measures to prevent unauthorised access. Stale or non-expiring secrets must be rotated and replaced with time-bound credentials or managed identities."
+    },
+    "AZ-IDN-007": {
+      "control_id": "CC6.1",
+      "control_name": "Logical Access Security Measures",
+      "description": "Active Entra ID users with no MFA registered can access Azure resources with a single compromised password. CC6.1 requires that logical access controls implement multi-factor authentication to protect against unauthorised access. Conditional Access policies must enforce MFA registration and usage for all active user accounts."
+    },
+    "AZ-IDN-008": {
+      "control_id": "CC6.3",
+      "control_name": "Role-based access control",
+      "description": "Custom RBAC roles with wildcard permissions grant unconstrained access to subscription resources and undermine role-based access controls. CC6.3 requires that role-based access controls restrict access based on defined job responsibilities. Wildcard actions in custom roles must be replaced with explicit, minimal permission sets."
+    },
+    "AZ-IDN-009": {
+      "control_id": "CC7.2",
+      "control_name": "System monitoring",
+      "description": "Without an activity log alert for role assignment changes, privilege escalation events in the subscription are not detected or investigated. CC7.2 requires that the entity monitors system components and the operation of controls to detect anomalies. An alert for Microsoft.Authorization/roleAssignments/write must be created and linked to an active action group."
+    },
     "AZ-DB-001": {
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit and At Rest",
