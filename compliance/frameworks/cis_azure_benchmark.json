@@ -78,6 +78,31 @@
       "control_name": "Ensure that 'Guest invite restrictions' is set to 'Only users assigned to specific admin roles can invite guest users'",
       "description": "Unrestricted guest user invitation settings allow any member of the organisation to invite external users into the tenant without administrative review. This bypasses centralised approval for external identity provisioning and increases the risk of unauthorised access by untrusted parties."
     },
+        "AZ-IDN-005": {
+      "control_id": "1.3",
+      "control_name": "Ensure guest users are reviewed on a monthly basis",
+      "description": "Guest accounts assigned to high privilege roles in Entra ID allow external identities to perform administrative actions in the tenant. CIS 1.3 requires that guest users are reviewed and that privileged access is restricted to internal accounts only. Any guest user holding a role such as Global Administrator, Security Administrator, or User Administrator must have that assignment removed immediately."
+    },
+    "AZ-IDN-006": {
+      "control_id": "1.14",
+      "control_name": "Ensure that service principal passwords are rotated within 90 days",
+      "description": "Service principal client secrets older than 90 days or with no expiry date represent a persistent credential risk. CIS 1.14 requires that service principal passwords are rotated at least every 90 days. Secrets that never expire remain valid indefinitely if leaked, giving an attacker permanent access to the application and its Azure permissions."
+    },
+    "AZ-IDN-007": {
+      "control_id": "1.1",
+      "control_name": "Ensure that multi-factor authentication is enabled for all privileged users",
+      "description": "Active users in Entra ID with no MFA methods registered are vulnerable to password-based attacks including spray and phishing. CIS 1.1 requires that MFA is enabled for all users, particularly those with privileged access. Users without MFA registered must be required to enrol before they can access Azure resources."
+    },
+    "AZ-IDN-008": {
+      "control_id": "1.23",
+      "control_name": "Ensure that custom subscription roles do not exist",
+      "description": "Custom RBAC roles with wildcard actions (*) at subscription scope grant Owner-equivalent permissions and violate the principle of least privilege. CIS 1.23 requires that custom subscription roles do not have wildcard permissions. These roles must be replaced with definitions that specify only the exact actions required for the intended use case."
+    },
+    "AZ-IDN-009": {
+      "control_id": "5.2.1",
+      "control_name": "Ensure that activity log alert exists for Create Policy Assignment",
+      "description": "A subscription without an activity log alert for role assignment changes cannot detect privilege escalation in real time. CIS 5.2.1 requires that activity log alerts exist for administrative operations including role assignment writes. Without this alert, an attacker who elevates their own permissions will go undetected until the next manual review."
+    },
     "AZ-DB-001": {
       "control_id": "4.3.1",
       "control_name": "Ensure 'Allow access to Azure services' for PostgreSQL Database Server is disabled",
