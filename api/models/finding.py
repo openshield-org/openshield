@@ -42,6 +42,9 @@ class Finding:
     scan_id: Optional[str] = None
     playbook: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    cve_references: List[Dict[str, Any]] = field(default_factory=list)
+    cvss_score: Optional[float] = None
+    exploit_available: bool = False
     id: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
@@ -61,6 +64,9 @@ class Finding:
             "scan_id": self.scan_id,
             "playbook": self.playbook,
             "metadata": self.metadata,
+            "cve_references": self.cve_references,
+            "cvss_score": self.cvss_score,
+            "exploit_available": self.exploit_available,
         }
 
 
@@ -108,11 +114,19 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def init_db(self) -> None:
-        """Alias for create_tables to match startup script expectations."""
-        self.create_tables()
+        """Alias for run_migrations. Called by startup.sh on every boot.
+
+        Calling this is always safe — run_migrations() handles both fresh
+        databases and existing ones via IF NOT EXISTS guards throughout.
+        """
+        self.run_migrations()
 
     def create_tables(self) -> None:
-        """Create the findings, scans, and rules tables if they do not exist."""
+        """Create the findings, scans, and rules tables if they do not exist.
+
+        Includes all columns — including CVE columns — so fresh databases
+        never need the ALTER TABLE path in run_migrations().
+        """
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute("""
@@ -140,6 +154,9 @@ class DatabaseManager:
                     playbook        TEXT,
                     frameworks      JSONB,
                     metadata        JSONB,
+                    cve_references  JSONB DEFAULT '[]',
+                    cvss_score      FLOAT DEFAULT NULL,
+                    exploit_available BOOLEAN DEFAULT FALSE,
                     detected_at     TIMESTAMPTZ NOT NULL
                 );
             """)
@@ -153,6 +170,43 @@ class DatabaseManager:
             """)
         conn.commit()
         logger.info("Database tables created / verified")
+
+    def run_migrations(self) -> None:
+        """Ensure the schema is fully current. Safe to call on every startup.
+
+        Calls create_tables() first so the call order never matters — this
+        method is safe whether the database is brand new or has existing data.
+
+        On a fresh database:
+            create_tables() creates all tables including CVE columns.
+            The ALTER TABLE below is a no-op (IF NOT EXISTS).
+
+        On a pre-CVE database (existed before this feature was merged):
+            create_tables() verifies tables exist and skips creation.
+            The ALTER TABLE adds the three CVE columns.
+
+        Concurrent startup safety:
+            Both CREATE TABLE IF NOT EXISTS and ALTER TABLE ADD COLUMN IF NOT
+            EXISTS are atomic at the PostgreSQL catalog level. Two Render
+            instances racing at boot will not error — the second call silently
+            no-ops on whichever statement the first already completed.
+        """
+        self.create_tables()
+
+        conn = self._get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    ALTER TABLE findings
+                        ADD COLUMN IF NOT EXISTS cve_references    JSONB   DEFAULT '[]',
+                        ADD COLUMN IF NOT EXISTS cvss_score        FLOAT   DEFAULT NULL,
+                        ADD COLUMN IF NOT EXISTS exploit_available BOOLEAN DEFAULT FALSE
+                """)
+            conn.commit()
+            logger.info("CVE migrations applied successfully")
+        except Exception as e:
+            logger.error("Failed to run CVE migrations: %s", e)
+            conn.rollback()
 
     # ------------------------------------------------------------------ #
     # Write                                                                 #
@@ -183,8 +237,9 @@ class DatabaseManager:
                         (scan_id, rule_id, rule_name, severity, category,
                          resource_id, resource_name, resource_type,
                          description, remediation, playbook,
-                         frameworks, metadata, detected_at)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                         frameworks, metadata, cve_references,
+                         cvss_score, exploit_available, detected_at)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                     """,
                     (
                         f.get("scan_id"),
@@ -200,11 +255,18 @@ class DatabaseManager:
                         f.get("playbook"),
                         json.dumps(f.get("frameworks", {})),
                         json.dumps(f.get("metadata", {})),
+                        json.dumps(f.get("cve_references", [])),
+                        f.get("cvss_score"),
+                        f.get("exploit_available", False),
                         f.get("detected_at"),
                     ),
                 )
         conn.commit()
-        logger.info("Saved scan %s with %d findings", scan_result["scan_id"], scan_result["total_findings"])
+        logger.info(
+            "Saved scan %s with %d findings",
+            scan_result["scan_id"],
+            scan_result["total_findings"],
+        )
 
     # ------------------------------------------------------------------ #
     # Read                                                                  #
@@ -245,6 +307,37 @@ class DatabaseManager:
             row = cur.fetchone()
             return dict(row) if row else None
 
+    def update_cve_fields(self, findings: List[Dict[str, Any]]) -> None:
+        """Persist CVE enrichment fields for existing findings.
+
+        Updates are no-ops for findings without an id.
+        """
+        if not findings:
+            return
+
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            for f in findings:
+                finding_id = f.get("id")
+                if not finding_id:
+                    continue
+                cur.execute(
+                    """
+                    UPDATE findings
+                    SET cve_references = %s,
+                        cvss_score = %s,
+                        exploit_available = %s
+                    WHERE id = %s
+                    """,
+                    (
+                        json.dumps(f.get("cve_references", [])),
+                        f.get("cvss_score"),
+                        f.get("exploit_available", False),
+                        finding_id,
+                    ),
+                )
+        conn.commit()
+
     def get_scans(self) -> List[Dict[str, Any]]:
         """Return all scan records ordered by most recent first."""
         conn = self._get_conn()
@@ -257,7 +350,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def get_score(self) -> int:
-        """Return a 0–100 security posture score based on open findings.
+        """Return a 0-100 security posture score based on open findings.
 
         HIGH findings deduct 10 points each, MEDIUM 5, LOW 2.
         Score floors at 0.
@@ -273,6 +366,38 @@ class DatabaseManager:
             SEVERITY_WEIGHTS.get(sev.upper(), 0) * count for sev, count in rows
         )
         return max(0, 100 - deduction)
+
+    def get_cve_summary(self) -> Dict[str, Any]:
+        """Return high-level summary of CVE findings for the dashboard."""
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    COUNT(*) as total_findings,
+                    COUNT(CASE WHEN exploit_available = TRUE THEN 1 END) as exploit_count,
+                    MAX(cvss_score) as max_cvss_score,
+                    AVG(cvss_score) as avg_cvss_score,
+                    COUNT(CASE WHEN cvss_score >= 9.0 THEN 1 END) as critical_cve_count
+                FROM findings
+            """)
+            row = cur.fetchone()
+
+        if not row:
+            return {
+                "total_findings": 0,
+                "exploit_count": 0,
+                "max_cvss_score": None,
+                "avg_cvss_score": None,
+                "critical_cve_count": 0,
+            }
+
+        return {
+            "total_findings": row[0],
+            "exploit_count": row[1],
+            "max_cvss_score": row[2],
+            "avg_cvss_score": round(row[3], 2) if row[3] is not None else None,
+            "critical_cve_count": row[4],
+        }
 
     def get_compliance_score(self, framework: str) -> Dict[str, Any]:
         """Return pass/fail breakdown against a compliance framework.

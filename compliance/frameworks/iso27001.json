@@ -98,11 +98,6 @@
       "control_name": "Policy on the use of cryptographic controls",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). A.10.1.1 requires that a policy on the use of cryptographic controls is developed and implemented."
     },
-    "AZ-CMP-003": {
-      "control_id": "A.12.2.1",
-      "control_name": "Controls against malware",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. A.12.2.1 requires that detection, prevention and recovery controls are implemented to protect against malware."
-    },
     "AZ-CMP-004": {
       "control_id": "A.12.6.1",
       "control_name": "Management of technical vulnerabilities",
@@ -167,6 +162,11 @@
       "control_id": "A.9.2.3",
       "control_name": "Management of privileged access rights",
       "description": "The allocation and use of privileged access rights should be restricted and controlled. PIM enforces just-in-time access with time limits and approval workflows, ensuring privileged access rights are tightly managed and not permanently assigned."
+    },
+    "AZ-NET-013": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A virtual network without an Azure Firewall relies on NSGs alone and has no centralized perimeter inspection or logging. A.13.1.1 requires that networks be managed and controlled to protect information in systems and applications. Deploying an Azure Firewall provides stateful inspection, filtering, and logging at the network boundary."
     },
     "AZ-NET-014": {
       "control_id": "A.13.1.1",

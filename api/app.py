@@ -9,6 +9,7 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
 from api.models.finding import DatabaseManager
+from api.routes.ai import ai_bp
 
 load_dotenv()
 
@@ -61,12 +62,17 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Database Management                                                   #
     # ------------------------------------------------------------------ #
+    with app.app_context():
+        db = DatabaseManager()
+        db.run_migrations()
 
     @app.teardown_appcontext
     def close_db(error=None):
         """Ensure the database connection is closed after the request."""
-        db = g.pop("db", None)
-        if db is not None:
+        for key in ("db", "db_conn"):
+            db = g.pop(key, None)
+            if db is None:
+                continue
             try:
                 if hasattr(db, "conn") and db.conn is not None:
                     db.conn.close()
@@ -162,7 +168,7 @@ def create_app() -> Flask:
         logger.error("Unhandled exception: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
-    logger.info("OpenShield API created — %d blueprints registered", len(app.blueprints))
+    logger.info("OpenShield API created - %d blueprints registered", len(app.blueprints))
     return app
 
 

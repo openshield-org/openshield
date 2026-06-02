@@ -18,6 +18,11 @@
       "control_name": "Change Management",
       "description": "A storage account with no lifecycle management policy allows data to accumulate indefinitely with no automatic expiry or tiering. CC8.1 requires that infrastructure and data are managed through formal processes. Implementing a lifecycle policy ensures data retention is controlled and old data is automatically moved or deleted according to organisational policy."
     },
+    "AZ-STOR-004": {
+      "control_id": "CC7.2",
+      "control_name": "System monitoring",
+      "description": "Azure Monitor diagnostic logging must be enabled for all storage account services (blob, queue, table) to ensure that security-relevant events are recorded. CC7.2 requires that the entity monitors the system and takes action to maintain compliance. Without full logging, unauthorized access or data exfiltration attempts may go undetected."
+    },
     "AZ-STOR-005": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
@@ -108,20 +113,10 @@
       "control_name": "Protects Data in Transit and At Rest",
       "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CC6.7 requires that data is protected using encryption. Platform-managed keys lack customer control and audit capabilities needed for compliance."
     },
-    "AZ-CMP-003": {
-      "control_id": "CC6.8",
-      "control_name": "Prevents or Detects Unauthorized or Malicious Software",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorised or malicious software."
-    },
     "AZ-CMP-004": {
       "control_id": "CC7.1",
       "control_name": "System Vulnerabilities are Identified and Managed",
       "description": "The virtual machine does not have automatic OS patching enabled. CC7.1 requires that vulnerabilities in system components are identified and managed through a defined process. Without automatic patching, known OS vulnerabilities are left unmitigated and exploitable."
-    },
-    "AZ-CMP-003": {
-      "control_id": "CC6.8",
-      "control_name": "Prevents or Detects Unauthorized or Malicious Software",
-      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CC6.8 requires that controls are implemented to prevent or detect and act upon the introduction of unauthorized or malicious software. Without endpoint protection, malicious code executing on the VM will not be detected or blocked."
     },
     "AZ-KV-001": {
       "control_id": "A1.2",
@@ -163,7 +158,12 @@
       "control_name": "Role-based access control",
       "description": "PIM provides role-based access control with time-bound activation for privileged roles. Without PIM, admin roles are permanently assigned with no controls, violating the requirement for managed and restricted privileged access."
     },
-    "AZ-NET-014": {
+    "AZ-NET-013": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A virtual network without an Azure Firewall relies on NSGs alone and lacks a centralized point to inspect, filter, and log traffic crossing the network boundary. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Deploying an Azure Firewall enforces inspected, logged perimeter access for the network."
+    },
+     "AZ-NET-014": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "VNet peering with allowGatewayTransit or useRemoteGateways enabled allows traffic to cross network boundaries through shared gateways, weakening the logical separation between network zones. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Gateway transit on peering connections should be disabled to enforce boundary separation."

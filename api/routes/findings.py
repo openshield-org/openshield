@@ -5,16 +5,17 @@ import os
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
+from scanner.cve_correlator import enrich_findings
 
 findings_bp = Blueprint("findings", __name__)
 logger = logging.getLogger(__name__)
 
 
 def _get_db() -> DatabaseManager:
-    if "db_conn" not in g:
-        g.db_conn = DatabaseManager(os.environ["DATABASE_URL"])
-        g.db_conn.connect()
-    return g.db_conn
+    if "db" not in g:
+        g.db = DatabaseManager(os.environ["DATABASE_URL"])
+        g.db.connect()
+    return g.db
 
 
 @findings_bp.get("/api/findings")
@@ -22,10 +23,10 @@ def list_findings():
     """Return findings, optionally filtered by severity, category, or rule_id.
 
     Query parameters:
-        severity  — HIGH | MEDIUM | LOW | INFO
-        category  — Storage | Network | Identity | Database | Compute | KeyVault
-        rule_id   — e.g. AZ-STOR-001
-        scan_id   — UUID of a specific scan
+        severity  - HIGH | MEDIUM | LOW | INFO
+        category  - Storage | Network | Identity | Database | Compute | KeyVault
+        rule_id   - e.g. AZ-STOR-001
+        scan_id   - UUID of a specific scan
     """
     try:
         filters = {
@@ -35,6 +36,16 @@ def list_findings():
         }
         db = _get_db()
         findings = db.get_findings(filters)
+        legacy_findings = [
+            f
+            for f in findings
+            if f.get("cve_references") is None
+            and f.get("cvss_score") is None
+            and f.get("exploit_available") is None
+        ]
+        if legacy_findings:
+            enrich_findings(legacy_findings)
+            db.update_cve_fields(legacy_findings)
         return jsonify({"count": len(findings), "findings": findings})
     except Exception as exc:
         logger.error("Failed to list findings: %s", exc)
