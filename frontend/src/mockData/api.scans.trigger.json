@@ -1,0 +1,8 @@
+{
+  "scan_id": "scan-new-20260601",
+  "subscription_id": "sub-123",
+  "started_at": "2026-06-01T10:00:00Z",
+  "completed_at": null,
+  "total_findings": null,
+  "status": "running"
+}

@@ -1,26 +1,42 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        cream: '#EDE9E6',
-        tan: '#C9996B',
-        'dark-brown': '#5C4F4A',
-        sage: '#5C766D',
-        'text-gray': '#282828',  // ← ADD THIS
-        critical: '#D64545',
-        high: '#E67E22',
-        success: '#27AE60',
+        'brand-primary': '#10b981',
+        'brand-secondary': '#059669',
+        'severity-high': '#ef4444',
+        'severity-medium': '#f97316',
+        'severity-low': '#10b981',
+        'severity-info': '#6b7280',
+        'bg-primary': '#ffffff',
+        'bg-secondary': '#f8f9fa',
+        'bg-tertiary': '#f1f3f5',
+        'bg-dark-primary': '#0f0f0f',
+        'bg-dark-secondary': '#1a1a1a',
+        'bg-dark-tertiary': '#2d2d2d',
+        'text-primary': '#1a1a1a',
+        'text-secondary': '#666666',
+        'text-tertiary': '#999999',
+        'text-dark-primary': '#ffffff',
+        'text-dark-secondary': '#e0e0e0',
+        'text-dark-tertiary': '#a0a0a0',
+        'border-light': '#e5e7eb',
+        'border-dark': '#333333',
+        'status-success': '#10b981',
+        'status-error': '#ef4444',
+        'status-warning': '#f59e0b',
+        'status-info': '#3b82f6',
+      },
+      boxShadow: {
+        'soft': '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+        'soft-lg': '0 4px 6px -1px rgb(0 0 0 / 0.1)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
       },
     },
   },
+  darkMode: 'class',
   plugins: [],
-}
+};

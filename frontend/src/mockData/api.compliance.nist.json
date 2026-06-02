@@ -1,0 +1,21 @@
+{
+  "framework": "NIST SP 800-53 Rev 5",
+  "version": "5.0.0",
+  "score_percent": 68,
+  "passed": 17,
+  "failed": 8,
+  "total_controls": 25,
+  "controls": [
+    { "control_id": "AC-2",    "control_name": "Account Management",                                     "rule_id": null,          "status": "PASS" },
+    { "control_id": "AC-3",    "control_name": "Access Enforcement",                                     "rule_id": "AZ-STOR-001", "status": "FAIL" },
+    { "control_id": "AC-6",    "control_name": "Least Privilege",                                        "rule_id": "AZ-IDN-001",  "status": "FAIL" },
+    { "control_id": "AC-17",   "control_name": "Remote Access",                                          "rule_id": "AZ-NET-001",  "status": "FAIL" },
+    { "control_id": "AU-2",    "control_name": "Event Logging",                                          "rule_id": "AZ-NET-003",  "status": "FAIL" },
+    { "control_id": "IA-5",    "control_name": "Authenticator Management",                               "rule_id": null,          "status": "PASS" },
+    { "control_id": "SC-7",    "control_name": "Boundary Protection",                                    "rule_id": "AZ-DB-001",   "status": "FAIL" },
+    { "control_id": "SC-8",    "control_name": "Transmission Confidentiality and Integrity",             "rule_id": "AZ-STOR-002", "status": "FAIL" },
+    { "control_id": "SI-2",    "control_name": "Flaw Remediation",                                       "rule_id": "AZ-CMP-001",  "status": "FAIL" },
+    { "control_id": "SI-4",    "control_name": "System Monitoring",                                      "rule_id": null,          "status": "PASS" },
+    { "control_id": "CP-9",    "control_name": "Information System Backup",                              "rule_id": null,          "status": "PASS" }
+  ]
+}
