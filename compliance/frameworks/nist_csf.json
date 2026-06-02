@@ -78,6 +78,31 @@
       "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
       "description": "Unrestricted guest user invitations allow any organisation member to introduce external identities into the tenant without centralised review. PR.AC-1 requires that identities and credentials are managed and verified. Restricting guest invitations to administrators ensures external identity provisioning is controlled and audited."
     },
+        "AZ-IDN-005": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Guest users with high privilege roles in Entra ID violate the principle of least privilege and separation of duties. PR.AC-4 requires that access permissions and authorisations are managed, incorporating the principles of least privilege and separation of duties. External guest accounts must not hold privileged directory roles."
+    },
+    "AZ-IDN-006": {
+      "control_id": "PR.AC-1",
+      "control_name": "Identities and credentials are managed for authorised devices and users",
+      "description": "Client secrets on service principals that are older than 90 days or have no expiry violate credential lifecycle management requirements. PR.AC-1 requires that identities and credentials are issued, managed, verified, revoked, and audited for authorised devices, users, and processes. Long-lived secrets must be rotated or replaced with certificate-based or managed identity authentication."
+    },
+    "AZ-IDN-007": {
+      "control_id": "PR.AC-7",
+      "control_name": "Users, devices, and other assets are authenticated",
+      "description": "Active Entra ID users without MFA registered rely solely on a password for authentication, which is insufficient against modern credential attacks. PR.AC-7 requires that users, devices, and other assets are authenticated commensurate with the risk of the transaction. MFA must be enforced for all active user accounts via Conditional Access policy."
+    },
+    "AZ-IDN-008": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Custom RBAC roles containing wildcard action patterns grant unrestricted resource permissions equivalent to the Owner built-in role. PR.AC-4 requires that access permissions and authorisations are managed incorporating the principle of least privilege. Wildcard actions in custom role definitions must be replaced with the minimum specific actions required."
+    },
+    "AZ-IDN-009": {
+      "control_id": "DE.CM-3",
+      "control_name": "Personnel activity is monitored to detect potential cybersecurity events",
+      "description": "The absence of an activity log alert for Microsoft.Authorization/roleAssignments/write means that privilege escalation events in the subscription are not detected in real time. DE.CM-3 requires that personnel activity is monitored to detect potential cybersecurity events. An alert must be configured to notify security personnel whenever a role assignment is created or modified."
+    },
     "AZ-DB-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
