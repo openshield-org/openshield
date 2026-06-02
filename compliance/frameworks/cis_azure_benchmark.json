@@ -73,6 +73,11 @@
       "control_name": "Ensure that 'Multi-Factor Authentication Status' is 'Enabled' for all Privileged Users",
       "description": "Multi-Factor Authentication requires an individual to present a minimum of two separate forms of authentication before access is granted. MFA should be enforced for all users with administrative privileges via Conditional Access policies."
     },
+    "AZ-IDN-003": {
+      "control_id": "1.15",
+      "control_name": "Ensure that 'Guest invite restrictions' is set to 'Only users assigned to specific admin roles can invite guest users'",
+      "description": "Unrestricted guest user invitation settings allow any member of the organisation to invite external users into the tenant without administrative review. This bypasses centralised approval for external identity provisioning and increases the risk of unauthorised access by untrusted parties."
+    },
     "AZ-DB-001": {
       "control_id": "4.3.1",
       "control_name": "Ensure 'Allow access to Azure services' for PostgreSQL Database Server is disabled",
@@ -88,20 +93,85 @@
       "control_name": "Ensure that 'OS disk' are encrypted",
       "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
     },
+    "AZ-CMP-002": {
+      "control_id": "7.2",
+      "control_name": "Ensure that 'OS disk' are encrypted",
+      "description": "Virtual machine OS and data disks are using platform-managed encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be protected using customer-managed keys or Azure Disk Encryption. Platform-managed encryption does not give the organisation control over the encryption keys and does not satisfy this control."
+    },
+    "AZ-CMP-003": {
+      "control_id": "8.2",
+      "control_name": "Ensure that 'Endpoint protection solution' is installed on VMs",
+      "description": "The virtual machine does not have a recognised endpoint protection extension installed. CIS 8.2 requires that an approved endpoint protection solution is installed and running on all virtual machines. Without endpoint protection, malware and ransomware can execute without detection."
+    },
+    "AZ-CMP-004": {
+      "control_id": "8.3",
+      "control_name": "Ensure that 'OS patching' is enabled for virtual machines",
+      "description": "The virtual machine does not have automatic OS patching enabled. CIS 8.3 requires that OS patches are applied in a timely manner. Unpatched VMs are vulnerable to known exploits targeting unpatched OS vulnerabilities."
+    },  
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
-      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
+      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7\u201390 days), protecting against accidental or malicious deletion."
     },
     "AZ-STOR-003": {
       "control_id": "3.7",
       "control_name": "Ensure that storage accounts have lifecycle management policies configured",
       "description": "Storage accounts without lifecycle management policies retain data indefinitely. This increases storage costs, expands the attack surface through accumulation of stale data, and may violate data retention compliance requirements. Lifecycle policies automate the transition and deletion of blobs based on age and access patterns."
     },
+    "AZ-STOR-004": {
+      "control_id": "3.3",
+      "control_name": "Ensure Storage logging is enabled for Blob, Queue, and Table services for read, write, and delete requests",
+      "description": "Enabling diagnostic logging for Azure Storage blob, queue, and table services records read, write, and delete operations. Without logging, unauthorized access, data exfiltration, or destructive operations on storage services cannot be detected or investigated."
+    },
+    "AZ-STOR-005": {
+      "control_id": "3.1",
+      "control_name": "Ensure that storage accounts use geo-redundant replication",
+      "description": "Storage accounts configured with locally redundant (LRS) or zone-redundant (ZRS) replication do not replicate data outside the primary region. A regional disaster or prolonged outage could result in data unavailability or data loss. Geo-redundant storage (GRS or GZRS) replicates data asynchronously to a secondary Azure region, protecting against region-wide failures."
+    },
     "AZ-KV-002": {
       "control_id": "8.3",
       "control_name": "Ensure that public network access to Key Vault is disabled",
       "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
+    },
+    "AZ-NET-011": {
+      "control_id": "6.5",
+      "control_name": "Ensure that Network Watcher is enabled in all regions",
+      "description": "Network Watcher should be enabled in all regions where Azure resources are deployed. Network Watcher provides network monitoring, diagnostics, and logging capabilities essential for investigating network-level incidents."
+    },
+    "AZ-DB-003": {
+      "control_id": "4.3.6",
+      "control_name": "Ensure SSL connection is enabled for PostgreSQL Flexible Server",
+      "description": "SSL enforcement should be enabled on PostgreSQL Flexible Server to ensure data in transit is encrypted. Without SSL, database connections transmit data in plaintext, exposing it to interception."
+    },
+    "AZ-KV-004": {
+      "control_id": "8.6",
+      "control_name": "Ensure that Azure Key Vault Purge Protection is Enabled",
+      "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of vaults and their secrets, keys, and certificates during the soft-delete retention period. Even with soft delete enabled, a malicious insider or privileged account can purge vault objects before the retention period expires. Enabling purge protection prevents this by blocking purge operations for the full retention period."
+    },
+    "AZ-DB-004": {
+      "control_id": "4.1.2",
+      "control_name": "Ensure that 'Allow access to Azure services' for SQL Servers is disabled",
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource \u2014 including services from other tenants \u2014 to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
+    },
+    "AZ-IDN-004": {
+      "control_id": "1.14",
+      "control_name": "Ensure that 'Privileged Identity Management' is used to manage privileged access",
+      "description": "Privileged Identity Management provides time-based and approval-based role activation to mitigate the risk of excessive, unnecessary, or misused access permissions on resources. Without PIM, admin roles are permanently assigned with no just-in-time controls or approval workflows."
+    },
+    "AZ-KV-005": {
+      "control_id": "8.5",
+      "control_name": "Ensure that the expiration date is set on all certificates",
+      "description": "A certificate stored in Azure Key Vault is expiring within 30 days and does not have auto-renewal configured. CIS 8.5 requires that expiration dates are monitored and certificates are renewed before expiry to prevent service outages and broken authentication flows."
+    },
+    "AZ-NET-013": {
+      "control_id": "6.4",
+      "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
+      "description": "Virtual networks should be protected by an Azure Firewall rather than relying on Network Security Groups alone. Azure Firewall provides centralized, stateful traffic inspection, FQDN and threat-intelligence filtering, and network-wide logging that NSGs cannot offer. VNets without an associated Azure Firewall lack a perimeter inspection and logging layer."
+    },
+    "AZ-NET-014": {
+      "control_id": "6.4",
+      "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
+      "description": "VNet peering connections with allowGatewayTransit or useRemoteGateways enabled allow traffic to route between network segments through shared gateways. This can break network segmentation and enable lateral movement between zones that should remain isolated. Peering connections should be reviewed and gateway transit disabled unless explicitly required and documented."
     }
   }
 }

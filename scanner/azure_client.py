@@ -11,7 +11,9 @@ from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
 from azure.mgmt.sql import SqlManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
 from azure.mgmt.storage import StorageManagementClient
+
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +67,13 @@ class AzureClient:
     ) -> Optional[bool]:
         """Check whether a storage account has a lifecycle management policy.
 
-        Three-state return — the calling rule uses strict identity checks
+        Three-state return - the calling rule uses strict identity checks
         (is False / is None) to distinguish these states:
 
-            True  — policy exists and contains at least one enabled rule.
-            False — ResourceNotFoundError: no policy configured (non-compliant).
-            None  — any other error (permissions, network, SDK bug).
-                    Caller must NOT create a finding — skip with a warning
+            True  - policy exists and contains at least one enabled rule.
+            False - ResourceNotFoundError: no policy configured (non-compliant).
+            None  - any other error (permissions, network, SDK bug).
+                    Caller must NOT create a finding - skip with a warning
                     to avoid false positives.
 
         The StorageManagementClient is created fresh here following the same
@@ -84,23 +86,23 @@ class AzureClient:
             account_name:   Name of the storage account.
 
         Returns:
-            Optional[bool] — True, False, or None as described above.
+            Optional[bool] - True, False, or None as described above.
         """
         try:
             client = StorageManagementClient(self.credential, self.subscription_id)
             policy = client.management_policies.get(
                 resource_group, account_name, "default"
             )
-            # A policy shell can exist with an empty rules list —
+            # A policy shell can exist with an empty rules list -
             # treat that the same as no policy (non-compliant).
             rules = getattr(getattr(policy, "policy", None), "rules", None)
             return bool(rules)
 
         except ResourceNotFoundError:
             # Expected path: the account genuinely has no lifecycle policy.
-            # This is the non-compliant condition — return False to flag it.
+            # This is the non-compliant condition - return False to flag it.
             logger.debug(
-                "get_storage_lifecycle_policy(%s): ResourceNotFound — no policy",
+                "get_storage_lifecycle_policy(%s): ResourceNotFound - no policy",
                 account_name,
             )
             return False
@@ -108,9 +110,9 @@ class AzureClient:
         except HttpResponseError as exc:
             # 403 = service principal lacks
             # Microsoft.Storage/storageAccounts/managementPolicies/read.
-            # Return None — cannot determine compliance, do not flag.
+            # Return None - cannot determine compliance, do not flag.
             logger.error(
-                "get_storage_lifecycle_policy(%s) HTTP %s — "
+                "get_storage_lifecycle_policy(%s) HTTP %s - "
                 "check service principal permissions: %s",
                 account_name,
                 exc.status_code,
@@ -120,10 +122,87 @@ class AzureClient:
 
         except Exception as exc:
             # Unexpected failure (network, SDK bug, etc.).
-            # Return None — skip rather than create a false positive.
+            # Return None - skip rather than create a false positive.
             logger.error(
                 "get_storage_lifecycle_policy(%s) unexpected error: %s",
                 account_name,
+                exc,
+            )
+            return None
+
+    def get_storage_service_logging(
+        self, resource_group: str, account_name: str, service: str
+    ) -> Optional[bool]:
+        """Check Azure Monitor diagnostic settings for a storage service sub-resource.
+
+        Three-state return - the calling rule uses strict identity checks
+        (is False / is None) to distinguish these states:
+
+            True  - at least one diagnostic setting has StorageRead, StorageWrite,
+                    and StorageDelete all enabled (compliant).
+            False - no setting covers all three required categories (non-compliant).
+            None  - permission error or unexpected SDK failure.
+                    Caller must NOT create a finding - skip with a warning
+                    to avoid false positives.
+
+        Args:
+            resource_group: Resource group containing the storage account.
+            account_name:   Name of the storage account.
+            service:        Sub-service to check: "blob", "queue", or "table".
+
+        Returns:
+            Optional[bool] - True, False, or None as described above.
+        """
+        _REQUIRED = {"StorageRead", "StorageWrite", "StorageDelete"}
+        _SERVICE_MAP = {
+            "blob":  "blobServices",
+            "queue": "queueServices",
+            "table": "tableServices",
+        }
+        svc_path = _SERVICE_MAP.get(service)
+        if not svc_path:
+            logger.error(
+                "get_storage_service_logging: unknown service %r - must be "
+                "blob, queue, or table",
+                service,
+            )
+            return None
+
+        resource_uri = (
+            f"/subscriptions/{self.subscription_id}"
+            f"/resourceGroups/{resource_group}"
+            f"/providers/Microsoft.Storage/storageAccounts/{account_name}"
+            f"/{svc_path}/default"
+        )
+        try:
+            client = MonitorManagementClient(self.credential, self.subscription_id)
+            settings = list(client.diagnostic_settings.list(resource_uri))
+            for setting in settings:
+                enabled_categories = {
+                    log.category
+                    for log in (getattr(setting, "logs", None) or [])
+                    if getattr(log, "enabled", False)
+                }
+                if _REQUIRED.issubset(enabled_categories):
+                    return True
+            return False
+
+        except HttpResponseError as exc:
+            logger.error(
+                "get_storage_service_logging(%s/%s) HTTP %s - "
+                "check service principal permissions: %s",
+                account_name,
+                service,
+                exc.status_code,
+                exc,
+            )
+            return None
+
+        except Exception as exc:
+            logger.error(
+                "get_storage_service_logging(%s/%s) unexpected error: %s",
+                account_name,
+                service,
                 exc,
             )
             return None
@@ -170,6 +249,42 @@ class AzureClient:
             logger.error("get_public_ip_addresses failed: %s", exc)
             return []
 
+    def get_azure_firewalls(self, resource_group: str) -> List[Any]:
+        """List all Azure Firewalls in a resource group."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.azure_firewalls.list(resource_group))
+        except Exception as exc:
+            logger.error("get_azure_firewalls(%s) failed: %s", resource_group, exc)
+            return []
+
+    def get_all_azure_firewalls(self) -> Optional[List[Any]]:
+        """List all Azure Firewalls in the subscription.
+
+        Three-state return - the calling rule distinguishes these states:
+
+            [...] - successful listing (may be empty: genuinely no firewalls).
+            None  - listing failed (permissions, network, SDK error). The
+                    caller must NOT flag VNets as non-compliant, since it
+                    cannot tell which VNets are protected - skip to avoid
+                    false positives.
+        """
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.azure_firewalls.list_all())
+        except Exception as exc:
+            logger.error("get_all_azure_firewalls failed: %s", exc)
+            return None
+
+    def get_vnet_peerings(self, resource_group: str, vnet_name: str) -> List[Any]:
+        """List all peering connections for a Virtual Network."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.virtual_network_peerings.list(resource_group, vnet_name))
+        except Exception as exc:
+            logger.error("get_vnet_peerings(%s) failed: %s", vnet_name, exc)
+            return []
+
     # ------------------------------------------------------------------ #
     # Compute                                                               #
     # ------------------------------------------------------------------ #
@@ -182,6 +297,21 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_virtual_machines failed: %s", exc)
             return []
+
+    def get_vm_extensions(
+        self, resource_group: str, vm_name: str
+    ) -> Optional[List[Any]]:
+        """List all extensions installed on a virtual machine."""
+        try:
+            result = ComputeManagementClient(
+                self.credential, self.subscription_id
+            ).virtual_machine_extensions.list(resource_group, vm_name)
+            return list(getattr(result, "value", []) or [])
+        except Exception as exc:
+            logger.error(
+                "get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc
+            )
+            return None
 
     # ------------------------------------------------------------------ #
     # Databases                                                             #
@@ -218,6 +348,19 @@ class AzureClient:
             )
             return None
 
+    def get_sql_server_firewall_rules(
+        self, resource_group: str, server_name: str
+    ) -> List[Any]:
+        """List all firewall rules for an Azure SQL server."""
+        try:
+            client = SqlManagementClient(self.credential, self.subscription_id)
+            return list(client.firewall_rules.list_by_server(resource_group, server_name))
+        except Exception as exc:
+            logger.error(
+                "get_sql_server_firewall_rules(%s) failed: %s", server_name, exc
+            )
+            return []
+
     # ------------------------------------------------------------------ #
     # Key Vault                                                             #
     # ------------------------------------------------------------------ #
@@ -230,6 +373,69 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_key_vaults failed: %s", exc)
             return []
+
+    def get_key_vault_certificates(self, vault_name: str) -> List[Any]:
+        """List all certificates in a Key Vault using the Key Vault data plane API."""
+        try:
+            from azure.keyvault.certificates import CertificateClient
+            vault_url = f"https://{vault_name}.vault.azure.net"
+            client = CertificateClient(vault_url=vault_url, credential=self.credential)
+            return list(client.list_properties_of_certificates())
+        except Exception as exc:
+            logger.error(
+                "get_key_vault_certificates(%s) failed: %s", vault_name, exc
+            )
+            return []
+
+    # ------------------------------------------------------------------ #
+    # Monitoring                                                            #
+    # ------------------------------------------------------------------ #
+
+    def get_diagnostic_settings(self, resource_id: str) -> Optional[bool]:
+        """Return diagnostic logging status for a resource.
+
+        Three-state return:
+
+            True  - at least one diagnostic log category is enabled.
+            False - no diagnostic settings exist or all logs are disabled.
+            None  - unable to determine status due to permissions/API failure.
+
+        Returns:
+            Optional[bool] - True, False, or None as described above.
+        """
+        try:
+            client = MonitorManagementClient(
+                self.credential,
+                self.subscription_id,
+            )
+            settings = list(client.diagnostic_settings.list(resource_id))
+            if not settings:
+                return False
+            for setting in settings:
+                logs = getattr(setting, "logs", [])
+                for log in logs:
+                    category = getattr(log, "category", "")
+                    enabled = getattr(log, "enabled", False)
+                    if category == "AuditEvent" and enabled:
+                        return True
+            return False
+
+        except HttpResponseError as exc:
+            logger.error(
+                "get_diagnostic_settings(%s) HTTP %s: %s",
+                resource_id,
+                exc.status_code,
+                exc,
+            )
+            return None
+
+        except Exception as exc:
+            logger.error(
+                "get_diagnostic_settings(%s) failed: %s",
+                resource_id,
+                exc,
+            )
+            return None
 
     # ------------------------------------------------------------------ #
     # Identity / Authorization                                              #
@@ -252,6 +458,32 @@ class AzureClient:
             logger.error("get_service_principals failed: %s", exc)
             return []
 
+    def get_postgresql_flexible_servers(self) -> List[Any]:
+        """List all PostgreSQL Flexible Server instances in the subscription."""
+        try:
+            from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
+            client = FlexClient(self.credential, self.subscription_id)
+            return list(client.servers.list())
+        except Exception as exc:
+            logger.error("get_postgresql_flexible_servers failed: %s", exc)
+            return []
+
+    def get_postgresql_flexible_server_parameters(
+        self, resource_group: str, server_name: str
+    ) -> List[Any]:
+        """List all configuration parameters for a PostgreSQL Flexible Server."""
+        try:
+            from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
+            client = FlexClient(self.credential, self.subscription_id)
+            return list(client.configurations.list_by_server(resource_group, server_name))
+        except Exception as exc:
+            logger.error(
+                "get_postgresql_flexible_server_parameters(%s) failed: %s",
+                server_name,
+                exc,
+            )
+            return []
+
     def get_conditional_access_policies(self) -> List[Any]:
         """Fetch Conditional Access policies from the Microsoft Graph API.
 
@@ -272,4 +504,33 @@ class AzureClient:
             return response.json().get("value", [])
         except Exception as exc:
             logger.error("get_conditional_access_policies failed: %s", exc)
+            return []
+
+    def get_regions_with_resources(self) -> List[str]:
+        """List all regions that have at least one resource deployed."""
+        try:
+            from azure.mgmt.resource import ResourceManagementClient
+            client = ResourceManagementClient(self.credential, self.subscription_id)
+            regions = {
+                r.location.lower().replace(" ", "")
+                for r in client.resources.list()
+                if r.location
+            }
+            return list(regions)
+        except Exception as exc:
+            logger.error("get_regions_with_resources failed: %s", exc)
+            return []
+
+    def get_network_watcher_regions(self) -> List[str]:
+        """List all regions that already have Network Watcher enabled."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            regions = {
+                w.location.lower().replace(" ", "")
+                for w in client.network_watchers.list_all()
+                if w.location
+            }
+            return list(regions)
+        except Exception as exc:
+            logger.error("get_network_watcher_regions failed: %s", exc)
             return []

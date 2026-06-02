@@ -34,7 +34,13 @@ jobs:
         run: |
           echo "=== Checking Python syntax on scanner/rules/ ==="
           FAIL=0
-          for f in scanner/rules/az_*.py; do
+          shopt -s nullglob
+          files=(scanner/rules/az_*.py)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "ERROR: No rule files found matching scanner/rules/az_*.py"
+            exit 1
+          fi
+          for f in "${files[@]}"; do
             if ! python -m py_compile "$f" 2>&1; then
               echo "SYNTAX ERROR: $f"
               FAIL=1
@@ -116,11 +122,15 @@ jobs:
         id: cred_scan
         run: |
           echo "=== Scanning for hardcoded credentials ==="
+          # Each credential-name pattern requires a quoted string literal on the
+          # right-hand side. This flags real hardcoded values (api_key = "sk-...")
+          # while ignoring safe assignments to function calls or expressions
+          # (api_key = str(data.get(...)) , _SECRET = secrets.token_urlsafe(32)).
           PATTERNS=(
-            "password\s*="
-            "secret\s*="
-            "api_key\s*="
-            "client_secret\s*="
+            "password\s*=\s*['\"]"
+            "secret\s*=\s*['\"]"
+            "api_key\s*=\s*['\"]"
+            "client_secret\s*=\s*['\"]"
             "AZURE_CLIENT_SECRET\s*=\s*['\"][^'\"]\+"
             "-----BEGIN.*PRIVATE KEY-----"
             "AccountKey="
@@ -137,9 +147,12 @@ jobs:
               grep -v "\.env" | \
               grep -v "os\.environ" | \
               grep -v "os\.getenv" | \
-              grep -v "#" | \
+              grep -vE '^\s*#' | \
               grep -v "example" | \
-              grep -v "placeholder" || true)
+              grep -v "placeholder" | \
+              grep -v "\.get(" | \
+              grep -v "request\." | \
+              grep -v "config\." || true)
 
             if [ -n "$matches" ]; then
               echo "POTENTIAL CREDENTIAL LEAK — pattern '$pattern':"
@@ -161,7 +174,13 @@ jobs:
         run: |
           echo "=== Checking playbooks exist and are valid bash ==="
           FAIL=0
-          for rule_file in scanner/rules/az_*.py; do
+          shopt -s nullglob
+          files=(scanner/rules/az_*.py)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "ERROR: No rule files found matching scanner/rules/az_*.py"
+            exit 1
+          fi
+          for rule_file in "${files[@]}"; do
             filename=$(basename "$rule_file" .py)
             playbook="playbooks/cli/fix_${filename}.sh"
 
@@ -287,7 +306,8 @@ jobs:
                   continue
               fpath = os.path.join(framework_dir, fname)
               try:
-                  data = json.load(open(fpath))
+                  with open(fpath) as f:
+                      data = json.load(f)
               except (json.JSONDecodeError, OSError):
                   continue
 

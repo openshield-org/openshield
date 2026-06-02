@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
+from api.models.finding import DatabaseManager
+from api.routes.ai import ai_bp
+
 load_dotenv()
 
 logging.basicConfig(
@@ -28,14 +31,54 @@ def create_app() -> Flask:
     - JWT authentication middleware on all non-public routes
     - Blueprints for findings, scans, score, and compliance
     - JSON error handlers for 400, 401, 403, 404, and 500
+    - Global database connection teardown
     """
     app = Flask(__name__)
-    app.config["JWT_SECRET"] = os.environ.get("JWT_SECRET", "change-me-in-production")
+
+    # ------------------------------------------------------------------ #
+    # Configuration & Security                                             #
+    # ------------------------------------------------------------------ #
+    jwt_key = os.environ.get("JWT_SECRET")
+    if not jwt_key:
+        logger.warning(
+            "!!! SECURITY WARNING: JWT_SECRET NOT SET. USING INSECURE DEFAULT !!! "
+            "For production deployments, you MUST set a strong, unique JWT_SECRET."
+        )
+        jwt_key = "change-me-in-production"
+    app.config["JWT_SECRET"] = jwt_key
 
     # ------------------------------------------------------------------ #
     # CORS                                                                  #
     # ------------------------------------------------------------------ #
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    allowed_origins_raw = os.environ.get("ALLOWED_ORIGINS", "*")
+    if allowed_origins_raw == "*":
+        logger.warning(
+            "!!! SECURITY WARNING: ALLOWED_ORIGINS NOT SET. DEFAULTING TO '*' !!! "
+            "For production deployments, set this to your specific frontend domain(s)."
+        )
+    allowed_origins = allowed_origins_raw.split(",")
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+
+    # ------------------------------------------------------------------ #
+    # Database Management                                                   #
+    # ------------------------------------------------------------------ #
+    with app.app_context():
+        db = DatabaseManager()
+        db.run_migrations()
+
+    @app.teardown_appcontext
+    def close_db(error=None):
+        """Ensure the database connection is closed after the request."""
+        for key in ("db", "db_conn"):
+            db = g.pop(key, None)
+            if db is None:
+                continue
+            try:
+                if hasattr(db, "conn") and db.conn is not None:
+                    db.conn.close()
+                    logger.debug("Database connection closed gracefully")
+            except Exception as exc:
+                logger.error("Error closing database connection: %s", exc)
 
     # ------------------------------------------------------------------ #
     # JWT middleware                                                         #
@@ -71,19 +114,30 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Blueprints                                                            #
     # ------------------------------------------------------------------ #
+    from api.routes.ai import ai_bp
     from api.routes.compliance import compliance_bp
     from api.routes.findings import findings_bp
     from api.routes.scans import scans_bp
     from api.routes.score import score_bp
 
+    app.register_blueprint(ai_bp)
     app.register_blueprint(findings_bp)
     app.register_blueprint(scans_bp)
     app.register_blueprint(score_bp)
     app.register_blueprint(compliance_bp)
 
     # ------------------------------------------------------------------ #
-    # Health check (public)                                                 #
+    # Routes (public)                                                      #
     # ------------------------------------------------------------------ #
+
+    @app.get("/")
+    def index():
+        return jsonify({
+            "message": "Welcome to the OpenShield REST API",
+            "version": "1.0.0",
+            "docs": "/docs",
+            "status": "online"
+        })
 
     @app.get("/health")
     def health():
@@ -114,12 +168,13 @@ def create_app() -> Flask:
         logger.error("Unhandled exception: %s", exc)
         return jsonify({"error": "Internal server error"}), 500
 
-    logger.info("OpenShield API created — %d blueprints registered", len(app.blueprints))
+    logger.info("OpenShield API created - %d blueprints registered", len(app.blueprints))
     return app
 
 
+application = create_app()
+
 if __name__ == "__main__":
-    application = create_app()
     application.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000)),
