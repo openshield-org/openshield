@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Paths that do not require a JWT token
 _PUBLIC_PATHS = {"/health", "/"}
 
-_DEFAULT_JWT_SECRET = "change-me-in-production"
+_INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
 _GENERATE_CMD = "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
 
@@ -56,7 +56,7 @@ def _resolve_jwt_secret() -> str:
                 "Production deployments require a strong, unique JWT_SECRET. "
                 f"Generate one with: {_GENERATE_CMD}"
             )
-        if jwt_key == _DEFAULT_JWT_SECRET:
+        if jwt_key == _INSECURE_JWT_DEFAULT:
             raise RuntimeError(
                 "FATAL: JWT_SECRET is set to the insecure default value. "
                 "Production deployments must use a unique secret. "
@@ -76,7 +76,7 @@ def _resolve_jwt_secret() -> str:
             "Set OPENSHIELD_ENV=production (or RENDER=true) to enforce a strong "
             "secret and block startup when it is missing. !!!"
         )
-        return _DEFAULT_JWT_SECRET
+        return _INSECURE_JWT_DEFAULT
 
     return jwt_key
 

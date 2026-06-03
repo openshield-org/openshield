@@ -4,7 +4,7 @@ import secrets
 
 import pytest
 
-from api.app import _DEFAULT_JWT_SECRET, _MIN_JWT_SECRET_LENGTH, _resolve_jwt_secret, create_app
+from api.app import _INSECURE_JWT_DEFAULT, _MIN_JWT_SECRET_LENGTH, _resolve_jwt_secret, create_app
 
 
 def _clear_jwt_env(monkeypatch):
@@ -19,21 +19,21 @@ def _clear_jwt_env(monkeypatch):
 def test_unspecified_env_allows_default(monkeypatch):
     """No env vars → permissive path; returns the hardcoded default."""
     _clear_jwt_env(monkeypatch)
-    assert _resolve_jwt_secret() == _DEFAULT_JWT_SECRET
+    assert _resolve_jwt_secret() == _INSECURE_JWT_DEFAULT
 
 
 def test_development_env_allows_default(monkeypatch):
     """OPENSHIELD_ENV=development + no JWT_SECRET → returns default."""
     _clear_jwt_env(monkeypatch)
     monkeypatch.setenv("OPENSHIELD_ENV", "development")
-    assert _resolve_jwt_secret() == _DEFAULT_JWT_SECRET
+    assert _resolve_jwt_secret() == _INSECURE_JWT_DEFAULT
 
 
 def test_flask_debug_allows_default(monkeypatch):
     """FLASK_DEBUG=true → treated as development; default secret returned."""
     _clear_jwt_env(monkeypatch)
     monkeypatch.setenv("FLASK_DEBUG", "true")
-    assert _resolve_jwt_secret() == _DEFAULT_JWT_SECRET
+    assert _resolve_jwt_secret() == _INSECURE_JWT_DEFAULT
 
 
 def test_custom_secret_in_dev(monkeypatch):
@@ -59,7 +59,7 @@ def test_production_default_secret_raises(monkeypatch):
     """OPENSHIELD_ENV=production + default secret → RuntimeError."""
     _clear_jwt_env(monkeypatch)
     monkeypatch.setenv("OPENSHIELD_ENV", "production")
-    monkeypatch.setenv("JWT_SECRET", _DEFAULT_JWT_SECRET)
+    monkeypatch.setenv("JWT_SECRET", _INSECURE_JWT_DEFAULT)
     with pytest.raises(RuntimeError, match="insecure default"):
         _resolve_jwt_secret()
 
@@ -85,7 +85,7 @@ def test_render_default_secret_raises(monkeypatch):
     """RENDER=true + default secret → RuntimeError."""
     _clear_jwt_env(monkeypatch)
     monkeypatch.setenv("RENDER", "true")
-    monkeypatch.setenv("JWT_SECRET", _DEFAULT_JWT_SECRET)
+    monkeypatch.setenv("JWT_SECRET", _INSECURE_JWT_DEFAULT)
     with pytest.raises(RuntimeError, match="insecure default"):
         _resolve_jwt_secret()
 
@@ -134,4 +134,4 @@ def test_create_app_development_starts_without_secret(monkeypatch):
     monkeypatch.setenv("OPENSHIELD_ENV", "development")
     monkeypatch.delenv("JWT_SECRET", raising=False)
     app = create_app()
-    assert app.config["JWT_SECRET"] == _DEFAULT_JWT_SECRET
+    assert app.config["JWT_SECRET"] == _INSECURE_JWT_DEFAULT
