@@ -61,7 +61,7 @@ def create_app() -> Flask:
             "For production deployments, set this to your specific frontend domain(s)."
         )
     allowed_origins = allowed_origins_raw.split(",")
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+    CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
     # ------------------------------------------------------------------ #
     # Database Management                                                   #
