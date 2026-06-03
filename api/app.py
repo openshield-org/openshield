@@ -19,7 +19,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Paths that do not require a JWT token
-_PUBLIC_PATHS = {"/health", "/"}
+# All GET requests are public — the dashboard is a public demo of seeded data.
+# POST endpoints (scan trigger, AI) remain JWT-protected.
+def _is_public_get(path: str) -> bool:
+    if path in ("/", "/health"):
+        return True
+    return path.startswith("/api/")
 
 
 def create_app() -> Flask:
@@ -88,7 +93,7 @@ def create_app() -> Flask:
         """Validate the Bearer token on every non-public, non-OPTIONS request."""
         if request.method == "OPTIONS":
             return None
-        if request.path in _PUBLIC_PATHS:
+        if request.method == "GET" and _is_public_get(request.path):
             return None
 
         auth = request.headers.get("Authorization", "")
