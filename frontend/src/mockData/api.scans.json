@@ -1,0 +1,37 @@
+{
+  "count": 4,
+  "scans": [
+    {
+      "scan_id": "scan-new-20260601",
+      "subscription_id": "sub-123",
+      "started_at": "2026-06-01T10:00:00Z",
+      "completed_at": "2026-06-01T10:05:47Z",
+      "total_findings": 25,
+      "status": "completed"
+    },
+    {
+      "scan_id": "scan-001-20260529",
+      "subscription_id": "sub-123",
+      "started_at": "2026-05-29T14:00:00Z",
+      "completed_at": "2026-05-29T14:05:23Z",
+      "total_findings": 25,
+      "status": "completed"
+    },
+    {
+      "scan_id": "scan-002-20260528",
+      "subscription_id": "sub-123",
+      "started_at": "2026-05-28T10:00:00Z",
+      "completed_at": "2026-05-28T10:08:41Z",
+      "total_findings": 24,
+      "status": "completed"
+    },
+    {
+      "scan_id": "scan-003-20260527",
+      "subscription_id": "sub-123",
+      "started_at": "2026-05-27T09:00:00Z",
+      "completed_at": "2026-05-27T09:07:55Z",
+      "total_findings": 22,
+      "status": "completed"
+    }
+  ]
+}

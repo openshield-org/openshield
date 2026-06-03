@@ -1,0 +1,37 @@
+{
+  "score": 68,
+  "maxScore": 100,
+  "trend": [
+    { "month": "Dec", "score": 52, "target": 80 },
+    { "month": "Jan", "score": 55, "target": 80 },
+    { "month": "Feb", "score": 58, "target": 80 },
+    { "month": "Mar", "score": 62, "target": 80 },
+    { "month": "Apr", "score": 65, "target": 80 },
+    { "month": "May", "score": 68, "target": 80 }
+  ],
+  "stats": {
+    "totalFindings": 25,
+    "criticalIssues": 5,
+    "mediumRisk": 8,
+    "lowPriority": 12
+  },
+  "findingsDistribution": [
+    { "name": "High",   "value": 5,  "color": "#ef4444" },
+    { "name": "Medium", "value": 8,  "color": "#f97316" },
+    { "name": "Low",    "value": 12, "color": "#10b981" }
+  ],
+  "findingsByResourceGroup": [
+    { "group": "rg-prod",    "HIGH": 2, "MEDIUM": 4, "LOW": 7 },
+    { "group": "rg-staging", "HIGH": 2, "MEDIUM": 2, "LOW": 3 },
+    { "group": "rg-dev",     "HIGH": 1, "MEDIUM": 2, "LOW": 2 }
+  ],
+  "categoryScores": [
+    { "category": "Storage",    "score": 60, "findings": 6 },
+    { "category": "Compute",    "score": 70, "findings": 5 },
+    { "category": "Network",    "score": 55, "findings": 7 },
+    { "category": "Identity",   "score": 80, "findings": 3 },
+    { "category": "Database",   "score": 85, "findings": 2 },
+    { "category": "KeyVault",   "score": 90, "findings": 1 },
+    { "category": "Monitoring", "score": 95, "findings": 1 }
+  ]
+}

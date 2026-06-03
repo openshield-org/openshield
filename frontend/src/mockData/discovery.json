@@ -1,0 +1,227 @@
+{
+  "summary": {
+    "total": 17,
+    "byCategory": {
+      "Storage": 4,
+      "Compute": 3,
+      "Network": 4,
+      "Identity": 1,
+      "Database": 3,
+      "KeyVault": 1,
+      "Monitoring": 1
+    },
+    "byRiskLevel": {
+      "HIGH": 7,
+      "MEDIUM": 4,
+      "LOW": 4,
+      "NONE": 2
+    },
+    "lastScanAt": "2026-05-29T18:00:00Z"
+  },
+  "resources": [
+    {
+      "id": "sub-123/rg-prod/storage-01",
+      "name": "prod-storage-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "category": "Storage",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T10:00:00Z",
+      "config": { "https_only": false, "public_access": true, "shared_key_access": true }
+    },
+    {
+      "id": "sub-123/rg-prod/storage-02",
+      "name": "prod-storage-02",
+      "type": "Microsoft.Storage/storageAccounts",
+      "category": "Storage",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "MEDIUM",
+      "discoveredAt": "2026-05-28T10:01:00Z",
+      "config": { "https_only": true, "public_access": false, "lifecycle_policy": false }
+    },
+    {
+      "id": "sub-123/rg-staging/storage-03",
+      "name": "staging-storage-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "category": "Storage",
+      "resourceGroup": "rg-staging",
+      "subscription": "sub-123",
+      "location": "westus2",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T11:00:00Z",
+      "config": { "https_only": false, "public_access": false, "shared_key_access": true }
+    },
+    {
+      "id": "sub-456/rg-dev/storage-04",
+      "name": "dev-storage-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "category": "Storage",
+      "resourceGroup": "rg-dev",
+      "subscription": "sub-456",
+      "location": "centralus",
+      "risk": "NONE",
+      "discoveredAt": "2026-05-28T12:00:00Z",
+      "config": { "https_only": true, "public_access": false, "shared_key_access": false }
+    },
+    {
+      "id": "sub-123/rg-prod/vm-web-01",
+      "name": "vm-web-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "category": "Compute",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T10:05:00Z",
+      "config": { "os": "Windows Server 2019", "public_ip": true, "patches_pending": 14, "last_patch": "2026-02-10" }
+    },
+    {
+      "id": "sub-123/rg-prod/vm-app-01",
+      "name": "vm-app-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "category": "Compute",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "LOW",
+      "discoveredAt": "2026-05-28T10:06:00Z",
+      "config": { "os": "Ubuntu 22.04", "public_ip": false, "disk_encryption": false }
+    },
+    {
+      "id": "sub-123/rg-staging/vm-staging-01",
+      "name": "vm-staging-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "category": "Compute",
+      "resourceGroup": "rg-staging",
+      "subscription": "sub-123",
+      "location": "westus2",
+      "risk": "LOW",
+      "discoveredAt": "2026-05-28T11:05:00Z",
+      "config": { "os": "Ubuntu 20.04", "public_ip": false, "disk_encryption": false }
+    },
+    {
+      "id": "sub-123/rg-prod/nsg-web",
+      "name": "nsg-web",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "category": "Network",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T10:10:00Z",
+      "config": { "open_ports": [22], "ssh_source": "0.0.0.0/0", "inbound_rules": 8 }
+    },
+    {
+      "id": "sub-123/rg-prod/nsg-app",
+      "name": "nsg-app",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "category": "Network",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T10:11:00Z",
+      "config": { "open_ports": [3389], "rdp_source": "0.0.0.0/0", "inbound_rules": 6 }
+    },
+    {
+      "id": "sub-123/rg-staging/nsg-staging",
+      "name": "nsg-staging",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "category": "Network",
+      "resourceGroup": "rg-staging",
+      "subscription": "sub-123",
+      "location": "westus2",
+      "risk": "MEDIUM",
+      "discoveredAt": "2026-05-28T11:15:00Z",
+      "config": { "flow_logs_enabled": false, "inbound_rules": 12, "overly_permissive": true }
+    },
+    {
+      "id": "sub-456/rg-dev/vnet-dev",
+      "name": "vnet-dev-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "category": "Network",
+      "resourceGroup": "rg-dev",
+      "subscription": "sub-456",
+      "location": "centralus",
+      "risk": "LOW",
+      "discoveredAt": "2026-05-28T12:05:00Z",
+      "config": { "subnets": 3, "ddos_protection": false, "flow_logs": false }
+    },
+    {
+      "id": "sub-123/rg-prod/sql-prod",
+      "name": "sql-prod",
+      "type": "Microsoft.Sql/servers",
+      "category": "Database",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "LOW",
+      "discoveredAt": "2026-05-28T10:20:00Z",
+      "config": { "aad_auth": false, "tls_version": "1.2", "public_access": false }
+    },
+    {
+      "id": "sub-123/rg-staging/cosmos-db",
+      "name": "cosmos-staging",
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "category": "Database",
+      "resourceGroup": "rg-staging",
+      "subscription": "sub-123",
+      "location": "westus2",
+      "risk": "MEDIUM",
+      "discoveredAt": "2026-05-28T11:10:00Z",
+      "config": { "network_acls": "disabled", "public_access": true, "backup_policy": "periodic" }
+    },
+    {
+      "id": "sub-456/rg-dev/sql-dev",
+      "name": "sql-dev-exposed",
+      "type": "Microsoft.Sql/servers",
+      "category": "Database",
+      "resourceGroup": "rg-dev",
+      "subscription": "sub-456",
+      "location": "centralus",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T12:10:00Z",
+      "config": { "public_access": true, "firewall_rule": "0.0.0.0-255.255.255.255", "aad_auth": false }
+    },
+    {
+      "id": "sub-123/rg-prod/kv-prod",
+      "name": "kv-prod-secrets",
+      "type": "Microsoft.KeyVault/vaults",
+      "category": "KeyVault",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "MEDIUM",
+      "discoveredAt": "2026-05-28T10:25:00Z",
+      "config": { "soft_delete": true, "purge_protection": false, "network_acls": "disabled" }
+    },
+    {
+      "id": "sub-123/rg-prod/sp-deployer",
+      "name": "sp-prod-deployer",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "category": "Identity",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "global",
+      "risk": "HIGH",
+      "discoveredAt": "2026-05-28T10:15:00Z",
+      "config": { "role": "Owner", "scope": "/subscriptions/sub-123", "mfa_enabled": false }
+    },
+    {
+      "id": "sub-123/rg-prod/log-analytics",
+      "name": "log-analytics-prod",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "category": "Monitoring",
+      "resourceGroup": "rg-prod",
+      "subscription": "sub-123",
+      "location": "eastus",
+      "risk": "NONE",
+      "discoveredAt": "2026-05-28T10:30:00Z",
+      "config": { "retention_days": 90, "diagnostic_settings": true }
+    }
+  ]
+}

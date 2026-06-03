@@ -1,0 +1,92 @@
+{
+  "frameworks": [
+    {
+      "id": "cis",
+      "name": "CIS Azure",
+      "version": "1.5.0",
+      "score": 74,
+      "totalControls": 85,
+      "passing": 63,
+      "failing": 15,
+      "notApplicable": 7,
+      "lastAssessed": "2026-05-29T18:00:00Z",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "nist",
+      "name": "NIST SP 800-53",
+      "version": "Rev 5",
+      "score": 68,
+      "totalControls": 110,
+      "passing": 75,
+      "failing": 24,
+      "notApplicable": 11,
+      "lastAssessed": "2026-05-29T18:00:00Z",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "iso27001",
+      "name": "ISO 27001",
+      "version": "2022",
+      "score": 81,
+      "totalControls": 93,
+      "passing": 75,
+      "failing": 12,
+      "notApplicable": 6,
+      "lastAssessed": "2026-05-29T18:00:00Z",
+      "color": "#10b981"
+    },
+    {
+      "id": "soc2",
+      "name": "SOC 2 Type II",
+      "version": "2017",
+      "score": 77,
+      "totalControls": 64,
+      "passing": 49,
+      "failing": 11,
+      "notApplicable": 4,
+      "lastAssessed": "2026-05-29T18:00:00Z",
+      "color": "#f59e0b"
+    }
+  ],
+  "controls": [
+    { "id": "CIS-3.1",   "framework": "CIS Azure",       "name": "Ensure 'Secure transfer required' is enabled on storage accounts",       "status": "FAIL", "severity": "HIGH",   "category": "Storage",   "resources": 2, "ruleId": "AZ-STOR-002" },
+    { "id": "CIS-3.2",   "framework": "CIS Azure",       "name": "Ensure storage account shared key access is disabled",                    "status": "FAIL", "severity": "HIGH",   "category": "Storage",   "resources": 4, "ruleId": "AZ-STOR-003" },
+    { "id": "CIS-3.5",   "framework": "CIS Azure",       "name": "Ensure public access is disabled on all storage accounts",               "status": "FAIL", "severity": "HIGH",   "category": "Storage",   "resources": 3, "ruleId": "AZ-STOR-001" },
+    { "id": "CIS-4.1",   "framework": "CIS Azure",       "name": "Ensure SQL Server firewall does not allow 0.0.0.0/0 source",             "status": "FAIL", "severity": "HIGH",   "category": "Database",  "resources": 1, "ruleId": "AZ-DB-003" },
+    { "id": "CIS-6.2",   "framework": "CIS Azure",       "name": "Ensure SSH access is restricted from the internet",                      "status": "FAIL", "severity": "HIGH",   "category": "Network",   "resources": 1, "ruleId": "AZ-NET-001" },
+    { "id": "CIS-6.3",   "framework": "CIS Azure",       "name": "Ensure RDP access is restricted from the internet",                      "status": "FAIL", "severity": "HIGH",   "category": "Network",   "resources": 2, "ruleId": "AZ-NET-002" },
+    { "id": "CIS-1.1",   "framework": "CIS Azure",       "name": "Ensure Security Defaults are enabled on Azure Active Directory",         "status": "PASS", "severity": "HIGH",   "category": "Identity",  "resources": 1, "ruleId": null },
+    { "id": "CIS-1.2",   "framework": "CIS Azure",       "name": "Ensure MFA is enabled for all privileged users",                         "status": "FAIL", "severity": "HIGH",   "category": "Identity",  "resources": 1, "ruleId": "AZ-IDN-002" },
+    { "id": "CIS-1.20",  "framework": "CIS Azure",       "name": "Ensure service principal credentials are reviewed regularly",            "status": "FAIL", "severity": "HIGH",   "category": "Identity",  "resources": 2, "ruleId": "AZ-IDN-001" },
+    { "id": "CIS-7.3",   "framework": "CIS Azure",       "name": "Ensure OS disk encryption is enabled for virtual machines",              "status": "FAIL", "severity": "MEDIUM", "category": "Compute",   "resources": 3, "ruleId": "AZ-CMP-002" },
+    { "id": "CIS-8.1",   "framework": "CIS Azure",       "name": "Ensure Key Vault audit logging is enabled",                              "status": "PASS", "severity": "MEDIUM", "category": "KeyVault",  "resources": 2, "ruleId": null },
+    { "id": "CIS-8.5",   "framework": "CIS Azure",       "name": "Ensure purge protection is enabled on Key Vaults",                       "status": "FAIL", "severity": "MEDIUM", "category": "KeyVault",  "resources": 2, "ruleId": "AZ-KV-001" },
+    { "id": "NIST-AC-2", "framework": "NIST SP 800-53",  "name": "Account Management — user accounts reviewed quarterly",                 "status": "PASS", "severity": "HIGH",   "category": "Identity",  "resources": 5, "ruleId": null },
+    { "id": "NIST-AC-3", "framework": "NIST SP 800-53",  "name": "Access Enforcement — data accessible only to authorized entities",      "status": "FAIL", "severity": "HIGH",   "category": "Storage",   "resources": 3, "ruleId": "AZ-STOR-001" },
+    { "id": "NIST-AC-6", "framework": "NIST SP 800-53",  "name": "Least Privilege — roles scoped to minimum necessary permissions",       "status": "FAIL", "severity": "HIGH",   "category": "Identity",  "resources": 2, "ruleId": "AZ-IDN-001" },
+    { "id": "NIST-AC-17","framework": "NIST SP 800-53",  "name": "Remote Access — remote access sessions controlled and encrypted",       "status": "FAIL", "severity": "HIGH",   "category": "Network",   "resources": 3, "ruleId": "AZ-NET-001" },
+    { "id": "NIST-IA-5", "framework": "NIST SP 800-53",  "name": "Authenticator Management — MFA required for privileged access",        "status": "FAIL", "severity": "HIGH",   "category": "Identity",  "resources": 1, "ruleId": "AZ-IDN-002" },
+    { "id": "NIST-SC-7", "framework": "NIST SP 800-53",  "name": "Boundary Protection — network perimeter controls enforced",             "status": "FAIL", "severity": "HIGH",   "category": "Network",   "resources": 2, "ruleId": "AZ-DB-003" },
+    { "id": "NIST-SC-8", "framework": "NIST SP 800-53",  "name": "Transmission Confidentiality — data in transit encrypted (TLS)",       "status": "FAIL", "severity": "HIGH",   "category": "Storage",   "resources": 2, "ruleId": "AZ-STOR-002" },
+    { "id": "NIST-SI-2", "framework": "NIST SP 800-53",  "name": "Flaw Remediation — critical vulnerabilities patched within 30 days",   "status": "FAIL", "severity": "MEDIUM", "category": "Compute",   "resources": 1, "ruleId": "AZ-CMP-001" },
+    { "id": "ISO-A.9.4", "framework": "ISO 27001",       "name": "Access control to systems — least-privilege access enforced",           "status": "FAIL", "severity": "HIGH",   "category": "Identity",  "resources": 2, "ruleId": "AZ-IDN-001" },
+    { "id": "ISO-A.10.1","framework": "ISO 27001",       "name": "Cryptographic controls — data at rest and in transit encrypted",        "status": "FAIL", "severity": "HIGH",   "category": "Storage",   "resources": 4, "ruleId": "AZ-STOR-002" },
+    { "id": "ISO-A.12.3","framework": "ISO 27001",       "name": "Information backup — backup storage secured and tested",               "status": "PASS", "severity": "HIGH",   "category": "Storage",   "resources": 6, "ruleId": null },
+    { "id": "ISO-A.12.6","framework": "ISO 27001",       "name": "Technical vulnerability management — patches applied within SLA",      "status": "FAIL", "severity": "HIGH",   "category": "Compute",   "resources": 1, "ruleId": "AZ-CMP-001" },
+    { "id": "ISO-A.13.1","framework": "ISO 27001",       "name": "Network security management — network access controls enforced",       "status": "FAIL", "severity": "HIGH",   "category": "Network",   "resources": 3, "ruleId": "AZ-NET-002" },
+    { "id": "ISO-A.18.1","framework": "ISO 27001",       "name": "Compliance with legal requirements — data protection controls active", "status": "PASS", "severity": "MEDIUM", "category": "Storage",   "resources": 8, "ruleId": null },
+    { "id": "SOC2-CC6.1","framework": "SOC 2 Type II",   "name": "Logical access controls — authentication and authorization enforced",  "status": "FAIL", "severity": "HIGH",   "category": "Identity",  "resources": 3, "ruleId": "AZ-IDN-001" },
+    { "id": "SOC2-CC6.6","framework": "SOC 2 Type II",   "name": "Restriction of access — network perimeter access restricted",         "status": "FAIL", "severity": "HIGH",   "category": "Network",   "resources": 2, "ruleId": "AZ-NET-001" },
+    { "id": "SOC2-CC7.1","framework": "SOC 2 Type II",   "name": "System monitoring — security events logged and reviewed",             "status": "PASS", "severity": "MEDIUM", "category": "Monitoring","resources": 2, "ruleId": null },
+    { "id": "SOC2-CC8.1","framework": "SOC 2 Type II",   "name": "Change management — infrastructure changes tracked and approved",     "status": "PASS", "severity": "MEDIUM", "category": "Monitoring","resources": 4, "ruleId": null }
+  ],
+  "trend": [
+    { "month": "Dec", "CIS Azure": 60, "NIST SP 800-53": 55, "ISO 27001": 70, "SOC 2 Type II": 65 },
+    { "month": "Jan", "CIS Azure": 63, "NIST SP 800-53": 58, "ISO 27001": 72, "SOC 2 Type II": 67 },
+    { "month": "Feb", "CIS Azure": 66, "NIST SP 800-53": 60, "ISO 27001": 75, "SOC 2 Type II": 70 },
+    { "month": "Mar", "CIS Azure": 69, "NIST SP 800-53": 62, "ISO 27001": 77, "SOC 2 Type II": 73 },
+    { "month": "Apr", "CIS Azure": 71, "NIST SP 800-53": 65, "ISO 27001": 79, "SOC 2 Type II": 75 },
+    { "month": "May", "CIS Azure": 74, "NIST SP 800-53": 68, "ISO 27001": 81, "SOC 2 Type II": 77 }
+  ]
+}
