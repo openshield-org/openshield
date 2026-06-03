@@ -76,7 +76,11 @@ The OpenShield API is deployed to the Render free tier and is accessible at:
 > **Note:** As this is hosted on the Render free tier, the service may spin down after 15 minutes of inactivity. The first request after a spin-down can take 30-60 seconds to complete.
 
 > [!IMPORTANT]
-> **Security Requirement:** For absolute security, any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the environment variables.
+> **Security Requirement:** Production deployments **fail at startup** if `JWT_SECRET` is missing, set to the insecure default, or shorter than 32 characters. Generate a strong secret with:
+> ```
+> python -c "import secrets; print(secrets.token_urlsafe(32))"
+> ```
+> Set `OPENSHIELD_ENV=production` (or rely on Render's automatic `RENDER=true`) to enable this enforcement. Local development runs without these signals are allowed to use the default with a warning.
 
 ---
 
