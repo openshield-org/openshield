@@ -16,7 +16,8 @@
 import aiMockData from '../mockData/ai.json';
 import cveMockData from '../mockData/cve.json';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://openshield-api.onrender.com');
 const TIMEOUT  = 30000;
 
 // ── Provider settings stored in localStorage ───────────────────────────────
@@ -137,7 +138,8 @@ function buildBody(extra = {}) {
 }
 
 function isDemoOrUnconfigured() {
-  const _demoMode = localStorage.getItem('openShieldDemoMode') !== 'false';
+  // Must match api.js: absent key = live, 'true' = demo (never 'false' in the new scheme)
+  const _demoMode = localStorage.getItem('openShieldDemoMode') === 'true';
   return _demoMode || !aiSettings.isConfigured();
 }
 

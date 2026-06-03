@@ -114,17 +114,19 @@ export default function AILayer() {
   const [settingsKey,     setSettingsKey]     = useState(0); // force re-render on settings save
 
   useEffect(() => {
-    Promise.all([api.getAIMessages(), api.getAISuggestions(), api.getFindings()]).then(
-      ([msgs, sugs, scans]) => {
+    Promise.all([api.getAIMessages(), api.getAISuggestions(), api.getFindings()])
+      .then(([msgs, sugs, scans]) => {
         setInitialMessages(msgs);
         setSuggestions(sugs);
         setFindings(scans);
         const fromScan = location.state?.finding;
         if (fromScan) setSelectedFinding(fromScan);
-        // Load summary once findings are available (pass them for live AI)
         aiApi.getSummary(scans).then(setSummary).finally(() => setSummaryLoading(false));
-      }
-    );
+      })
+      .catch(() => {
+        // getFindings failed (e.g. backend cold-starting) — still clear the loading spinner
+        aiApi.getSummary([]).then(setSummary).finally(() => setSummaryLoading(false));
+      });
     aiApi.getCVEAnalysis().then(setCveData).finally(() => setCveLoading(false));
   }, []);
 

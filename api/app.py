@@ -9,7 +9,6 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
 from api.models.finding import DatabaseManager
-from api.routes.ai import ai_bp
 
 load_dotenv()
 
@@ -116,15 +115,21 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     from api.routes.ai import ai_bp
     from api.routes.compliance import compliance_bp
+    from api.routes.drift import drift_bp
     from api.routes.findings import findings_bp
+    from api.routes.prioritization import prioritization_bp
+    from api.routes.resources import resources_bp
     from api.routes.scans import scans_bp
     from api.routes.score import score_bp
 
     app.register_blueprint(ai_bp)
+    app.register_blueprint(compliance_bp)
+    app.register_blueprint(drift_bp)
     app.register_blueprint(findings_bp)
+    app.register_blueprint(prioritization_bp)
+    app.register_blueprint(resources_bp)
     app.register_blueprint(scans_bp)
     app.register_blueprint(score_bp)
-    app.register_blueprint(compliance_bp)
 
     # ------------------------------------------------------------------ #
     # Routes (public)                                                      #

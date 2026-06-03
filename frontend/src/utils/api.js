@@ -27,12 +27,16 @@ import prioritizationData from '../mockData/prioritization.json';
 import aiData             from '../mockData/ai.json';
 
 // ── Config ─────────────────────────────────────────────────────────────────
-// Production (Vercel): set VITE_API_URL=https://openshield-api.onrender.com
+// Production (Vercel): optionally set VITE_API_URL to override the default.
 // Local dev: falls back to http://localhost:5000
-// If neither is available in production, API calls fail loudly (no silent localhost fallback)
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+// Production default: https://openshield-api.onrender.com (Render free tier —
+//   first request after 15 min idle may take 30–60s to wake).
+const API_BASE = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://openshield-api.onrender.com');
 
-let _demoMode = localStorage.getItem('openShieldDemoMode') !== 'false';
+// Default to live data. Only treat as demo when explicitly persisted as 'true'.
+// This means a fresh browser (no localStorage key) always tries the live backend.
+let _demoMode = localStorage.getItem('openShieldDemoMode') === 'true';
 
 const getToken = () => localStorage.getItem('jwt_token');
 const setToken = (tok) => localStorage.setItem('jwt_token', tok);
@@ -265,7 +269,13 @@ function buildComplianceFromFrameworks(cis, nist, iso) {
 export const api = {
 
   // ── Mode control ──────────────────────────────────────────────────────────
-  setDemoMode: (on) => { _demoMode = on; localStorage.setItem('openShieldDemoMode', String(on)); },
+  // persist=true (default): saves to localStorage so the choice survives reloads.
+  // persist=false: in-memory only — used for automatic cold-start fallbacks so
+  //   a temporary backend timeout doesn't lock the app into demo mode forever.
+  setDemoMode: (on, persist = true) => {
+    _demoMode = on;
+    if (persist) localStorage.setItem('openShieldDemoMode', String(on));
+  },
   isDemoMode:  () => _demoMode,
   getApiBase:  () => API_BASE,
 

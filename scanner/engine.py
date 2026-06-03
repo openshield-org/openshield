@@ -137,6 +137,7 @@ class ScanEngine:
         result = {
             "scan_id": scan_id,
             "subscription_id": self.subscription_id,
+            "status": "completed",
             "started_at": started_at,
             "completed_at": completed_at,
             "total_findings": len(findings),

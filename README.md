@@ -36,7 +36,7 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 | **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
 | **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, and compliance posture over REST |
 | **Remediation Playbooks** | Every current rule ships with a matching Azure CLI remediation script |
-| **Security Dashboard** | Frontend scaffold is present; the React dashboard MVP is still on the roadmap |
+| **Security Dashboard** | Full React dashboard deployed on Vercel — live monitoring, findings, compliance, drift, and AI-layer views |
 | **Sentinel Integration** | Normalises findings and pushes them into Microsoft Sentinel via a Log Analytics custom table and KQL analytics rules |
 
 ---
@@ -45,7 +45,7 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 ```mermaid
 flowchart TD
-    A["React Dashboard MVP\nPlanned frontend"]
+    A["React Dashboard\nVercel · Live"]
     B["Flask REST API\nJWT · CORS · Blueprints"]
     C["Scanner Engine\n20 Python rules"]
     D["Azure Subscription\nScanned via Azure SDK + Graph"]
@@ -67,16 +67,17 @@ flowchart TD
     I -->|alerts| A
 ```
 
-## Live API
+## Live Demo
 
-The OpenShield API is deployed to the Render free tier and is accessible at:
+| Service | URL |
+|---|---|
+| **Dashboard** (Vercel) | <!-- TODO: replace with your Vercel URL once the contributor shares it --> `https://<your-project>.vercel.app` |
+| **REST API** (Render) | `https://openshield-api.onrender.com` |
 
-**`https://openshield-api.onrender.com`**
-
-> **Note:** As this is hosted on the Render free tier, the service may spin down after 15 minutes of inactivity. The first request after a spin-down can take 30-60 seconds to complete.
+> **Note:** The API is hosted on the Render free tier. After 15 minutes of inactivity the service spins down; the first request can take **30–60 seconds** to wake it. The dashboard detects this automatically — it retries the health probe and switches to live data once the backend responds.
 
 > [!IMPORTANT]
-> **Security Requirement:** For absolute security, any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the environment variables.
+> **Security Requirement:** Any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the Render environment variables. Never commit this secret to the repository.
 
 ---
 
@@ -84,7 +85,7 @@ The OpenShield API is deployed to the Render free tier and is accessible at:
 
 | Layer | Technology | Cost |
 |---|---|---|
-| Frontend | Scaffolded dashboard app (React + Tailwind planned) | Free |
+| Frontend | React + Vite + Tailwind, deployed on Vercel | Free |
 | Backend API | Python + Flask | Free |
 | Database | PostgreSQL | Free (Render/Azure free tier) |
 | Cloud Scanner | Python + Azure SDK | Free |
@@ -125,6 +126,8 @@ openshield/
 
 ## Quick Start
 
+**Backend (Flask API + Scanner)**
+
 ```bash
 # Clone the repo
 git clone https://github.com/openshield-org/openshield.git
@@ -138,6 +141,7 @@ export AZURE_SUBSCRIPTION_ID=your-subscription-id
 export AZURE_CLIENT_ID=your-client-id
 export AZURE_CLIENT_SECRET=your-client-secret
 export AZURE_TENANT_ID=your-tenant-id
+export JWT_SECRET=your-strong-secret   # must match VITE_JWT_TOKEN signing key
 
 # Run a scan
 python -c "
@@ -150,6 +154,29 @@ print(json.dumps(result, indent=2))
 # Start the API
 FLASK_APP=api/app.py flask run
 ```
+
+**Frontend (React dashboard)**
+
+```bash
+cd frontend
+npm install
+
+# Local dev — points at http://localhost:5000 by default
+npm run dev
+
+# To develop against the live Render backend:
+VITE_API_URL=https://openshield-api.onrender.com \
+VITE_JWT_TOKEN=<your-demo-jwt> \
+npm run dev
+```
+
+Generate the demo JWT (must match the `JWT_SECRET` on Render):
+
+```bash
+JWT_SECRET=your-strong-secret python scripts/generate_demo_jwt.py
+```
+
+Set the printed token as `VITE_JWT_TOKEN` in the Vercel environment variables and redeploy.
 
 ---
 
@@ -176,7 +203,7 @@ Contributors are credited below.
 - [x] Core scanner engine (Azure SDK integration)
 - [x] 20 scan rules
 - [x] Flask API + PostgreSQL schema
-- [ ] React dashboard MVP
+- [x] React dashboard MVP (live on Vercel)
 - [x] CIS Benchmark compliance mapping
 - [x] SOC 2 compliance mapping
 - [x] Sentinel alert integration
