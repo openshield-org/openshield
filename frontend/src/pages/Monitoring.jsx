@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
+import monitoringMock from '../mockData/monitoring.json';
 import ScoreGauge from '../components/monitoring/ScoreGauge';
 import TrendChart from '../components/monitoring/TrendChart';
 import StatCards from '../components/monitoring/StatCards';
@@ -9,11 +10,59 @@ import Card from '../components/shared/Card';
 import Loader, { CardLoader } from '../components/shared/Loader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
+// Build per-resource-group breakdown from a flat findings array
+function buildRgGroups(findings) {
+  const groups = {};
+  findings.forEach((f) => {
+    const rg = f.resourceGroup || 'unknown';
+    if (!groups[rg]) groups[rg] = { group: rg, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    const sev = (f.severity || '').toUpperCase();
+    if (sev === 'HIGH' || sev === 'MEDIUM' || sev === 'LOW') groups[rg][sev]++;
+  });
+  return Object.values(groups).sort((a, b) => (b.HIGH + b.MEDIUM + b.LOW) - (a.HIGH + a.MEDIUM + a.LOW));
+}
+
 export default function Monitoring() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    api.getMonitoring().then(setData);
+    if (api.isDemoMode()) {
+      // Demo mode: use static mock data
+      api.getMonitoring().then(setData);
+      return;
+    }
+
+    // Live mode: fetch real score + findings, overlay onto mock structure
+    // (trend and categoryScores stay from mock — no backend endpoint for those yet)
+    Promise.all([api.getScore(), api.getFindings()])
+      .then(([scoreData, findings]) => {
+        const high   = findings.filter((f) => (f.severity || '').toUpperCase() === 'HIGH').length;
+        const medium = findings.filter((f) => (f.severity || '').toUpperCase() === 'MEDIUM').length;
+        const low    = findings.filter((f) => (f.severity || '').toUpperCase() === 'LOW').length;
+        const total  = findings.length;
+
+        setData({
+          ...monitoringMock,                  // keeps trend, categoryScores from mock
+          score:    scoreData.score    ?? scoreData,
+          maxScore: scoreData.max_score ?? 100,
+          stats: {
+            totalFindings: total,
+            criticalIssues: high,
+            mediumRisk:     medium,
+            lowPriority:    low,
+          },
+          findingsDistribution: [
+            { name: 'High',   value: high,   color: '#ef4444' },
+            { name: 'Medium', value: medium, color: '#f97316' },
+            { name: 'Low',    value: low,    color: '#10b981' },
+          ],
+          findingsByResourceGroup: buildRgGroups(findings),
+        });
+      })
+      .catch(() => {
+        // Backend unreachable — fall back to mock gracefully
+        api.getMonitoring().then(setData);
+      });
   }, []);
 
   if (!data) return (

@@ -1,24 +1,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // OpenShield API Service Layer
 //
-// In DEMO mode  → returns data from src/mockData/api.*.json (no network calls)
-// In LIVE mode  → calls the real backend at VITE_API_URL with JWT auth
+// Demo mode → mock JSON files (no network calls, no API key needed)
+// Live mode → real Flask backend at VITE_API_URL with JWT auth
 //
-// Every method has a mock fallback so the app works whether or not the backend
-// exists yet. When a backend endpoint is ready, it automatically takes over.
+// Every live call has a graceful mock fallback so the app always works.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── API-format mock data (matches exact backend response schema) ───────────
-import mockHealth      from '../mockData/api.health.json';
-import mockScore       from '../mockData/api.score.json';
-import mockFindings    from '../mockData/api.findings.json';
-import mockScans       from '../mockData/api.scans.json';
-import mockScanResult  from '../mockData/api.scans.trigger.json';
-import mockCIS         from '../mockData/api.compliance.cis.json';
-import mockNIST        from '../mockData/api.compliance.nist.json';
-import mockISO         from '../mockData/api.compliance.iso27001.json';
+// ── API-format mock data ───────────────────────────────────────────────────
+import mockHealth     from '../mockData/api.health.json';
+import mockScore      from '../mockData/api.score.json';
+import mockFindings   from '../mockData/api.findings.json';
+import mockScans      from '../mockData/api.scans.json';
+import mockScanResult from '../mockData/api.scans.trigger.json';
+import mockCIS        from '../mockData/api.compliance.cis.json';
+import mockNIST       from '../mockData/api.compliance.nist.json';
+import mockISO        from '../mockData/api.compliance.iso27001.json';
 
-// ── Legacy mock data (fallback for pages whose endpoints don't exist yet) ──
+// ── Legacy mock data (fallback for endpoints not yet in backend) ───────────
 import discoveryData      from '../mockData/discovery.json';
 import monitoringData     from '../mockData/monitoring.json';
 import scanData           from '../mockData/scan.json';
@@ -28,11 +27,13 @@ import prioritizationData from '../mockData/prioritization.json';
 import aiData             from '../mockData/ai.json';
 
 // ── Config ─────────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// Production (Vercel): set VITE_API_URL=https://openshield-api.onrender.com
+// Local dev: falls back to http://localhost:5000
+// If neither is available in production, API calls fail loudly (no silent localhost fallback)
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 let _demoMode = localStorage.getItem('openShieldDemoMode') !== 'false';
 
-// ── Auth ───────────────────────────────────────────────────────────────────
 const getToken = () => localStorage.getItem('jwt_token');
 const setToken = (tok) => localStorage.setItem('jwt_token', tok);
 
@@ -52,37 +53,51 @@ async function apiFetch(path, options = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Normalisers — backend returns snake_case, components expect camelCase.
-// Each function handles both snake_case (live) and camelCase (mock fallback)
-// gracefully via the `a || b` pattern.
+// Normalisers — map backend snake_case + varying shapes → components expect
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Score: backend returns plain int (68), mock returns { score, max_score }
+function normalizeScore(raw) {
+  if (typeof raw === 'number') return { score: raw, max_score: 100 };
+  return { score: raw.score ?? raw.score_percent ?? 0, max_score: raw.max_score ?? 100 };
+}
 
 // Findings ──────────────────────────────────────────────────────────────────
 function normalizeFinding(f) {
+  // Enrich with playbook steps from scan.json (works for both camelCase mock + snake_case live)
+  const ruleId = f.rule_id || f.ruleId;
+  const resourceName = f.resource_name || f.resourceName;
   const playbook = scanData.findings.find(
-    (s) => s.ruleId === f.rule_id && s.resourceName === f.resource_name
+    (s) => s.ruleId === ruleId && s.resourceName === resourceName
   ) || {};
+
   return {
-    id:              f.id,
-    ruleId:          f.rule_id,
-    ruleName:        f.rule_name,
-    severity:        f.severity,
-    category:        f.category,
-    resourceName:    f.resource_name,
-    resourceGroup:   f.resource_id?.split('/')?.[4] ?? '',
-    resourceId:      f.resource_id,
-    resourceType:    f.resource_type,
-    description:     f.description,
-    remediation:     f.remediation,
-    detectedAt:      f.detected_at,
-    portalSteps:     playbook.portalSteps     || [],
-    cliCommands:     playbook.cliCommands     || [],
-    validationSteps: playbook.validationSteps || [],
-    references:      playbook.references      || [],
+    id:               f.id,
+    ruleId:           ruleId,
+    ruleName:         f.rule_name     || f.ruleName,
+    severity:         f.severity,
+    category:         f.category,
+    resourceName:     resourceName,
+    resourceGroup:    (f.resource_id || f.resourceId)?.split('/')?.[4] ?? f.resourceGroup ?? '',
+    resourceId:       f.resource_id   || f.resourceId,
+    resourceType:     f.resource_type || f.resourceType,
+    description:      f.description,
+    remediation:      f.remediation,
+    detectedAt:       f.detected_at   || f.detectedAt,
+    // CVE fields (new from backend)
+    cveReferences:    f.cve_references    || f.cveReferences    || [],
+    cvssScore:        f.cvss_score        ?? f.cvssScore         ?? null,
+    exploitAvailable: f.exploit_available ?? f.exploitAvailable  ?? false,
+    frameworks:       f.frameworks        || {},
+    // Playbook — enriched from internal library
+    portalSteps:      playbook.portalSteps     || [],
+    cliCommands:      playbook.cliCommands     || [],
+    validationSteps:  playbook.validationSteps || [],
+    references:       playbook.references      || [],
   };
 }
 
-// Resources (Discovery page) ────────────────────────────────────────────────
+// Resources (Discovery) ─────────────────────────────────────────────────────
 function normalizeResource(r) {
   return {
     id:            r.id,
@@ -109,6 +124,12 @@ function normalizeResourcesResponse(data) {
     },
     resources: (data.resources || []).map(normalizeResource),
   };
+}
+
+// Scans: backend returns plain array [], mock returns { count, scans: [] }
+function normalizeScans(data) {
+  const scans = Array.isArray(data) ? data : (data.scans || []);
+  return { count: scans.length, scans };
 }
 
 // Prioritization ────────────────────────────────────────────────────────────
@@ -191,46 +212,50 @@ function normalizePlaybook(p) {
   };
 }
 
-// Compliance (combines 3 framework endpoints → old page format) ─────────────
-function buildComplianceFromFrameworks(cis, nist, iso) {
-  const mapFramework = (f, id, color) => ({
+// Compliance: backend returns { framework, version, total_controls, passed,
+//   failed, score_percent, controls: [{ rule_id, control_id, control_name, status }] }
+// Map to shape the compliance page expects
+function normalizeComplianceFramework(data, id, color) {
+  return {
     id,
-    name:           f.framework,
-    version:        f.version,
-    score:          f.score_percent,
-    totalControls:  f.total_controls,
-    passing:        f.passed,
-    failing:        f.failed,
-    notApplicable:  f.total_controls - f.passed - f.failed,
+    name:           data.framework,
+    version:        data.version,
+    score:          data.score_percent,
+    totalControls:  data.total_controls,
+    passing:        data.passed,
+    failing:        data.failed,
+    notApplicable:  (data.total_controls || 0) - (data.passed || 0) - (data.failed || 0),
     lastAssessed:   new Date().toISOString(),
     color,
-  });
+  };
+}
 
-  const mapControl = (c, frameworkName) => ({
+function normalizeComplianceControl(c, frameworkName) {
+  return {
     id:        c.control_id,
     framework: frameworkName,
     name:      c.control_name,
     status:    c.status,
     ruleId:    c.rule_id,
-    // severity and category not returned by backend yet — leave blank
     severity:  c.severity  || 'MEDIUM',
     category:  c.category  || 'General',
     resources: c.resources || 0,
-  });
+  };
+}
 
+function buildComplianceFromFrameworks(cis, nist, iso) {
   return {
     frameworks: [
-      mapFramework(cis,  'cis',      '#3b82f6'),
-      mapFramework(nist, 'nist',     '#8b5cf6'),
-      mapFramework(iso,  'iso27001', '#10b981'),
+      normalizeComplianceFramework(cis,  'cis',      '#3b82f6'),
+      normalizeComplianceFramework(nist, 'nist',     '#8b5cf6'),
+      normalizeComplianceFramework(iso,  'iso27001', '#10b981'),
     ],
     controls: [
-      ...(cis.controls  || []).map((c) => mapControl(c, cis.framework)),
-      ...(nist.controls || []).map((c) => mapControl(c, nist.framework)),
-      ...(iso.controls  || []).map((c) => mapControl(c, iso.framework)),
+      ...(cis.controls  || []).map((c) => normalizeComplianceControl(c, cis.framework)),
+      ...(nist.controls || []).map((c) => normalizeComplianceControl(c, nist.framework)),
+      ...(iso.controls  || []).map((c) => normalizeComplianceControl(c, iso.framework)),
     ],
-    // Trend has no backend endpoint yet — keep from mock
-    trend: complianceData.trend,
+    trend: complianceData.trend,  // no trend endpoint on backend yet
   };
 }
 
@@ -254,31 +279,36 @@ export const api = {
     } catch { clearTimeout(t); return false; }
   },
 
-  // ── Health ─────────────────────────────────────────────────────────────────
-  // GET /health
+  // ── Health  GET /health ────────────────────────────────────────────────────
   health: async () => {
     try { const r = await fetch(`${API_BASE}/health`); return r.ok ? r.json() : mockHealth; }
     catch { return mockHealth; }
   },
 
-  // ── Score ──────────────────────────────────────────────────────────────────
-  // GET /api/score
+  // ── Score  GET /api/score ──────────────────────────────────────────────────
+  // Backend returns a plain integer; normalizeScore wraps it
   getScore: async () => {
     if (_demoMode) return mockScore;
-    return apiFetch('/score');
+    try { return normalizeScore(await apiFetch('/score')); }
+    catch { return mockScore; }
   },
 
-  // ── Findings list ──────────────────────────────────────────────────────────
-  // GET /api/findings
+  // ── CVE Summary  GET /api/score/cve-summary  (new endpoint) ───────────────
+  getCVESummary: async () => {
+    if (_demoMode) return null;
+    try { return await apiFetch('/score/cve-summary'); }
+    catch { return null; }
+  },
+
+  // ── Findings  GET /api/findings ────────────────────────────────────────────
   getFindings: async (filters = {}) => {
     if (_demoMode) return mockFindings.findings.map(normalizeFinding);
     const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v != null && v !== ''));
     const data = await apiFetch(`/findings${params.toString() ? '?' + params : ''}`);
-    return data.findings.map(normalizeFinding);
+    return (data.findings || data).map(normalizeFinding);
   },
 
-  // ── Single finding ─────────────────────────────────────────────────────────
-  // GET /api/findings/:id
+  // ── Single finding  GET /api/findings/:id ─────────────────────────────────
   getFinding: async (id) => {
     if (_demoMode) {
       const f = mockFindings.findings.find((x) => x.id === id);
@@ -287,8 +317,7 @@ export const api = {
     return normalizeFinding(await apiFetch(`/findings/${id}`));
   },
 
-  // ── Playbook ───────────────────────────────────────────────────────────────
-  // GET /api/findings/:id/playbook
+  // ── Playbook  GET /api/findings/:id/playbook ───────────────────────────────
   getPlaybook: async (id) => {
     if (_demoMode) {
       const f = scanData.findings.find((s) => s.id === id);
@@ -297,59 +326,45 @@ export const api = {
     try {
       return normalizePlaybook(await apiFetch(`/findings/${id}/playbook`));
     } catch {
-      // Endpoint not yet implemented — fall back to scan.json enrichment
       const f = scanData.findings.find((s) => s.id === id);
       return f ? normalizePlaybook(f) : { portalSteps: [], cliCommands: [], validationSteps: [], references: [] };
     }
   },
 
-  // ── Resources (Discovery page) ─────────────────────────────────────────────
-  // GET /api/resources
+  // ── Resources (Discovery)  GET /api/resources ──────────────────────────────
   getResources: async () => {
     if (_demoMode) return discoveryData;
-    try {
-      return normalizeResourcesResponse(await apiFetch('/resources'));
-    } catch {
-      return discoveryData;
-    }
+    try { return normalizeResourcesResponse(await apiFetch('/resources')); }
+    catch { return discoveryData; }
   },
-  getResourceSummary: async () => {
-    const d = await api.getResources();
-    return d.summary;
-  },
+  getResourceSummary: async () => { const d = await api.getResources(); return d.summary; },
 
-  // ── Prioritization ─────────────────────────────────────────────────────────
-  // GET /api/prioritization
+  // ── Prioritization  GET /api/prioritization ────────────────────────────────
   getPrioritization: async () => {
     if (_demoMode) return prioritizationData;
-    try {
-      return normalizePrioritizationResponse(await apiFetch('/prioritization'));
-    } catch {
-      return prioritizationData;
-    }
+    try { return normalizePrioritizationResponse(await apiFetch('/prioritization')); }
+    catch { return prioritizationData; }
   },
   getPriorityMatrix: async () => { const d = await api.getPrioritization(); return d.matrix; },
   getRiskRankings:   async () => { const d = await api.getPrioritization(); return d.rankings; },
 
-  // ── Drift ──────────────────────────────────────────────────────────────────
-  // GET /api/drift
+  // ── Drift  GET /api/drift ──────────────────────────────────────────────────
   getDrift: async () => {
     if (_demoMode) return driftData;
-    try {
-      return normalizeDriftResponse(await apiFetch('/drift'));
-    } catch {
-      return driftData;
-    }
+    try { return normalizeDriftResponse(await apiFetch('/drift')); }
+    catch { return driftData; }
   },
   getDriftEvents: async () => { const d = await api.getDrift(); return d.events; },
 
-  // ── Scans ──────────────────────────────────────────────────────────────────
-  // GET /api/scans
+  // ── Scans  GET /api/scans ─────────────────────────────────────────────────
+  // Backend returns a plain array; normalizeScans wraps it
   getScans: async () => {
     if (_demoMode) return mockScans;
-    return apiFetch('/scans');
+    try { return normalizeScans(await apiFetch('/scans')); }
+    catch { return mockScans; }
   },
-  // POST /api/scans/trigger
+
+  // ── Trigger scan  POST /api/scans/trigger ─────────────────────────────────
   triggerScan: async (subscriptionId) => {
     if (_demoMode) return mockScanResult;
     return apiFetch('/scans/trigger', {
@@ -357,24 +372,25 @@ export const api = {
       body: JSON.stringify(subscriptionId ? { subscription_id: subscriptionId } : {}),
     });
   },
-  // GET /api/scans/:id
+
+  // ── Single scan  GET /api/scans/:id ──────────────────────────────────────
   getScan: async (scanId) => {
     if (_demoMode) return mockScans.scans.find((s) => s.scan_id === scanId) ?? mockScanResult;
-    try {
-      return await apiFetch(`/scans/${scanId}`);
-    } catch {
+    try { return await apiFetch(`/scans/${scanId}`); }
+    catch {
       const data = await apiFetch('/scans');
-      return data.scans.find((s) => s.scan_id === scanId) ?? null;
+      const scans = normalizeScans(data).scans;
+      return scans.find((s) => s.scan_id === scanId) ?? null;
     }
   },
 
-  // ── Compliance ─────────────────────────────────────────────────────────────
-  // GET /api/compliance/cis | /nist | /iso27001
+  // ── Compliance  GET /api/compliance/<framework> ────────────────────────────
+  // Backend supports: cis, nist, iso27001, soc2
   getComplianceCIS:      async () => _demoMode ? mockCIS  : apiFetch('/compliance/cis'),
   getComplianceNIST:     async () => _demoMode ? mockNIST : apiFetch('/compliance/nist'),
   getComplianceISO27001: async () => _demoMode ? mockISO  : apiFetch('/compliance/iso27001'),
 
-  // Combined — returns old page format (for Compliance page)
+  // Combined — returns page format (frameworks[], controls[], trend)
   getCompliance: async () => {
     if (_demoMode) return complianceData;
     try {
@@ -384,9 +400,7 @@ export const api = {
         apiFetch('/compliance/iso27001'),
       ]);
       return buildComplianceFromFrameworks(cis, nist, iso);
-    } catch {
-      return complianceData;
-    }
+    } catch { return complianceData; }
   },
   getFrameworks: async () => { const d = await api.getCompliance(); return d.frameworks; },
 

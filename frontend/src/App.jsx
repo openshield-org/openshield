@@ -13,9 +13,13 @@ import AILayer from './pages/AILayer';
 
 export default function App() {
   useEffect(() => {
-    // Bootstrap a dev token if none exists yet
+    // Bootstrap JWT token.
+    // In production (Vercel): set VITE_JWT_TOKEN to a pre-generated HS256 JWT
+    // signed with the same JWT_SECRET as the Render backend.
+    // In local dev: falls back to 'dev-demo-token' (only works when backend
+    // uses the default insecure JWT_SECRET = 'change-me-in-production').
     if (!api.getToken()) {
-      api.setToken('dev-demo-token');
+      api.setToken(import.meta.env.VITE_JWT_TOKEN || 'dev-demo-token');
     }
 
     // Probe backend health; auto-enable demo mode if unreachable

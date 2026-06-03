@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   FiMenu, FiAlertTriangle, FiX,
@@ -60,7 +60,6 @@ function ConnectionErrorPopup({ apiBase, onClose }) {
 
 // ── Scan result toast ──────────────────────────────────────────────────────
 function ScanToast({ result, error, onClose }) {
-  // Auto-dismiss after 6 seconds
   useEffect(() => {
     const t = setTimeout(onClose, 6000);
     return () => clearTimeout(t);
@@ -75,7 +74,6 @@ function ScanToast({ result, error, onClose }) {
           ? 'bg-bg-primary dark:bg-bg-dark-secondary border-green-200 dark:border-green-900/50'
           : 'bg-bg-primary dark:bg-bg-dark-secondary border-red-200 dark:border-red-900/50'
       }`}>
-        {/* Top stripe */}
         <div className={`px-4 py-3 flex items-center justify-between gap-3 ${
           isSuccess ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'
         }`}>
@@ -92,14 +90,12 @@ function ScanToast({ result, error, onClose }) {
             <FiX size={14} />
           </button>
         </div>
-
-        {/* Body */}
         <div className="px-4 py-3 space-y-1.5 text-xs text-text-secondary dark:text-text-dark-tertiary">
           {isSuccess ? (
             <>
               <div className="flex justify-between">
                 <span>Scan ID</span>
-                <span className="font-mono text-text-primary dark:text-text-dark-primary">{result.scan_id}</span>
+                <span className="font-mono text-text-primary dark:text-text-dark-primary truncate max-w-[160px]">{result.scan_id}</span>
               </div>
               <div className="flex justify-between">
                 <span>Findings detected</span>
@@ -113,11 +109,63 @@ function ScanToast({ result, error, onClose }) {
               </div>
             </>
           ) : (
-            <p className="text-severity-high">{error || 'Could not reach the backend. Check that the server is running.'}</p>
+            <p className="text-severity-high">{error || 'Could not reach the backend.'}</p>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Scan input popover (live mode only) ────────────────────────────────────
+function ScanInputPopover({ onConfirm, onCancel }) {
+  const [subId, setSubId] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[80]" onClick={onCancel} />
+      <div className="absolute top-full right-0 mt-2 z-[90] w-72 rounded-2xl border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-secondary shadow-soft-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-light dark:border-border-dark">
+          <p className="text-sm font-semibold text-text-primary dark:text-text-dark-primary">Run Azure Scan</p>
+          <p className="text-xs text-text-secondary dark:text-text-dark-tertiary mt-0.5">
+            Leave blank to use the subscription configured on the backend.
+          </p>
+        </div>
+        <div className="px-4 py-3 space-y-3">
+          <div>
+            <label className="text-xs font-medium text-text-secondary dark:text-text-dark-tertiary block mb-1">
+              Subscription ID <span className="text-text-tertiary">(optional)</span>
+            </label>
+            <input
+              ref={inputRef}
+              type="text"
+              value={subId}
+              onChange={(e) => setSubId(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') onConfirm(subId || undefined); if (e.key === 'Escape') onCancel(); }}
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-border-light dark:border-border-dark bg-bg-secondary dark:bg-bg-dark-tertiary text-text-primary dark:text-text-dark-primary placeholder:text-text-tertiary dark:placeholder:text-text-dark-tertiary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onConfirm(subId || undefined)}
+              className="flex-1 py-2 text-xs font-semibold rounded-lg bg-brand-primary hover:bg-brand-secondary text-white transition-colors"
+            >
+              Start Scan
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-3 py-2 text-xs rounded-lg border border-border-light dark:border-border-dark text-text-secondary dark:text-text-dark-tertiary hover:bg-bg-secondary dark:hover:bg-bg-dark-tertiary transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -126,13 +174,14 @@ export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation();
   const page = PAGE_TITLES[pathname] || { title: 'OpenShield', subtitle: '' };
 
-  const [demoMode, setDemoMode]   = useState(api.isDemoMode());
-  const [testing, setTesting]     = useState(false);
-  const [showConnErr, setConnErr] = useState(false);
-
-  const [scanning, setScanning]   = useState(false);
-  const [elapsed, setElapsed]     = useState(0);
-  const [scanToast, setScanToast] = useState(null); // null | { result } | { error }
+  const [demoMode, setDemoMode]     = useState(api.isDemoMode());
+  const [testing, setTesting]       = useState(false);
+  const [showConnErr, setConnErr]   = useState(false);
+  const [scanning, setScanning]     = useState(false);
+  const [elapsed, setElapsed]       = useState(0);
+  const [scanToast, setScanToast]   = useState(null);
+  const [showScanInput, setShowScanInput] = useState(false);
+  const scanBtnRef = useRef(null);
 
   // ── Demo/Live toggle ─────────────────────────────────────────────────────
   const handleToggle = async () => {
@@ -157,44 +206,43 @@ export default function Header({ onMenuToggle }) {
     setDemoMode(true);
   };
 
-  // ── Run Scan with polling ─────────────────────────────────────────────────
-  const handleRunScan = async () => {
+  // ── Scan button click ────────────────────────────────────────────────────
+  const handleScanClick = () => {
+    if (demoMode) {
+      // Demo mode: run immediately with no subscription input
+      executeScan(undefined);
+    } else {
+      // Live mode: show subscription ID input first
+      setShowScanInput(true);
+    }
+  };
+
+  // ── Execute scan (after optional subscription ID is provided) ─────────────
+  const executeScan = async (subscriptionId) => {
+    setShowScanInput(false);
     setScanning(true);
     setElapsed(0);
     setScanToast(null);
 
-    // Tick elapsed seconds while scanning
     const ticker = setInterval(() => setElapsed((s) => s + 1), 1000);
 
     try {
-      const trigger = await api.triggerScan();
+      const trigger = await api.triggerScan(subscriptionId);
 
-      // Already done (backend finished synchronously or demo mode with completed status)
       if (trigger.status === 'completed' || trigger.status === 'failed') {
         setScanToast(trigger.status === 'completed' ? { result: trigger } : { error: 'Scan failed on the backend.' });
         return;
       }
 
-      // Poll until the scan finishes (max 5 minutes, every 4 seconds)
+      // Poll until done (max 5 min, every 4s)
       const scanId = trigger.scan_id;
-      const maxAttempts = 75; // 75 × 4s = 5 min
-
-      for (let i = 0; i < maxAttempts; i++) {
+      for (let i = 0; i < 75; i++) {
         await new Promise((r) => setTimeout(r, 4000));
         const scan = await api.getScan(scanId);
-
-        if (scan?.status === 'completed') {
-          setScanToast({ result: scan });
-          return;
-        }
-        if (scan?.status === 'failed') {
-          setScanToast({ error: `Scan ${scanId} failed on the backend.` });
-          return;
-        }
-        // status is still "running" / "pending" — keep waiting
+        if (scan?.status === 'completed') { setScanToast({ result: scan }); return; }
+        if (scan?.status === 'failed')    { setScanToast({ error: `Scan ${scanId} failed.` }); return; }
       }
-
-      setScanToast({ error: 'Scan timed out after 5 minutes. Check the backend logs.' });
+      setScanToast({ error: 'Scan timed out after 5 minutes. Check backend logs.' });
     } catch (err) {
       setScanToast({ error: err?.message || 'Scan failed. Is the backend running?' });
     } finally {
@@ -232,21 +280,30 @@ export default function Header({ onMenuToggle }) {
         {/* Right: controls */}
         <div className="flex items-center gap-2 md:gap-2.5 flex-shrink-0">
 
-          {/* Run Scan button */}
-          <button
-            onClick={handleRunScan}
-            disabled={scanning}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-primary hover:bg-brand-secondary disabled:opacity-60 disabled:cursor-wait text-white transition-all duration-200"
-            title="Trigger a new security scan"
-          >
-            {scanning
-              ? <FiLoader size={12} className="animate-spin" />
-              : <FiZap size={12} />
-            }
-            <span className="hidden sm:inline">
-              {scanning ? `Scanning… ${elapsed}s` : 'Run Scan'}
-            </span>
-          </button>
+          {/* Run Scan button + popover wrapper */}
+          <div className="relative" ref={scanBtnRef}>
+            <button
+              onClick={handleScanClick}
+              disabled={scanning}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-primary hover:bg-brand-secondary disabled:opacity-60 disabled:cursor-wait text-white transition-all duration-200"
+              title={demoMode ? 'Trigger a demo scan' : 'Trigger a real Azure scan'}
+            >
+              {scanning
+                ? <FiLoader size={12} className="animate-spin" />
+                : <FiZap size={12} />
+              }
+              <span className="hidden sm:inline">
+                {scanning ? `Scanning… ${elapsed}s` : 'Run Scan'}
+              </span>
+            </button>
+
+            {showScanInput && (
+              <ScanInputPopover
+                onConfirm={executeScan}
+                onCancel={() => setShowScanInput(false)}
+              />
+            )}
+          </div>
 
           {/* Demo / Live badge */}
           <button
@@ -274,7 +331,6 @@ export default function Header({ onMenuToggle }) {
         </div>
       </header>
 
-      {/* Popups */}
       {showConnErr && <ConnectionErrorPopup apiBase={api.getApiBase()} onClose={closeConnErr} />}
       {scanToast && (
         <ScanToast
