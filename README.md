@@ -71,7 +71,7 @@ flowchart TD
 
 | Service | URL |
 |---|---|
-| **Dashboard** (Vercel) | <!-- TODO: replace with your Vercel URL once the contributor shares it --> `https://<your-project>.vercel.app` |
+| **Dashboard** (Vercel) | `https://openshield-gules.vercel.app` |
 | **REST API** (Render) | `https://openshield-api.onrender.com` |
 
 > **Note:** The API is hosted on the Render free tier. After 15 minutes of inactivity the service spins down; the first request can take **30–60 seconds** to wake it. The dashboard detects this automatically — it retries the health probe and switches to live data once the backend responds.
@@ -141,7 +141,7 @@ export AZURE_SUBSCRIPTION_ID=your-subscription-id
 export AZURE_CLIENT_ID=your-client-id
 export AZURE_CLIENT_SECRET=your-client-secret
 export AZURE_TENANT_ID=your-tenant-id
-export JWT_SECRET=your-strong-secret   # must match VITE_JWT_TOKEN signing key
+export JWT_SECRET=your-strong-secret   # used to protect write endpoints (scan trigger, AI)
 
 # Run a scan
 python -c "
@@ -165,18 +165,10 @@ npm install
 npm run dev
 
 # To develop against the live Render backend:
-VITE_API_URL=https://openshield-api.onrender.com \
-VITE_JWT_TOKEN=<your-demo-jwt> \
-npm run dev
+VITE_API_URL=https://openshield-api.onrender.com npm run dev
 ```
 
-Generate the demo JWT (must match the `JWT_SECRET` on Render):
-
-```bash
-JWT_SECRET=your-strong-secret python scripts/generate_demo_jwt.py
-```
-
-Set the printed token as `VITE_JWT_TOKEN` in the Vercel environment variables and redeploy.
+No token required — all read endpoints are public. Only scan trigger and AI endpoints require a JWT (POST only).
 
 ---
 
