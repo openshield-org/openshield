@@ -477,7 +477,7 @@ const siteContent = {
         },
         {
             question: "How do I try the live dashboard?",
-            answer: "The dashboard is deployed at openshield-gules.vercel.app and connects to a seeded backend at openshield-api.onrender.com. The backend may take 30-60 seconds to wake from idle on first load — the dashboard retries automatically."
+            answer: "The project website is at openshield-website.vercel.app. The security dashboard is at openshield-gules.vercel.app and connects to the live backend at openshield-api.onrender.com. The backend may take 30-60 seconds to wake from idle — the dashboard retries automatically."
         },
         {
             question: "How do I contribute?",

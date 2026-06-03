@@ -32,11 +32,12 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 | Feature | Description |
 |---|---|
-| **Misconfiguration Scanner** | Runs 20 Azure security rules across storage, network, identity, database, compute, and Key Vault |
+| **Misconfiguration Scanner** | Runs 36 Azure security rules across storage, network, identity, database, compute, and Key Vault |
 | **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
-| **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, and compliance posture over REST |
-| **Remediation Playbooks** | Every current rule ships with a matching Azure CLI remediation script |
-| **Security Dashboard** | Full React dashboard deployed on Vercel — live monitoring, findings, compliance, drift, and AI-layer views |
+| **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, compliance posture, drift, and resource inventory over REST |
+| **Remediation Playbooks** | Every rule ships with a matching Azure CLI remediation script (36 playbooks) |
+| **Security Dashboard** | Full React dashboard deployed on Vercel — live monitoring, findings, compliance, drift, prioritization, and AI-layer views |
+| **Project Website** | Documentation and reference site at [openshield-website.vercel.app](https://openshield-website.vercel.app) — blog, rules gallery, docs, roadmap, releases, and interactive playground |
 | **Sentinel Integration** | Normalises findings and pushes them into Microsoft Sentinel via a Log Analytics custom table and KQL analytics rules |
 
 ---
@@ -47,11 +48,11 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 flowchart TD
     A["React Dashboard\nVercel · Live"]
     B["Flask REST API\nJWT · CORS · Blueprints"]
-    C["Scanner Engine\n20 Python rules"]
+    C["Scanner Engine\n36 Python rules"]
     D["Azure Subscription\nScanned via Azure SDK + Graph"]
     E["Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
     F["PostgreSQL Database\nFindings · Scans"]
-    G["Azure CLI Playbooks\n20 remediation scripts"]
+    G["Azure CLI Playbooks\n36 remediation scripts"]
     H["sentinel/ingest.py\nNormalise + HMAC upload"]
     I["Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
@@ -71,7 +72,8 @@ flowchart TD
 
 | Service | URL |
 |---|---|
-| **Dashboard** (Vercel) | `https://openshield-gules.vercel.app` |
+| **Project Website** | `https://openshield-website.vercel.app` |
+| **Security Dashboard** (Vercel) | `https://openshield-gules.vercel.app` |
 | **REST API** (Render) | `https://openshield-api.onrender.com` |
 
 > **Note:** The API is hosted on the Render free tier. After 15 minutes of inactivity the service spins down; the first request can take **30–60 seconds** to wake it. The dashboard detects this automatically — it retries the health probe and switches to live data once the backend responds.
@@ -85,7 +87,8 @@ flowchart TD
 
 | Layer | Technology | Cost |
 |---|---|---|
-| Frontend | React + Vite + Tailwind, deployed on Vercel | Free |
+| Project Website | Static HTML + Tailwind CDN, deployed on Vercel | Free |
+| Security Dashboard | React + Vite + Tailwind, deployed on Vercel | Free |
 | Backend API | Python + Flask | Free |
 | Database | PostgreSQL | Free (Render/Azure free tier) |
 | Cloud Scanner | Python + Azure SDK | Free |
@@ -113,7 +116,8 @@ openshield/
 ├── api/                   # Flask REST API
 │   ├── routes/
 │   └── models/
-├── frontend/              # Dashboard scaffold
+├── frontend/              # React security dashboard (Vercel)
+├── website/               # Project website — docs, blog, rules gallery (Vercel)
 ├── sentinel/              # Sentinel integration & KQL rules
 ├── .github/workflows/     # CI checks
 ├── docs/                  # Documentation
@@ -204,6 +208,8 @@ Contributors are credited below.
 - [x] Azure CLI remediation playbook library
 - [x] NIST CSF + ISO 27001 mappings
 - [x] GitHub Actions CI pipeline
+- [x] Project website with docs, blog, rules gallery, and playground
+- [x] Live end-to-end data wiring (all API endpoints serving real data)
 - [ ] Multi-cloud support (AWS, GCP)
 
 ---
@@ -214,20 +220,12 @@ MIT — free to use, modify, and distribute.
 
 ---
 
-> Built with ❤️ by security engineers and students who believe cloud security tooling should be accessible to everyone.
+> Built by security engineers and students who believe cloud security tooling should be accessible to everyone.
 
 ---
 
 ## Learn OpenShield
 
-Explore the OpenShield learning portal to understand:
+Full documentation, the security rules gallery, blog, and interactive playground are available at the project website:
 
-- Azure CSPM fundamentals
-- OpenShield architecture
-- Compliance mappings
-- Remediation workflows
-- Contributor onboarding
-- Documentation navigation
-
-👉 [OpenShield Learn](docs/learn/index.html)
-> Built by security engineers and students who believe cloud security tooling should be accessible to everyone.
+**[openshield-website.vercel.app](https://openshield-website.vercel.app)**

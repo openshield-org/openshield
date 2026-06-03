@@ -4,7 +4,7 @@ A data-driven static site for the OpenShield project. No build step required. Pu
 
 ## Live Site
 
-Update this line once the Vercel project is deployed.
+`https://openshield-website.vercel.app`
 
 ---
 

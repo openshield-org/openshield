@@ -181,7 +181,21 @@ export default function Header({ onMenuToggle }) {
   const [elapsed, setElapsed]       = useState(0);
   const [scanToast, setScanToast]   = useState(null);
   const [showScanInput, setShowScanInput] = useState(false);
+  const [lastScanAt, setLastScanAt] = useState(null);
   const scanBtnRef = useRef(null);
+
+  useEffect(() => {
+    api.getScans().then((data) => {
+      const latest = data?.scans?.[0];
+      if (latest?.started_at || latest?.startedAt) {
+        const raw = latest.started_at || latest.startedAt;
+        setLastScanAt(new Date(raw).toLocaleString(undefined, {
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit',
+        }));
+      }
+    }).catch(() => {});
+  }, []);
 
   // ── Demo/Live toggle ─────────────────────────────────────────────────────
   const handleToggle = async () => {
@@ -324,10 +338,12 @@ export default function Header({ onMenuToggle }) {
           </button>
 
           {/* Last scanned */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-tertiary dark:text-text-dark-tertiary">
-            <FiClock size={13} />
-            <span>Last scanned: May 29, 2026 6:00 PM</span>
-          </div>
+          {lastScanAt && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-tertiary dark:text-text-dark-tertiary">
+              <FiClock size={13} />
+              <span>Last scanned: {lastScanAt}</span>
+            </div>
+          )}
         </div>
       </header>
 
