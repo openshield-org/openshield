@@ -79,7 +79,11 @@ flowchart TD
 > **Note:** The API is hosted on Render. The dashboard connects automatically on load and shows live data from the PostgreSQL database.
 
 > [!IMPORTANT]
-> **Security Requirement:** Any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the Render environment variables. Never commit this secret to the repository.
+> **Security Requirement:** Production deployments **fail at startup** if `JWT_SECRET` is missing, set to the insecure default, or shorter than 32 characters. Generate a strong secret with:
+> ```
+> python -c "import secrets; print(secrets.token_urlsafe(32))"
+> ```
+> Set `OPENSHIELD_ENV=production` (or rely on Render's automatic `RENDER=true`) to enable this enforcement. Local development runs without these signals are allowed to use the default with a warning.
 
 ---
 

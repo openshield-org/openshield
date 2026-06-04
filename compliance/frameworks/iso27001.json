@@ -172,6 +172,21 @@
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "VNet peering connections with gateway transit enabled allow traffic to flow between network segments through shared gateways, potentially bypassing network controls. Networks should be managed and controlled to protect information in systems and applications. Gateway transit on peering connections should be disabled unless explicitly required."
+    },
+    "AZ-PQC-001": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "TLS configurations using classical key exchange algorithms do not align with a forward-looking cryptographic controls policy. A.10.1.1 requires that the organisation defines rules for effective use of cryptography. The policy must address post-quantum threats and mandate migration to quantum-safe cipher suites when supported."
+    },
+    "AZ-PQC-002": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "Key Vault keys using RSA or ECC do not meet the requirements of a cryptographic controls policy that accounts for quantum threats. A.10.1.1 requires that cryptographic controls are appropriate to the level of risk. Post-quantum safe algorithms must be adopted as part of the cryptographic policy when supported."
+    },
+    "AZ-PQC-003": {
+      "control_id": "A.10.1.1",
+      "control_name": "Policy on the use of cryptographic controls",
+      "description": "Certificates using classical signature algorithms expose the organisation to quantum-enabled signature forgery. A.10.1.1 requires that the cryptographic controls policy covers all cryptographic assets including certificates. Migration planning to post-quantum safe signature algorithms is required."
     }
   }
 }

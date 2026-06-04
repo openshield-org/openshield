@@ -109,7 +109,10 @@ AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 AZURE_CLIENT_SECRET=your-client-secret-from-step-3
 AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 DATABASE_URL=postgresql://openshield:openshield@localhost:5432/openshield
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+# Must be at least 32 characters. The app refuses to start in production without it.
 JWT_SECRET=your-random-secret-at-least-32-chars
+OPENSHIELD_ENV=production
 SENTINEL_WORKSPACE_ID=
 SENTINEL_SHARED_KEY=
 SENTINEL_LOG_TYPE=OpenShieldFindings

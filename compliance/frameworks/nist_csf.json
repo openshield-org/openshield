@@ -172,6 +172,21 @@
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
       "description": "VNet peering with gateway transit enabled allows traffic to cross network boundaries through shared gateways, undermining network segmentation. PR.AC-5 requires that network integrity is protected. Disabling gateway transit on peering connections enforces boundary integrity between network zones."
+    },
+    "AZ-PQC-001": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data in transit is protected",
+      "description": "TLS configurations using classical key exchange algorithms expose data in transit to Harvest Now Decrypt Later attacks. PR.DS-2 requires that data in transit is protected. Migrating to TLS 1.3 and post-quantum safe cipher suites when supported helps data remain protected against quantum-enabled adversaries."
+    },
+    "AZ-PQC-002": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data in transit is protected",
+      "description": "Key Vault keys using RSA or ECC can be broken by Shor's algorithm on quantum computers, compromising protected data and signatures. PR.DS-2 requires that data protection mechanisms are maintained. Post-quantum safe key encapsulation algorithms such as ML-KEM should replace classical alternatives when supported."
+    },
+    "AZ-PQC-003": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data in transit is protected",
+      "description": "Certificates using classical signature algorithms are vulnerable to quantum attacks, undermining authentication and integrity guarantees. PR.DS-2 requires that data protection includes integrity mechanisms. Migration to ML-DSA or SLH-DSA signature algorithms should be planned."
     }
   }
 }

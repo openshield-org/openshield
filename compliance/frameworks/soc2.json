@@ -163,10 +163,25 @@
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "A virtual network without an Azure Firewall relies on NSGs alone and lacks a centralized point to inspect, filter, and log traffic crossing the network boundary. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Deploying an Azure Firewall enforces inspected, logged perimeter access for the network."
     },
-     "AZ-NET-014": {
+    "AZ-NET-014": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "VNet peering with allowGatewayTransit or useRemoteGateways enabled allows traffic to cross network boundaries through shared gateways, weakening the logical separation between network zones. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Gateway transit on peering connections should be disabled to enforce boundary separation."
+    },
+    "AZ-PQC-001": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "TLS configurations using classical key exchange algorithms expose data in transit to Harvest Now Decrypt Later attacks where adversaries collect traffic today and decrypt it with future quantum computers. CC6.7 requires that data transmitted over networks is protected using encryption. Enforcing TLS 1.3 minimum reduces this risk."
+    },
+    "AZ-PQC-002": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "Key Vault keys using RSA or ECC will be vulnerable to Shor's algorithm, compromising data encrypted or signed with these keys. CC6.7 requires that data is protected using encryption. Post-quantum safe key encapsulation algorithms should replace classical alternatives when supported to maintain this protection."
+    },
+    "AZ-PQC-003": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "Certificates using classical signature algorithms will be vulnerable to quantum-enabled forgery, undermining authentication and data integrity. CC6.7 requires that data integrity is maintained through encryption and signing. Migration to post-quantum safe certificate algorithms should be planned."
     }
   }
 }

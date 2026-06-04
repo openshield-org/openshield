@@ -298,6 +298,16 @@ class AzureClient:
             logger.error("get_virtual_machines failed: %s", exc)
             return []
 
+    def get_web_apps(self) -> List[Any]:
+        """List all App Services in the subscription."""
+        try:
+            from azure.mgmt.web import WebSiteManagementClient
+            client = WebSiteManagementClient(self.credential, self.subscription_id)
+            return list(client.web_apps.list())
+        except Exception as exc:
+            logger.error("get_web_apps failed: %s", exc)
+            return []
+
     def get_vm_extensions(
         self, resource_group: str, vm_name: str
     ) -> Optional[List[Any]]:
@@ -385,6 +395,17 @@ class AzureClient:
             logger.error(
                 "get_key_vault_certificates(%s) failed: %s", vault_name, exc
             )
+            return []
+
+    def get_key_vault_keys(self, vault_name: str) -> List[Any]:
+        """List all keys in a Key Vault using the Key Vault data plane API."""
+        try:
+            from azure.keyvault.keys import KeyClient
+            vault_url = f"https://{vault_name}.vault.azure.net"
+            client = KeyClient(vault_url=vault_url, credential=self.credential)
+            return list(client.list_properties_of_keys())
+        except Exception as exc:
+            logger.error("get_key_vault_keys(%s) failed: %s", vault_name, exc)
             return []
 
     # ------------------------------------------------------------------ #

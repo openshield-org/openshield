@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+# Default to production so gunicorn-based deployments fail closed on a missing
+# or insecure JWT_SECRET. Override with OPENSHIELD_ENV=development only for
+# local/demo runs launched via this script.
+export OPENSHIELD_ENV="${OPENSHIELD_ENV:-production}"
+
 echo "=== OpenShield startup ==="
 echo "Running database initialisation..."
 
