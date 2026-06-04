@@ -15,7 +15,6 @@ _TEST_JWT_SECRET = secrets.token_urlsafe(32)
 @pytest.fixture
 def app():
     from api.app import create_app
-    import jwt  # noqa: F401
     application = create_app()
     application.config["TESTING"] = True
     application.config["JWT_SECRET"] = _TEST_JWT_SECRET
