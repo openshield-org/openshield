@@ -122,10 +122,6 @@ jobs:
         id: cred_scan
         run: |
           echo "=== Scanning for hardcoded credentials ==="
-          # Each credential-name pattern requires a quoted string literal on the
-          # right-hand side. This flags real hardcoded values (api_key = "sk-...")
-          # while ignoring safe assignments to function calls or expressions
-          # (api_key = str(data.get(...)) , _SECRET = secrets.token_urlsafe(32)).
           PATTERNS=(
             "password\s*=\s*['\"]"
             "secret\s*=\s*['\"]"
@@ -328,17 +324,25 @@ jobs:
               print(f"All compliance controls map to existing rule files. ({len(existing_ids)} rules checked)")
           PYEOF
 
+      # ── CHECK 8: Rule regression tests (MockAzureClient, no Azure creds) ──
+      - name: Rule regression tests
+        id: rule_tests
+        run: |
+          echo "=== Running rule regression tests ==="
+          pytest tests/test_rules_*.py -v --tb=short
+
       # ── Final summary — always runs, shows per-check pass/fail ────────
       - name: CI Summary
         if: always()
         env:
-          SYNTAX:    ${{ steps.syntax_check.outcome }}
-          STRUCTURE: ${{ steps.structure_check.outcome }}
-          CREDS:     ${{ steps.cred_scan.outcome }}
-          PLAYBOOK:  ${{ steps.playbook_check.outcome }}
-          JSON:      ${{ steps.json_check.outcome }}
-          API:       ${{ steps.api_check.outcome }}
-          XREF:      ${{ steps.xref_check.outcome }}
+          SYNTAX:     ${{ steps.syntax_check.outcome }}
+          STRUCTURE:  ${{ steps.structure_check.outcome }}
+          CREDS:      ${{ steps.cred_scan.outcome }}
+          PLAYBOOK:   ${{ steps.playbook_check.outcome }}
+          JSON:       ${{ steps.json_check.outcome }}
+          API:        ${{ steps.api_check.outcome }}
+          XREF:       ${{ steps.xref_check.outcome }}
+          RULE_TESTS: ${{ steps.rule_tests.outcome }}
         run: |
           python - <<'PYEOF'
           import os
@@ -351,6 +355,7 @@ jobs:
               ("Compliance JSON validation",           os.environ["JSON"]),
               ("API syntax check",                     os.environ["API"]),
               ("Compliance vs rule cross-reference",   os.environ["XREF"]),
+              ("Rule regression tests",                os.environ["RULE_TESTS"]),
           ]
 
           labels = {
