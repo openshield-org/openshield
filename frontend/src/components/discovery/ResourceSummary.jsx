@@ -1,15 +1,16 @@
 import React from 'react';
-import { FiDatabase, FiServer, FiWifi, FiUser, FiHardDrive, FiKey, FiEye } from 'react-icons/fi';
+import { FiDatabase, FiServer, FiWifi, FiUser, FiHardDrive, FiKey, FiEye, FiZap } from 'react-icons/fi';
 import Card from '../shared/Card';
 
 const CATEGORY_ICONS = {
-  Storage: FiHardDrive,
-  Compute: FiServer,
-  Network: FiWifi,
-  Identity: FiUser,
-  Database: FiDatabase,
-  KeyVault: FiKey,
-  Monitoring: FiEye,
+  Storage:     FiHardDrive,
+  Compute:     FiServer,
+  Network:     FiWifi,
+  Identity:    FiUser,
+  Database:    FiDatabase,
+  KeyVault:    FiKey,
+  Monitoring:  FiEye,
+  PostQuantum: FiZap,
 };
 
 export default function ResourceSummary({ summary, activeCategory, onCategoryClick }) {
