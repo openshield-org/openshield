@@ -215,12 +215,8 @@ Contributors are credited below.
 - [x] Core scanner engine (Azure SDK integration)
 - [x] 30+ scan rules
 - [x] Flask API + PostgreSQL schema
-<<<<<<< HEAD
-- [x] React dashboard MVP (live on Vercel)
-=======
 - [x] Post-quantum cryptography scanner (AZ-PQC-001 to AZ-PQC-003)
-- [ ] React dashboard MVP
->>>>>>> upstream/dev
+- [x] React dashboard (live on Vercel)
 - [x] CIS Benchmark compliance mapping
 - [x] SOC 2 compliance mapping
 - [x] Sentinel alert integration
