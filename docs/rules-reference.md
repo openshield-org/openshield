@@ -1,6 +1,6 @@
 # Rules Reference
 
-OpenShield currently ships 36 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
+OpenShield currently ships 39 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
 
 | Rule ID | Name | Severity | Category | CIS | NIST | ISO 27001 |
 |---|---|---|---|---|---|---|

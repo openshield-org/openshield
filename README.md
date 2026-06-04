@@ -1,6 +1,6 @@
 # OpenShield
 
-> **Open source Cloud Security Posture Management (CSPM) for Azure - built by the community, for the community.**
+> **Open source Cloud Security Posture Management (CSPM) for Azure - detect misconfigurations, map to CIS/NIST/ISO27001/SOC2, fix them with one command, and identify cryptographic assets requiring quantum-safe migration.**
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/network/members)
@@ -26,13 +26,25 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 **OpenShield changes that.**
 
+## Why Post-Quantum Cryptography Matters Now
+
+Adversaries are collecting encrypted Azure traffic today to decrypt it when quantum computers become available. This is called a Harvest Now Decrypt Later attack and it is happening right now.
+
+OpenShield scans Azure for classical cryptographic assets that need migration before it is too late:
+
+- TLS configurations using RSA or ECDH key exchange on App Services
+- Key Vault keys using RSA or ECC algorithms vulnerable to Shor's algorithm
+- Certificates using classical signature algorithms
+
+Findings map to NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA) and feed directly into post-quantum migration planning.
+
 ---
 
 ## What OpenShield Does
 
 | Feature | Description |
 |---|---|
-| **Misconfiguration Scanner** | Runs 36 Azure security rules across storage, network, identity, database, compute, and Key Vault |
+| **Misconfiguration Scanner** | Runs 39 Azure security rules across storage, network, identity, database, compute, Key Vault, and post-quantum cryptography |
 | **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
 | **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, compliance posture, drift, and resource inventory over REST |
 | **Remediation Playbooks** | Every rule ships with a matching Azure CLI remediation script (36 playbooks) |
@@ -48,11 +60,11 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 flowchart TD
     A["React Dashboard\nVercel · Live"]
     B["Flask REST API\nJWT · CORS · Blueprints"]
-    C["Scanner Engine\n36 Python rules"]
+    C["Scanner Engine\n39 Python rules"]
     D["Azure Subscription\nScanned via Azure SDK + Graph"]
     E["Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
     F["PostgreSQL Database\nFindings · Scans"]
-    G["Azure CLI Playbooks\n36 remediation scripts"]
+    G["Azure CLI Playbooks\n39 remediation scripts"]
     H["sentinel/ingest.py\nNormalise + HMAC upload"]
     I["Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
@@ -201,9 +213,14 @@ Contributors are credited below.
 
 - [x] Project scaffolding
 - [x] Core scanner engine (Azure SDK integration)
-- [x] 20 scan rules
+- [x] 30+ scan rules
 - [x] Flask API + PostgreSQL schema
+<<<<<<< HEAD
 - [x] React dashboard MVP (live on Vercel)
+=======
+- [x] Post-quantum cryptography scanner (AZ-PQC-001 to AZ-PQC-003)
+- [ ] React dashboard MVP
+>>>>>>> upstream/dev
 - [x] CIS Benchmark compliance mapping
 - [x] SOC 2 compliance mapping
 - [x] Sentinel alert integration
