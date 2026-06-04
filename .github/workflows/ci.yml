@@ -122,6 +122,10 @@ jobs:
         id: cred_scan
         run: |
           echo "=== Scanning for hardcoded credentials ==="
+          # Each credential-name pattern requires a quoted string literal on the
+          # right-hand side. This flags real hardcoded values (api_key = "sk-...")
+          # while ignoring safe assignments to function calls or expressions
+          # (api_key = str(data.get(...)) , _SECRET = secrets.token_urlsafe(32)).
           PATTERNS=(
             "password\s*=\s*['\"]"
             "secret\s*=\s*['\"]"
