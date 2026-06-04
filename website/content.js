@@ -496,7 +496,7 @@ const siteContent = {
         },
         {
             question: "How do I try the live dashboard?",
-            answer: "The project website is at openshield-website.vercel.app. The security dashboard is at openshield-gules.vercel.app and connects to the live backend at openshield-api.onrender.com. The backend may take 30-60 seconds to wake from idle — the dashboard retries automatically."
+            answer: "The project website is at openshield-website.vercel.app. The security dashboard is at openshield-gules.vercel.app and connects to the live backend at openshield-api.onrender.com."
         },
         {
             question: "How do I contribute?",

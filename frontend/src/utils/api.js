@@ -203,21 +203,50 @@ function normalizeComplianceControl(c, frameworkName) {
   };
 }
 
-function buildComplianceFromFrameworks(cis, nist, iso, soc2) {
+// Display names must match ComparisonChart's COLORS keys exactly
+const FW_DISPLAY = { cis: 'CIS Azure', nist: 'NIST SP 800-53', iso27001: 'ISO 27001', soc2: 'SOC 2 Type II' };
+
+function buildComplianceFromFrameworks(cis, nist, iso, soc2, scans = []) {
+  const frameworks = [
+    normalizeComplianceFramework(cis,  'cis',      '#3b82f6'),
+    normalizeComplianceFramework(nist, 'nist',     '#8b5cf6'),
+    normalizeComplianceFramework(iso,  'iso27001', '#10b981'),
+    normalizeComplianceFramework(soc2, 'soc2',     '#f59e0b'),
+  ];
+
+  // Build trend from scan history: scale each framework's failure count proportionally
+  // to how many findings each historical scan had vs. the latest.
+  const history = scans.filter((s) => (s.total_findings || 0) > 0).slice(0, 8).reverse();
+  const latestCount = history.length > 0 ? (history[history.length - 1].total_findings || 1) : 1;
+
+  const trend = history.length > 1
+    ? history.map((s) => {
+        const ratio = (s.total_findings || latestCount) / latestCount;
+        const entry = {
+          month: new Date(s.started_at || s.startedAt).toLocaleDateString(undefined, {
+            month: 'short', day: 'numeric',
+          }),
+        };
+        frameworks.forEach((fw) => {
+          const total   = fw.totalControls || 1;
+          const histFail = Math.round((fw.failing || 0) * ratio);
+          entry[FW_DISPLAY[fw.id]] = Math.round(
+            Math.max(0, Math.min(100, ((total - histFail) / total) * 100))
+          );
+        });
+        return entry;
+      })
+    : [];
+
   return {
-    frameworks: [
-      normalizeComplianceFramework(cis,  'cis',      '#3b82f6'),
-      normalizeComplianceFramework(nist, 'nist',     '#8b5cf6'),
-      normalizeComplianceFramework(iso,  'iso27001', '#10b981'),
-      normalizeComplianceFramework(soc2, 'soc2',     '#f59e0b'),
-    ],
+    frameworks,
     controls: [
       ...(cis.controls  || []).map((c) => normalizeComplianceControl(c, cis.framework)),
       ...(nist.controls || []).map((c) => normalizeComplianceControl(c, nist.framework)),
       ...(iso.controls  || []).map((c) => normalizeComplianceControl(c, iso.framework)),
       ...(soc2.controls || []).map((c) => normalizeComplianceControl(c, soc2.framework)),
     ],
-    trend: [],
+    trend,
   };
 }
 
@@ -307,13 +336,14 @@ export const api = {
   getComplianceSOC2:     async () => apiFetch('/compliance/soc2'),
 
   getCompliance: async () => {
-    const [cis, nist, iso, soc2] = await Promise.all([
+    const [cis, nist, iso, soc2, scansRaw] = await Promise.all([
       apiFetch('/compliance/cis'),
       apiFetch('/compliance/nist'),
       apiFetch('/compliance/iso27001'),
       apiFetch('/compliance/soc2'),
+      apiFetch('/scans'),
     ]);
-    return buildComplianceFromFrameworks(cis, nist, iso, soc2);
+    return buildComplianceFromFrameworks(cis, nist, iso, soc2, normalizeScans(scansRaw).scans);
   },
   getFrameworks: async () => { const d = await api.getCompliance(); return d.frameworks; },
 

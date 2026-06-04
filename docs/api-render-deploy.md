@@ -18,10 +18,10 @@ to Render (Starter instance or higher). The goal is to confirm:
 
 ## 2. Methodology and Test Rationale
 
-To ensure the highest reliability of the deployment while accommodating free-tier constraints and community contributions, specific methods and test strategies were chosen:
+To ensure the highest reliability of the deployment while remaining community-friendly, specific methods and test strategies were chosen:
 
 ### 2.1 Infrastructure and Pipeline Strategy
-* **Targeting Render over Azure F1:** Azure App Service's F1 tier imposes a strict 60 CPU-minute daily cap. Render provides unmetered CPU on the free tier, making it significantly more reliable for demo and development environments.
+* **Targeting Render over Azure F1:** Azure App Service's F1 tier imposes a strict 60 CPU-minute daily cap. Render provides unmetered CPU and always-on availability on paid instances, making it significantly more reliable for production environments.
 * **Database Initialization:** The `api/models/finding.py` was updated with an `init_db` method. This method ensures that all required tables (`scans`, `findings`) are created automatically during the first deployment, preventing HTTP 500 errors.
 * **Pre-commit Hook:** Fails fast. By running syntax checks and local API smoke tests *before* the commit is allowed, we prevent broken code from polluting the remote branch.
 * **Community-Friendly CI Gate:** The GitHub Action is designed to be zero-friction for contributors.

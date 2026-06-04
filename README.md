@@ -76,7 +76,7 @@ flowchart TD
 | **REST API** (Render) | `https://openshield-api.onrender.com` |
 | **Project Website** | `https://openshield-website.vercel.app` |
 
-> **Note:** The API is hosted on the Render free tier. After 15 minutes of inactivity the service spins down; the first request can take **30–60 seconds** to wake it. The dashboard detects this automatically — it retries the health probe and switches to live data once the backend responds.
+> **Note:** The API is hosted on Render. The dashboard connects automatically on load and shows live data from the PostgreSQL database.
 
 > [!IMPORTANT]
 > **Security Requirement:** Any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the Render environment variables. Never commit this secret to the repository.
@@ -90,7 +90,7 @@ flowchart TD
 | Project Website | Static HTML + Tailwind CDN, deployed on Vercel | Free |
 | Security Dashboard | React + Vite + Tailwind, deployed on Vercel | Free |
 | Backend API | Python + Flask | Free |
-| Database | PostgreSQL | Free (Render/Azure free tier) |
+| Database | PostgreSQL | Render managed PostgreSQL |
 | Cloud Scanner | Python + Azure SDK | Free |
 | Remediation | Azure CLI playbooks | Free |
 | SIEM | Microsoft Sentinel | 90-day free trial |
