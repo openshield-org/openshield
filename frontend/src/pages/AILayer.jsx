@@ -100,17 +100,15 @@ export default function AILayer() {
   const [settingsKey,     setSettingsKey]     = useState(0); // force re-render on settings save
 
   useEffect(() => {
-    Promise.all([api.getAIMessages(), api.getAISuggestions(), api.getFindings()])
-      .then(([msgs, sugs, scans]) => {
-        setInitialMessages(msgs);
-        setSuggestions(sugs);
+    api.getFindings()
+      .then((scans) => {
         setFindings(scans);
         const fromScan = location.state?.finding;
         if (fromScan) setSelectedFinding(fromScan);
         aiApi.getSummary(scans).then(setSummary).finally(() => setSummaryLoading(false));
       })
       .catch(() => {
-        setFindings(null); // null = error, [] = empty but loaded
+        setFindings(null);
         aiApi.getSummary([]).then(setSummary).finally(() => setSummaryLoading(false));
       });
     aiApi.getCVEAnalysis().then(setCveData).finally(() => setCveLoading(false));

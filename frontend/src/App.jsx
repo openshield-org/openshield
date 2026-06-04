@@ -13,8 +13,13 @@ import AILayer from './pages/AILayer';
 
 export default function App() {
   useEffect(() => {
-    if (!api.getToken()) {
-      api.setToken(import.meta.env.VITE_JWT_TOKEN || 'dev-local-token');
+    // Always prefer the build-time token so a stale localStorage value
+    // from a previous deployment never blocks authenticated requests.
+    const envToken = import.meta.env.VITE_JWT_TOKEN;
+    if (envToken) {
+      api.setToken(envToken);
+    } else if (!api.getToken()) {
+      api.setToken('dev-local-token');
     }
   }, []);
 
