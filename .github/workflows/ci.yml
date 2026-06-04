@@ -327,6 +327,8 @@ jobs:
       # ── CHECK 8: Rule regression tests (MockAzureClient, no Azure creds) ──
       - name: Rule regression tests
         id: rule_tests
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost/ci_db"
         run: |
           echo "=== Running rule regression tests ==="
           pytest tests/test_rules_*.py -v --tb=short
