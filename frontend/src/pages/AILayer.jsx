@@ -16,7 +16,6 @@ const PROVIDERS = [
 
 // ── AI Settings card ────────────────────────────────────────────────────────
 function AISettingsCard({ onSaved }) {
-  const isDemoMode = api.isDemoMode();
   const [provider, setProvider]   = useState(aiSettings.getProvider());
   const [apiKey,   setApiKey]     = useState(aiSettings.getApiKey());
   const [saved,    setSaved]      = useState(false);
@@ -28,19 +27,6 @@ function AISettingsCard({ onSaved }) {
     setTimeout(() => setSaved(false), 2000);
     onSaved?.();
   };
-
-  if (isDemoMode) {
-    return (
-      <div className="rounded-2xl border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-secondary p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary dark:text-text-dark-tertiary mb-2 flex items-center gap-1.5">
-          <FiKey size={11} /> AI Provider
-        </p>
-        <p className="text-xs text-text-secondary dark:text-text-dark-tertiary">
-          Demo mode active — using built-in mock responses. Switch to Live mode and add your API key to use real AI.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="rounded-2xl border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-secondary p-4 space-y-3">
@@ -124,7 +110,7 @@ export default function AILayer() {
         aiApi.getSummary(scans).then(setSummary).finally(() => setSummaryLoading(false));
       })
       .catch(() => {
-        // getFindings failed (e.g. backend cold-starting) — still clear the loading spinner
+        setFindings(null); // null = error, [] = empty but loaded
         aiApi.getSummary([]).then(setSummary).finally(() => setSummaryLoading(false));
       });
     aiApi.getCVEAnalysis().then(setCveData).finally(() => setCveLoading(false));
@@ -135,7 +121,7 @@ export default function AILayer() {
 
   const refreshSummary = () => {
     setSummaryLoading(true);
-    aiApi.getSummary(findings).then(setSummary).finally(() => setSummaryLoading(false));
+    aiApi.getSummary(findings ?? []).then(setSummary).finally(() => setSummaryLoading(false));
   };
 
   return (
@@ -153,9 +139,9 @@ export default function AILayer() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-text-primary dark:text-text-dark-primary">AI Security Chat</p>
               <p className="text-xs text-text-secondary dark:text-text-dark-tertiary">
-                {aiSettings.isConfigured() && !api.isDemoMode()
+                {aiSettings.isConfigured()
                   ? `${aiSettings.getProvider()} · live AI responses`
-                  : 'Demo mode · built-in responses'}
+                  : 'Configure a provider to enable AI responses'}
               </p>
             </div>
 
@@ -205,8 +191,10 @@ export default function AILayer() {
             )}
           </div>
           <div className="overflow-y-auto max-h-64 custom-scrollbar divide-y divide-border-light dark:divide-border-dark">
-            {findings.length === 0
-              ? <p className="text-xs text-text-tertiary dark:text-text-dark-tertiary px-4 py-6 text-center">Loading findings…</p>
+            {findings === null
+              ? <p className="text-xs text-text-tertiary dark:text-text-dark-tertiary px-4 py-6 text-center">Could not load findings — backend may be waking up.</p>
+              : findings.length === 0
+              ? <p className="text-xs text-text-tertiary dark:text-text-dark-tertiary px-4 py-6 text-center">No findings yet. Run a scan first.</p>
               : findings.map((f) => {
                   const isActive = selectedFinding?.id === f.id;
                   return (

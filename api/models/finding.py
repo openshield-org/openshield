@@ -135,7 +135,8 @@ class DatabaseManager:
                     subscription_id TEXT NOT NULL,
                     started_at      TIMESTAMPTZ NOT NULL,
                     completed_at    TIMESTAMPTZ,
-                    total_findings  INTEGER DEFAULT 0
+                    total_findings  INTEGER DEFAULT 0,
+                    score           INTEGER DEFAULT NULL
                 );
             """)
             cur.execute("""
@@ -218,8 +219,8 @@ class DatabaseManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO NOTHING
                 """,
                 (
@@ -228,6 +229,7 @@ class DatabaseManager:
                     scan_result["started_at"],
                     scan_result["completed_at"],
                     scan_result["total_findings"],
+                    scan_result.get("score"),
                 ),
             )
             for f in scan_result.get("findings", []):
@@ -293,7 +295,7 @@ class DatabaseManager:
         else:
             # Default to the latest scan so historical findings do not inflate counts
             clauses.append(
-                "scan_id = (SELECT scan_id FROM scans ORDER BY started_at DESC LIMIT 1)"
+                "scan_id = (SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1)"
             )
 
         where = "WHERE " + " AND ".join(clauses) if clauses else ""
@@ -368,7 +370,7 @@ class DatabaseManager:
                 SELECT severity, COUNT(*)
                 FROM findings
                 WHERE scan_id = (
-                    SELECT scan_id FROM scans ORDER BY started_at DESC LIMIT 1
+                    SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1
                 )
                 GROUP BY severity
                 """
@@ -393,7 +395,7 @@ class DatabaseManager:
                     COUNT(CASE WHEN cvss_score >= 9.0 THEN 1 END) as critical_cve_count
                 FROM findings
                 WHERE scan_id = (
-                    SELECT scan_id FROM scans ORDER BY started_at DESC LIMIT 1
+                    SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1
                 )
             """)
             row = cur.fetchone()

@@ -13,10 +13,6 @@ const IMPACT_STYLES = {
 
 const EFFORT_LABEL = { 1: 'LOW', 2: 'LOW', 3: 'MEDIUM', 4: 'HIGH', 5: 'HIGH' };
 
-function trunc(str, max) {
-  if (!str) return null;
-  return str.length > max ? str.slice(0, max) + '…' : str;
-}
 
 export default function QuickRemediation({ ranking, finding }) {
   const navigate = useNavigate();
@@ -33,8 +29,8 @@ export default function QuickRemediation({ ranking, finding }) {
 
   const eta = EFFORT_ETA[ranking.effort] ?? '—';
   const effortLabel = EFFORT_LABEL[ranking.effort] ?? 'MEDIUM';
-  const portalStep = trunc(finding?.portalSteps?.[0], 65) ?? 'See the Scan page for portal steps';
-  const cliCommand = trunc(finding?.cliCommands?.[0], 74);
+  const portalStep = finding?.portalSteps?.[0] ?? 'See the Scan page for portal steps';
+  const cliCommand = finding?.cliCommands?.[0] ?? null;
   const hasFinding = !!finding;
 
   return (

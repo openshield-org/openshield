@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
-import monitoringMock from '../mockData/monitoring.json';
 import ScoreGauge from '../components/monitoring/ScoreGauge';
 import TrendChart from '../components/monitoring/TrendChart';
 import StatCards from '../components/monitoring/StatCards';
@@ -10,7 +9,6 @@ import Card from '../components/shared/Card';
 import Loader, { CardLoader } from '../components/shared/Loader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-// Build per-resource-group breakdown from a flat findings array
 function buildRgGroups(findings) {
   const groups = {};
   findings.forEach((f) => {
@@ -22,31 +20,53 @@ function buildRgGroups(findings) {
   return Object.values(groups).sort((a, b) => (b.HIGH + b.MEDIUM + b.LOW) - (a.HIGH + a.MEDIUM + a.LOW));
 }
 
+function buildCategoryScores(findings) {
+  const catMap = {};
+  findings.forEach((f) => {
+    const cat = f.category || 'Other';
+    if (!catMap[cat]) catMap[cat] = { high: 0, medium: 0, low: 0 };
+    const sev = (f.severity || '').toUpperCase();
+    if (sev === 'HIGH') catMap[cat].high++;
+    else if (sev === 'MEDIUM') catMap[cat].medium++;
+    else if (sev === 'LOW') catMap[cat].low++;
+  });
+  return Object.entries(catMap)
+    .map(([category, c]) => ({
+      category,
+      score: Math.max(0, 100 - c.high * 10 - c.medium * 5 - c.low * 2),
+    }))
+    .sort((a, b) => a.score - b.score);
+}
+
+function buildTrend(scans) {
+  return scans
+    .slice(0, 8)
+    .reverse()
+    .map((s) => ({
+      month: new Date(s.started_at || s.startedAt).toLocaleDateString(undefined, {
+        month: 'short', day: 'numeric',
+      }),
+      score: s.score ?? Math.max(0, 100 - (s.total_findings || 0) * 7),
+    }));
+}
+
 export default function Monitoring() {
-  const [data, setData] = useState(null);
+  const [data,  setData]  = useState(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (api.isDemoMode()) {
-      // Demo mode: use static mock data
-      api.getMonitoring().then(setData);
-      return;
-    }
-
-    // Live mode: fetch real score + findings, overlay onto mock structure
-    // (trend and categoryScores stay from mock — no backend endpoint for those yet)
-    Promise.all([api.getScore(), api.getFindings()])
-      .then(([scoreData, findings]) => {
-        const high   = findings.filter((f) => (f.severity || '').toUpperCase() === 'HIGH').length;
-        const medium = findings.filter((f) => (f.severity || '').toUpperCase() === 'MEDIUM').length;
-        const low    = findings.filter((f) => (f.severity || '').toUpperCase() === 'LOW').length;
-        const total  = findings.length;
+    Promise.all([api.getScore(), api.getFindings(), api.getScans()])
+      .then(([scoreData, findings, scansData]) => {
+        const scans  = scansData.scans || [];
+        const high   = findings.filter((f) => f.severity?.toUpperCase() === 'HIGH').length;
+        const medium = findings.filter((f) => f.severity?.toUpperCase() === 'MEDIUM').length;
+        const low    = findings.filter((f) => f.severity?.toUpperCase() === 'LOW').length;
 
         setData({
-          ...monitoringMock,                  // keeps trend, categoryScores from mock
           score:    scoreData.score    ?? scoreData,
           maxScore: scoreData.max_score ?? 100,
           stats: {
-            totalFindings: total,
+            totalFindings:  findings.length,
             criticalIssues: high,
             mediumRisk:     medium,
             lowPriority:    low,
@@ -56,18 +76,27 @@ export default function Monitoring() {
             { name: 'Medium', value: medium, color: '#f97316' },
             { name: 'Low',    value: low,    color: '#10b981' },
           ],
+          categoryScores:          buildCategoryScores(findings),
+          trend:                   buildTrend(scans),
           findingsByResourceGroup: buildRgGroups(findings),
         });
       })
-      .catch(() => {
-        // Backend unreachable — fall back to mock gracefully
-        api.getMonitoring().then(setData);
-      });
+      .catch(() => setError(true));
   }, []);
+
+  if (error) return (
+    <div className="flex items-center justify-center h-64">
+      <p className="text-sm text-text-secondary dark:text-text-dark-tertiary">
+        Could not load monitoring data — backend may be starting up. Refresh to retry.
+      </p>
+    </div>
+  );
 
   if (!data) return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <CardLoader key={i} />)}</div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => <CardLoader key={i} />)}
+      </div>
       <Loader rows={6} />
     </div>
   );
@@ -84,28 +113,39 @@ export default function Monitoring() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <h2 className="text-base font-semibold text-text-primary dark:text-text-dark-primary mb-4">Score Trend (6 months)</h2>
-          <TrendChart trend={data.trend} />
+          <h2 className="text-base font-semibold text-text-primary dark:text-text-dark-primary mb-4">
+            Score Trend
+          </h2>
+          {data.trend.length > 1
+            ? <TrendChart trend={data.trend} />
+            : <p className="text-sm text-text-tertiary dark:text-text-dark-tertiary py-8 text-center">
+                Trend available after multiple scans.
+              </p>
+          }
         </Card>
       </div>
 
-      <Card>
-        <h2 className="text-base font-semibold text-text-primary dark:text-text-dark-primary mb-4">Security Score by Category</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={data.categoryScores} margin={{ top: 0, right: 0, bottom: 0, left: -10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} />
-            <XAxis dataKey="category" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
-            <Tooltip
-              contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: 12, fontSize: 12 }}
-              formatter={(v) => [`${v}%`, 'Score']}
-            />
-            <Bar dataKey="score" radius={[4, 4, 0, 0]} animationDuration={800}>
-              {data.categoryScores.map((_, i) => <Cell key={i} fill={categoryColors[i % categoryColors.length]} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
+      {data.categoryScores.length > 0 && (
+        <Card>
+          <h2 className="text-base font-semibold text-text-primary dark:text-text-dark-primary mb-4">
+            Security Score by Category
+          </h2>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data.categoryScores} margin={{ top: 0, right: 0, bottom: 0, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.3} />
+              <XAxis dataKey="category" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+              <Tooltip
+                contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: 12, fontSize: 12 }}
+                formatter={(v) => [`${v}%`, 'Score']}
+              />
+              <Bar dataKey="score" radius={[4, 4, 0, 0]} animationDuration={800}>
+                {data.categoryScores.map((_, i) => <Cell key={i} fill={categoryColors[i % categoryColors.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

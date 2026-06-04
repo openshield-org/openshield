@@ -39,7 +39,7 @@ def get_drift():
 
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT scan_id, started_at FROM scans ORDER BY started_at DESC LIMIT 2"
+                "SELECT scan_id, started_at FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 2"
             )
             scans = cur.fetchall()
 

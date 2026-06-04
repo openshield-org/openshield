@@ -5,6 +5,7 @@ import {
   FiShield, FiGitBranch, FiCpu, FiSun, FiMoon, FiX,
 } from 'react-icons/fi';
 import { useDarkMode } from '../../contexts/DarkModeContext';
+import Logo from '../shared/Logo';
 
 const navItems = [
   { path: '/monitoring',     label: 'Monitor',    Icon: FiActivity  },
@@ -24,9 +25,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* ── Desktop sidebar (always visible on lg+) ── */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full w-20 flex-col items-center py-4 bg-bg-primary dark:bg-bg-dark-secondary border-r border-border-light dark:border-border-dark z-50">
         <div className="mb-6">
-          <div className="w-10 h-10 rounded-lg bg-brand-primary flex items-center justify-center">
-            <FiShield className="text-white" size={20} />
-          </div>
+          <Logo size={36} />
         </div>
 
         <nav className="flex-1 flex flex-col items-center gap-1 w-full px-2">
@@ -72,10 +71,7 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Drawer header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-border-light dark:border-border-dark">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-primary flex items-center justify-center flex-shrink-0">
-              <FiShield className="text-white" size={18} />
-            </div>
-            <span className="text-base font-bold text-text-primary dark:text-text-dark-primary">OpenShield</span>
+            <Logo size={34} showWordmark />
           </div>
           <button
             onClick={onClose}

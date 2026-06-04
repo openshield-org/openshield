@@ -41,7 +41,7 @@ def get_resources():
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             # Get the most recent scan metadata
             cur.execute(
-                "SELECT scan_id, started_at FROM scans ORDER BY started_at DESC LIMIT 1"
+                "SELECT scan_id, started_at FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1"
             )
             latest_scan = cur.fetchone()
             if not latest_scan:

@@ -60,7 +60,7 @@ def get_prioritization():
 
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT scan_id FROM scans ORDER BY started_at DESC LIMIT 1"
+                "SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1"
             )
             row = cur.fetchone()
             if not row:

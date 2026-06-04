@@ -9,7 +9,7 @@ const siteContent = {
         {
             id: "why-openshield",
             title: "Why We Built OpenShield: Solving the Cloud Security Accessibility Gap",
-            date: "May 25, 2024",
+            date: "June 2, 2026",
             excerpt: "Cloud security shouldn't be a luxury reserved for the Fortune 500. We're democratizing CSPM for startups and researchers.",
             author: "OpenShield Maintainers",
             content: `
@@ -23,7 +23,7 @@ const siteContent = {
         {
             id: "rule-engine-deep-dive",
             title: "Under the Hood: Engineering a Dynamic Rule Orchestration Engine",
-            date: "May 24, 2024",
+            date: "May 28, 2026",
             excerpt: "A technical deep-dive into how OpenShield uses Python dynamic imports and SDK abstraction to scale security coverage.",
             author: "OpenShield Engineering",
             content: `
@@ -35,7 +35,7 @@ const siteContent = {
         {
             id: "sentinel-automation",
             title: "Automating Microsoft Sentinel with OpenShield Findings",
-            date: "May 23, 2024",
+            date: "May 20, 2026",
             excerpt: "Learn how to feed OpenShield's security posture data directly into Azure's enterprise SIEM for unified visibility.",
             author: "OpenShield Engineering",
             content: `
@@ -432,6 +432,25 @@ const siteContent = {
         }
     ],
     releases: [
+        {
+            version: "v0.2.0",
+            date: "June 2026",
+            type: "major",
+            title: "Live Data Wiring & Dashboard",
+            notes: [
+                "Full React security dashboard — 7 pages: Monitor, Discover, Prioritize, Scan, Comply, Drift, AI",
+                "Live backend integration: all GET endpoints public, real PostgreSQL data replaces mock stubs",
+                "SOC 2 Type II compliance framework added alongside CIS, NIST, ISO 27001",
+                "4 new REST endpoints: /api/resources, /api/prioritization, /api/drift, /api/findings/:id/playbook",
+                "Score and findings scoped to latest scan — eliminates stale aggregate counts",
+                "CVE enrichment via NVD API: cve_references, cvss_score, exploit_available on every finding",
+                "AI layer: chat, executive summary, CVE analysis — bring your own Anthropic/Groq/Gemini key",
+                "Configuration drift detection comparing consecutive scans",
+                "Project website with docs, rules gallery, roadmap, releases, blog, and playground",
+                "CORS fixed to cover all routes including /health for Vercel → Render connectivity"
+            ],
+            github: "https://github.com/openshield-org/openshield/releases/tag/v0.2.0"
+        },
         {
             version: "v0.1.0",
             date: "2025",

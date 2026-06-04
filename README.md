@@ -72,9 +72,9 @@ flowchart TD
 
 | Service | URL |
 |---|---|
-| **Project Website** | `https://openshield-website.vercel.app` |
 | **Security Dashboard** (Vercel) | `https://openshield-gules.vercel.app` |
 | **REST API** (Render) | `https://openshield-api.onrender.com` |
+| **Project Website** | `https://openshield-website.vercel.app` |
 
 > **Note:** The API is hosted on the Render free tier. After 15 minutes of inactivity the service spins down; the first request can take **30–60 seconds** to wake it. The dashboard detects this automatically — it retries the health probe and switches to live data once the backend responds.
 

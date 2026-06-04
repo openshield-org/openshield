@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 20 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API.
+OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 36 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API consumed by a live React dashboard.
 
 ---
 
@@ -10,17 +10,24 @@ OpenShield is a modular, open source Cloud Security Posture Management (CSPM) pl
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                 React Dashboard MVP (planned)                    │
-│                    frontend/ scaffold                            │
+│           React Dashboard  (frontend/ — deployed on Vercel)      │
+│                                                                  │
+│  7 pages: Monitor · Discover · Prioritize · Scan                │
+│           Comply · Drift · AI                                    │
 └────────────────────────────┬─────────────────────────────────────┘
-                             │ HTTPS / JWT
+                             │ HTTPS  (all GETs public, POSTs need JWT)
 ┌────────────────────────────▼─────────────────────────────────────┐
 │                    Flask REST API  (api/)                         │
 │                                                                  │
 │  GET  /health                                                    │
 │  GET  /api/findings          GET  /api/score                     │
-│  GET  /api/findings/<id>     GET  /api/compliance/<framework>    │
+│  GET  /api/findings/<id>     GET  /api/score/cve-summary         │
+│  GET  /api/findings/<id>/playbook                                │
 │  GET  /api/scans             POST /api/scans/trigger             │
+│  GET  /api/resources         GET  /api/prioritization            │
+│  GET  /api/drift             GET  /api/compliance/<framework>    │
+│  POST /api/ai/ask            POST /api/ai/summary                │
+│  POST /api/ai/insights       POST /api/ai/prioritise             │
 └───────────┬──────────────────────────────────┬───────────────────┘
             │                                  │
 ┌───────────▼──────────────┐   ┌───────────────▼───────────────────┐
@@ -103,16 +110,16 @@ result = engine.run_scan()
 
 ### 4. Current Rule Modules
 
-There are 20 current rule files in `scanner/rules/`.
+There are 36 rule files in `scanner/rules/`. See `docs/rules-reference.md` for the full table.
 
-| Category | Rules |
-|---|---|
-| Storage | AZ-STOR-001 public blob access, AZ-STOR-002 HTTPS-only storage, AZ-STOR-003 lifecycle management policy |
-| Network | AZ-NET-001 SSH from any source, AZ-NET-002 RDP from any source, AZ-NET-003 unrestricted 443, AZ-NET-004 empty NSG, AZ-NET-005 no DDoS protection, AZ-NET-006 unassociated public IP, AZ-NET-007 Application Gateway without WAF, AZ-NET-008 load balancer without backend pool, AZ-NET-009 outdated IKE version, AZ-NET-010 subnet without NSG |
-| Identity | AZ-IDN-001 service principal with Owner role, AZ-IDN-002 no admin MFA via Conditional Access |
-| Database | AZ-DB-001 PostgreSQL public network access, AZ-DB-002 SQL Server auditing disabled |
-| Compute | AZ-CMP-001 VM public IP with no NSG on NIC |
-| Key Vault | AZ-KV-001 soft delete disabled, AZ-KV-002 public network access without private endpoint |
+| Category | Count | Rules |
+|---|---|---|
+| Storage | 5 | AZ-STOR-001 to 005 |
+| Network | 14 | AZ-NET-001 to 014 |
+| Identity | 4 | AZ-IDN-001 to 004 |
+| Database | 4 | AZ-DB-001 to 004 |
+| Compute | 4 | AZ-CMP-001 to 004 |
+| Key Vault | 5 | AZ-KV-001 to 005 |
 
 Every rule has a matching Azure CLI playbook in `playbooks/cli/`.
 
@@ -167,24 +174,45 @@ Rules should use `scanner/azure_client.py` instead of instantiating SDK clients 
 ```
 run_scan()
     → findings[] in memory
+    → CVE enrichment via NVD API (cve_references, cvss_score, exploit_available)
     → db.save_scan(result)           # persists to PostgreSQL
+    →   scans row: scan_id, subscription_id, started_at, completed_at,
+                   total_findings, score (severity-weighted 0-100)
+    →   findings rows: one per finding with full metadata + CVE fields
     → return scan result JSON
 
+All dashboard data endpoints are scoped to the most recent scan that has findings
+(WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1), so seeded or last
+good scan data is always visible even if a later scan produces zero results.
+
 GET /api/findings
-    → db.get_findings(filters)       # reads from PostgreSQL
-    → returns JSON array
+    → db.get_findings(filters)       # reads from PostgreSQL, latest scan only
+    → returns { count, findings[] }
 
 GET /api/score
-    → db.get_score()                 # severity-weighted 0-100
-    → returns {"score": 82}
+    → db.get_score()                 # severity-weighted: HIGH -10, MEDIUM -5, LOW -2
+    → returns plain integer (e.g. 18)
 
-GET /api/compliance/cis
-    → db.get_compliance_score("cis") # joins DB findings with CIS JSON
-    → returns per-control pass/fail breakdown
+GET /api/resources
+    → aggregates unique resources from latest scan's findings
+    → returns { summary, resources[] }
 
-GET /api/compliance/soc2
-    → db.get_compliance_score("soc2") # same flow for SOC 2
-    → returns per-control pass/fail breakdown
+GET /api/prioritization
+    → ranks findings by severity_weight × affected_resource_count
+    → returns { matrix[], rankings[], action_items[], summary }
+
+GET /api/drift
+    → compares two most recent scans with findings
+    → returns { summary, events[] } with ADDED / REMOVED events
+
+GET /api/findings/<id>/playbook
+    → loads playbooks/cli/fix_<rule>.sh + CVE references
+    → returns { portal_steps[], cli_commands[], validation_steps[], references[] }
+
+GET /api/compliance/<framework>
+    → joins DB findings with compliance/frameworks/<framework>.json
+    → supported: cis, nist, iso27001, soc2
+    → returns per-control pass/fail breakdown + score_percent
 ```
 
 ---
