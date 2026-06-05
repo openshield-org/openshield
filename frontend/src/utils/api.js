@@ -1,38 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // OpenShield API Service Layer
 //
-// Demo mode → mock JSON files (no network calls, no API key needed)
-// Live mode → real Flask backend at VITE_API_URL with JWT auth
-//
-// Every live call has a graceful mock fallback so the app always works.
+// All data comes from the Flask backend. No mock fallbacks.
+// The backend always has data — either seeded or from a real scan.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── API-format mock data ───────────────────────────────────────────────────
-import mockHealth     from '../mockData/api.health.json';
-import mockScore      from '../mockData/api.score.json';
-import mockFindings   from '../mockData/api.findings.json';
-import mockScans      from '../mockData/api.scans.json';
-import mockScanResult from '../mockData/api.scans.trigger.json';
-import mockCIS        from '../mockData/api.compliance.cis.json';
-import mockNIST       from '../mockData/api.compliance.nist.json';
-import mockISO        from '../mockData/api.compliance.iso27001.json';
-
-// ── Legacy mock data (fallback for endpoints not yet in backend) ───────────
-import discoveryData      from '../mockData/discovery.json';
-import monitoringData     from '../mockData/monitoring.json';
-import scanData           from '../mockData/scan.json';
-import complianceData     from '../mockData/compliance.json';
-import driftData          from '../mockData/drift.json';
-import prioritizationData from '../mockData/prioritization.json';
-import aiData             from '../mockData/ai.json';
-
-// ── Config ─────────────────────────────────────────────────────────────────
-// Production (Vercel): set VITE_API_URL=https://openshield-api.onrender.com
-// Local dev: falls back to http://localhost:5000
-// If neither is available in production, API calls fail loudly (no silent localhost fallback)
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
-
-let _demoMode = localStorage.getItem('openShieldDemoMode') !== 'false';
+const API_BASE = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://openshield-api.onrender.com');
 
 const getToken = () => localStorage.getItem('jwt_token');
 const setToken = (tok) => localStorage.setItem('jwt_token', tok);
@@ -53,51 +27,40 @@ async function apiFetch(path, options = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Normalisers — map backend snake_case + varying shapes → components expect
+// Normalisers — map backend snake_case → component props
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Score: backend returns plain int (68), mock returns { score, max_score }
 function normalizeScore(raw) {
   if (typeof raw === 'number') return { score: raw, max_score: 100 };
   return { score: raw.score ?? raw.score_percent ?? 0, max_score: raw.max_score ?? 100 };
 }
 
-// Findings ──────────────────────────────────────────────────────────────────
 function normalizeFinding(f) {
-  // Enrich with playbook steps from scan.json (works for both camelCase mock + snake_case live)
-  const ruleId = f.rule_id || f.ruleId;
-  const resourceName = f.resource_name || f.resourceName;
-  const playbook = scanData.findings.find(
-    (s) => s.ruleId === ruleId && s.resourceName === resourceName
-  ) || {};
-
   return {
     id:               f.id,
-    ruleId:           ruleId,
-    ruleName:         f.rule_name     || f.ruleName,
+    ruleId:           f.rule_id          || f.ruleId,
+    ruleName:         f.rule_name        || f.ruleName,
     severity:         f.severity,
     category:         f.category,
-    resourceName:     resourceName,
+    resourceName:     f.resource_name    || f.resourceName,
     resourceGroup:    (f.resource_id || f.resourceId)?.split('/')?.[4] ?? f.resourceGroup ?? '',
-    resourceId:       f.resource_id   || f.resourceId,
-    resourceType:     f.resource_type || f.resourceType,
+    resourceId:       f.resource_id      || f.resourceId,
+    resourceType:     f.resource_type    || f.resourceType,
     description:      f.description,
     remediation:      f.remediation,
-    detectedAt:       f.detected_at   || f.detectedAt,
-    // CVE fields (new from backend)
-    cveReferences:    f.cve_references    || f.cveReferences    || [],
-    cvssScore:        f.cvss_score        ?? f.cvssScore         ?? null,
-    exploitAvailable: f.exploit_available ?? f.exploitAvailable  ?? false,
-    frameworks:       f.frameworks        || {},
-    // Playbook — enriched from internal library
-    portalSteps:      playbook.portalSteps     || [],
-    cliCommands:      playbook.cliCommands     || [],
-    validationSteps:  playbook.validationSteps || [],
-    references:       playbook.references      || [],
+    detectedAt:       f.detected_at      || f.detectedAt,
+    cveReferences:    f.cve_references   || f.cveReferences   || [],
+    cvssScore:        f.cvss_score       ?? f.cvssScore        ?? null,
+    exploitAvailable: f.exploit_available ?? f.exploitAvailable ?? false,
+    frameworks:       f.frameworks       || {},
+    // Playbook steps fetched separately via getPlaybook(id)
+    portalSteps:      [],
+    cliCommands:      [],
+    validationSteps:  [],
+    references:       [],
   };
 }
 
-// Resources (Discovery) ─────────────────────────────────────────────────────
 function normalizeResource(r) {
   return {
     id:            r.id,
@@ -107,7 +70,8 @@ function normalizeResource(r) {
     resourceGroup: r.resource_group  || r.resourceGroup,
     subscription:  r.subscription_id || r.subscription,
     location:      r.location,
-    risk:          r.risk,
+    risk:          r.risk_level      || r.risk,
+    findingCount:  r.finding_count   || r.findingCount || 0,
     discoveredAt:  r.discovered_at   || r.discoveredAt,
     config:        r.config          || {},
   };
@@ -126,13 +90,11 @@ function normalizeResourcesResponse(data) {
   };
 }
 
-// Scans: backend returns plain array [], mock returns { count, scans: [] }
 function normalizeScans(data) {
   const scans = Array.isArray(data) ? data : (data.scans || []);
   return { count: scans.length, scans };
 }
 
-// Prioritization ────────────────────────────────────────────────────────────
 function normalizePrioritizationResponse(data) {
   return {
     matrix: (data.matrix || []).map((m) => ({
@@ -163,28 +125,30 @@ function normalizePrioritizationResponse(data) {
       impact:   a.impact,
       effort:   a.effort,
       eta:      a.eta,
-      ruleId:   a.rule_id   || a.ruleId,
+      ruleId:   a.rule_id || a.ruleId,
       resource: a.resource,
     })),
     summary: data.summary,
   };
 }
 
-// Drift ─────────────────────────────────────────────────────────────────────
 function normalizeDriftEvent(e) {
   return {
     id:            e.id,
     type:          e.type,
     severity:      e.severity,
-    resourceName:  e.resource_name  || e.resourceName,
-    resourceType:  e.resource_type  || e.resourceType,
+    ruleId:        e.rule_id       || e.ruleId,
+    ruleName:      e.rule_name     || e.ruleName,
+    resourceName:  e.resource_name || e.resourceName,
+    resourceType:  e.resource_type || e.resourceType,
     resourceGroup: e.resource_group || e.resourceGroup,
     field:         e.field,
-    oldValue:      e.old_value      ?? e.oldValue,
-    newValue:      e.new_value      ?? e.newValue,
-    changedBy:     e.changed_by     || e.changedBy,
-    changedAt:     e.changed_at     || e.changedAt,
-    ruleViolated:  e.rule_violated  ?? e.ruleViolated,
+    oldValue:      e.old_value     ?? e.oldValue,
+    newValue:      e.new_value     ?? e.newValue,
+    changedBy:     e.changed_by    || e.changedBy,
+    changedAt:     e.changed_at    || e.changedAt,
+    detectedAt:    e.detected_at   || e.detectedAt,
+    ruleViolated:  e.rule_violated ?? e.ruleViolated,
   };
 }
 
@@ -202,7 +166,6 @@ function normalizeDriftResponse(data) {
   };
 }
 
-// Playbook ──────────────────────────────────────────────────────────────────
 function normalizePlaybook(p) {
   return {
     portalSteps:     p.portal_steps     || p.portalSteps     || [],
@@ -212,20 +175,17 @@ function normalizePlaybook(p) {
   };
 }
 
-// Compliance: backend returns { framework, version, total_controls, passed,
-//   failed, score_percent, controls: [{ rule_id, control_id, control_name, status }] }
-// Map to shape the compliance page expects
 function normalizeComplianceFramework(data, id, color) {
   return {
     id,
-    name:           data.framework,
-    version:        data.version,
-    score:          data.score_percent,
-    totalControls:  data.total_controls,
-    passing:        data.passed,
-    failing:        data.failed,
-    notApplicable:  (data.total_controls || 0) - (data.passed || 0) - (data.failed || 0),
-    lastAssessed:   new Date().toISOString(),
+    name:          data.framework,
+    version:       data.version,
+    score:         data.score_percent,
+    totalControls: data.total_controls,
+    passing:       data.passed,
+    failing:       data.failed,
+    notApplicable: (data.total_controls || 0) - (data.passed || 0) - (data.failed || 0),
+    lastAssessed:  new Date().toISOString(),
     color,
   };
 }
@@ -243,19 +203,50 @@ function normalizeComplianceControl(c, frameworkName) {
   };
 }
 
-function buildComplianceFromFrameworks(cis, nist, iso) {
+// Display names must match ComparisonChart's COLORS keys exactly
+const FW_DISPLAY = { cis: 'CIS Azure', nist: 'NIST SP 800-53', iso27001: 'ISO 27001', soc2: 'SOC 2 Type II' };
+
+function buildComplianceFromFrameworks(cis, nist, iso, soc2, scans = []) {
+  const frameworks = [
+    normalizeComplianceFramework(cis,  'cis',      '#3b82f6'),
+    normalizeComplianceFramework(nist, 'nist',     '#8b5cf6'),
+    normalizeComplianceFramework(iso,  'iso27001', '#10b981'),
+    normalizeComplianceFramework(soc2, 'soc2',     '#f59e0b'),
+  ];
+
+  // Build trend from scan history: scale each framework's failure count proportionally
+  // to how many findings each historical scan had vs. the latest.
+  const history = scans.filter((s) => (s.total_findings || 0) > 0).slice(0, 8).reverse();
+  const latestCount = history.length > 0 ? (history[history.length - 1].total_findings || 1) : 1;
+
+  const trend = history.length > 1
+    ? history.map((s) => {
+        const ratio = (s.total_findings || latestCount) / latestCount;
+        const entry = {
+          month: new Date(s.started_at || s.startedAt).toLocaleDateString(undefined, {
+            month: 'short', day: 'numeric',
+          }),
+        };
+        frameworks.forEach((fw) => {
+          const total   = fw.totalControls || 1;
+          const histFail = Math.round((fw.failing || 0) * ratio);
+          entry[FW_DISPLAY[fw.id]] = Math.round(
+            Math.max(0, Math.min(100, ((total - histFail) / total) * 100))
+          );
+        });
+        return entry;
+      })
+    : [];
+
   return {
-    frameworks: [
-      normalizeComplianceFramework(cis,  'cis',      '#3b82f6'),
-      normalizeComplianceFramework(nist, 'nist',     '#8b5cf6'),
-      normalizeComplianceFramework(iso,  'iso27001', '#10b981'),
-    ],
+    frameworks,
     controls: [
       ...(cis.controls  || []).map((c) => normalizeComplianceControl(c, cis.framework)),
       ...(nist.controls || []).map((c) => normalizeComplianceControl(c, nist.framework)),
       ...(iso.controls  || []).map((c) => normalizeComplianceControl(c, iso.framework)),
+      ...(soc2.controls || []).map((c) => normalizeComplianceControl(c, soc2.framework)),
     ],
-    trend: complianceData.trend,  // no trend endpoint on backend yet
+    trend,
   };
 }
 
@@ -264,10 +255,7 @@ function buildComplianceFromFrameworks(cis, nist, iso) {
 // ─────────────────────────────────────────────────────────────────────────────
 export const api = {
 
-  // ── Mode control ──────────────────────────────────────────────────────────
-  setDemoMode: (on) => { _demoMode = on; localStorage.setItem('openShieldDemoMode', String(on)); },
-  isDemoMode:  () => _demoMode,
-  getApiBase:  () => API_BASE,
+  getApiBase: () => API_BASE,
 
   // ── Connection test ────────────────────────────────────────────────────────
   testConnection: async () => {
@@ -279,138 +267,85 @@ export const api = {
     } catch { clearTimeout(t); return false; }
   },
 
-  // ── Health  GET /health ────────────────────────────────────────────────────
+  // ── Health ─────────────────────────────────────────────────────────────────
   health: async () => {
-    try { const r = await fetch(`${API_BASE}/health`); return r.ok ? r.json() : mockHealth; }
-    catch { return mockHealth; }
+    try { const r = await fetch(`${API_BASE}/health`); return r.ok ? r.json() : null; }
+    catch { return null; }
   },
 
   // ── Score  GET /api/score ──────────────────────────────────────────────────
-  // Backend returns a plain integer; normalizeScore wraps it
-  getScore: async () => {
-    if (_demoMode) return mockScore;
-    try { return normalizeScore(await apiFetch('/score')); }
-    catch { return mockScore; }
-  },
+  getScore: async () => normalizeScore(await apiFetch('/score')),
 
-  // ── CVE Summary  GET /api/score/cve-summary  (new endpoint) ───────────────
+  // ── CVE Summary  GET /api/score/cve-summary ───────────────────────────────
   getCVESummary: async () => {
-    if (_demoMode) return null;
     try { return await apiFetch('/score/cve-summary'); }
     catch { return null; }
   },
 
   // ── Findings  GET /api/findings ────────────────────────────────────────────
   getFindings: async (filters = {}) => {
-    if (_demoMode) return mockFindings.findings.map(normalizeFinding);
     const params = new URLSearchParams(Object.entries(filters).filter(([, v]) => v != null && v !== ''));
     const data = await apiFetch(`/findings${params.toString() ? '?' + params : ''}`);
     return (data.findings || data).map(normalizeFinding);
   },
 
   // ── Single finding  GET /api/findings/:id ─────────────────────────────────
-  getFinding: async (id) => {
-    if (_demoMode) {
-      const f = mockFindings.findings.find((x) => x.id === id);
-      return f ? normalizeFinding(f) : null;
-    }
-    return normalizeFinding(await apiFetch(`/findings/${id}`));
-  },
+  getFinding: async (id) => normalizeFinding(await apiFetch(`/findings/${id}`)),
 
   // ── Playbook  GET /api/findings/:id/playbook ───────────────────────────────
   getPlaybook: async (id) => {
-    if (_demoMode) {
-      const f = scanData.findings.find((s) => s.id === id);
-      return f ? normalizePlaybook(f) : { portalSteps: [], cliCommands: [], validationSteps: [], references: [] };
-    }
-    try {
-      return normalizePlaybook(await apiFetch(`/findings/${id}/playbook`));
-    } catch {
-      const f = scanData.findings.find((s) => s.id === id);
-      return f ? normalizePlaybook(f) : { portalSteps: [], cliCommands: [], validationSteps: [], references: [] };
-    }
+    try { return normalizePlaybook(await apiFetch(`/findings/${id}/playbook`)); }
+    catch { return { portalSteps: [], cliCommands: [], validationSteps: [], references: [] }; }
   },
 
-  // ── Resources (Discovery)  GET /api/resources ──────────────────────────────
-  getResources: async () => {
-    if (_demoMode) return discoveryData;
-    try { return normalizeResourcesResponse(await apiFetch('/resources')); }
-    catch { return discoveryData; }
-  },
+  // ── Resources (Discovery)  GET /api/resources ─────────────────────────────
+  getResources: async () => normalizeResourcesResponse(await apiFetch('/resources')),
   getResourceSummary: async () => { const d = await api.getResources(); return d.summary; },
 
   // ── Prioritization  GET /api/prioritization ────────────────────────────────
-  getPrioritization: async () => {
-    if (_demoMode) return prioritizationData;
-    try { return normalizePrioritizationResponse(await apiFetch('/prioritization')); }
-    catch { return prioritizationData; }
-  },
+  getPrioritization: async () => normalizePrioritizationResponse(await apiFetch('/prioritization')),
   getPriorityMatrix: async () => { const d = await api.getPrioritization(); return d.matrix; },
   getRiskRankings:   async () => { const d = await api.getPrioritization(); return d.rankings; },
 
   // ── Drift  GET /api/drift ──────────────────────────────────────────────────
-  getDrift: async () => {
-    if (_demoMode) return driftData;
-    try { return normalizeDriftResponse(await apiFetch('/drift')); }
-    catch { return driftData; }
-  },
+  getDrift: async () => normalizeDriftResponse(await apiFetch('/drift')),
   getDriftEvents: async () => { const d = await api.getDrift(); return d.events; },
 
-  // ── Scans  GET /api/scans ─────────────────────────────────────────────────
-  // Backend returns a plain array; normalizeScans wraps it
-  getScans: async () => {
-    if (_demoMode) return mockScans;
-    try { return normalizeScans(await apiFetch('/scans')); }
-    catch { return mockScans; }
-  },
+  // ── Scans  GET /api/scans ──────────────────────────────────────────────────
+  getScans: async () => normalizeScans(await apiFetch('/scans')),
 
   // ── Trigger scan  POST /api/scans/trigger ─────────────────────────────────
-  triggerScan: async (subscriptionId) => {
-    if (_demoMode) return mockScanResult;
-    return apiFetch('/scans/trigger', {
-      method: 'POST',
-      body: JSON.stringify(subscriptionId ? { subscription_id: subscriptionId } : {}),
-    });
-  },
+  triggerScan: async (subscriptionId) => apiFetch('/scans/trigger', {
+    method: 'POST',
+    body: JSON.stringify(subscriptionId ? { subscription_id: subscriptionId } : {}),
+  }),
 
-  // ── Single scan  GET /api/scans/:id ──────────────────────────────────────
+  // ── Single scan  GET /api/scans/:id (falls back to list) ──────────────────
   getScan: async (scanId) => {
-    if (_demoMode) return mockScans.scans.find((s) => s.scan_id === scanId) ?? mockScanResult;
     try { return await apiFetch(`/scans/${scanId}`); }
     catch {
       const data = await apiFetch('/scans');
-      const scans = normalizeScans(data).scans;
-      return scans.find((s) => s.scan_id === scanId) ?? null;
+      return normalizeScans(data).scans.find((s) => s.scan_id === scanId) ?? null;
     }
   },
 
   // ── Compliance  GET /api/compliance/<framework> ────────────────────────────
-  // Backend supports: cis, nist, iso27001, soc2
-  getComplianceCIS:      async () => _demoMode ? mockCIS  : apiFetch('/compliance/cis'),
-  getComplianceNIST:     async () => _demoMode ? mockNIST : apiFetch('/compliance/nist'),
-  getComplianceISO27001: async () => _demoMode ? mockISO  : apiFetch('/compliance/iso27001'),
+  getComplianceCIS:      async () => apiFetch('/compliance/cis'),
+  getComplianceNIST:     async () => apiFetch('/compliance/nist'),
+  getComplianceISO27001: async () => apiFetch('/compliance/iso27001'),
+  getComplianceSOC2:     async () => apiFetch('/compliance/soc2'),
 
-  // Combined — returns page format (frameworks[], controls[], trend)
   getCompliance: async () => {
-    if (_demoMode) return complianceData;
-    try {
-      const [cis, nist, iso] = await Promise.all([
-        apiFetch('/compliance/cis'),
-        apiFetch('/compliance/nist'),
-        apiFetch('/compliance/iso27001'),
-      ]);
-      return buildComplianceFromFrameworks(cis, nist, iso);
-    } catch { return complianceData; }
+    const [cis, nist, iso, soc2, scansRaw] = await Promise.all([
+      apiFetch('/compliance/cis'),
+      apiFetch('/compliance/nist'),
+      apiFetch('/compliance/iso27001'),
+      apiFetch('/compliance/soc2'),
+      apiFetch('/scans'),
+    ]);
+    return buildComplianceFromFrameworks(cis, nist, iso, soc2, normalizeScans(scansRaw).scans);
   },
   getFrameworks: async () => { const d = await api.getCompliance(); return d.frameworks; },
-
-  // ── Monitoring (no backend endpoint yet — uses mock) ──────────────────────
-  getMonitoring: async () => monitoringData,
-  getTrend:      async () => monitoringData.trend,
-
-  // ── AI chat data ───────────────────────────────────────────────────────────
-  getAIMessages:    async () => aiData.messages,
-  getAISuggestions: async () => aiData.suggestions,
 
   // ── JWT helpers ────────────────────────────────────────────────────────────
   setToken,

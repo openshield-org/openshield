@@ -44,11 +44,12 @@ Findings map to NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA
 
 | Feature | Description |
 |---|---|
-| **Misconfiguration Scanner** | Runs 30+ Azure security rules across storage, network, identity, database, compute, Key Vault, and post-quantum cryptography |
+| **Misconfiguration Scanner** | Runs 39 Azure security rules across storage, network, identity, database, compute, Key Vault, and post-quantum cryptography |
 | **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
-| **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, and compliance posture over REST |
-| **Remediation Playbooks** | Every current rule ships with a matching Azure CLI remediation script |
-| **Security Dashboard** | Frontend scaffold is present; the React dashboard MVP is still on the roadmap |
+| **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, compliance posture, drift, and resource inventory over REST |
+| **Remediation Playbooks** | Every rule ships with a matching Azure CLI remediation script (36 playbooks) |
+| **Security Dashboard** | Full React dashboard deployed on Vercel — live monitoring, findings, compliance, drift, prioritization, and AI-layer views |
+| **Project Website** | Documentation and reference site at [openshield-website.vercel.app](https://openshield-website.vercel.app) — blog, rules gallery, docs, roadmap, releases, and interactive playground |
 | **Sentinel Integration** | Normalises findings and pushes them into Microsoft Sentinel via a Log Analytics custom table and KQL analytics rules |
 
 ---
@@ -57,13 +58,13 @@ Findings map to NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA
 
 ```mermaid
 flowchart TD
-    A["React Dashboard MVP\nPlanned frontend"]
+    A["React Dashboard\nVercel · Live"]
     B["Flask REST API\nJWT · CORS · Blueprints"]
-    C["Scanner Engine\n30+ Python rules"]
+    C["Scanner Engine\n39 Python rules"]
     D["Azure Subscription\nScanned via Azure SDK + Graph"]
     E["Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
     F["PostgreSQL Database\nFindings · Scans"]
-    G["Azure CLI Playbooks\n30+ remediation scripts"]
+    G["Azure CLI Playbooks\n39 remediation scripts"]
     H["sentinel/ingest.py\nNormalise + HMAC upload"]
     I["Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
@@ -79,13 +80,15 @@ flowchart TD
     I -->|alerts| A
 ```
 
-## Live API
+## Live Demo
 
-The OpenShield API is deployed to the Render free tier and is accessible at:
+| Service | URL |
+|---|---|
+| **Security Dashboard** (Vercel) | `https://openshield-gules.vercel.app` |
+| **REST API** (Render) | `https://openshield-api.onrender.com` |
+| **Project Website** | `https://openshield-website.vercel.app` |
 
-**`https://openshield-api.onrender.com`**
-
-> **Note:** As this is hosted on the Render free tier, the service may spin down after 15 minutes of inactivity. The first request after a spin-down can take 30-60 seconds to complete.
+> **Note:** The API is hosted on Render. The dashboard connects automatically on load and shows live data from the PostgreSQL database.
 
 > [!IMPORTANT]
 > **Security Requirement:** Production deployments **fail at startup** if `JWT_SECRET` is missing, set to the insecure default, or shorter than 32 characters. Generate a strong secret with:
@@ -100,9 +103,10 @@ The OpenShield API is deployed to the Render free tier and is accessible at:
 
 | Layer | Technology | Cost |
 |---|---|---|
-| Frontend | Scaffolded dashboard app (React + Tailwind planned) | Free |
+| Project Website | Static HTML + Tailwind CDN, deployed on Vercel | Free |
+| Security Dashboard | React + Vite + Tailwind, deployed on Vercel | Free |
 | Backend API | Python + Flask | Free |
-| Database | PostgreSQL | Free (Render/Azure free tier) |
+| Database | PostgreSQL | Render managed PostgreSQL |
 | Cloud Scanner | Python + Azure SDK | Free |
 | Remediation | Azure CLI playbooks | Free |
 | SIEM | Microsoft Sentinel | 90-day free trial |
@@ -128,7 +132,8 @@ openshield/
 ├── api/                   # Flask REST API
 │   ├── routes/
 │   └── models/
-├── frontend/              # Dashboard scaffold
+├── frontend/              # React security dashboard (Vercel)
+├── website/               # Project website — docs, blog, rules gallery (Vercel)
 ├── sentinel/              # Sentinel integration & KQL rules
 ├── .github/workflows/     # CI checks
 ├── docs/                  # Documentation
@@ -140,6 +145,8 @@ openshield/
 
 
 ## Quick Start
+
+**Backend (Flask API + Scanner)**
 
 ```bash
 # Clone the repo
@@ -154,6 +161,7 @@ export AZURE_SUBSCRIPTION_ID=your-subscription-id
 export AZURE_CLIENT_ID=your-client-id
 export AZURE_CLIENT_SECRET=your-client-secret
 export AZURE_TENANT_ID=your-tenant-id
+export JWT_SECRET=your-strong-secret   # used to protect write endpoints (scan trigger, AI)
 
 # Run a scan
 python -c "
@@ -166,6 +174,21 @@ print(json.dumps(result, indent=2))
 # Start the API
 FLASK_APP=api/app.py flask run
 ```
+
+**Frontend (React dashboard)**
+
+```bash
+cd frontend
+npm install
+
+# Local dev — points at http://localhost:5000 by default
+npm run dev
+
+# To develop against the live Render backend:
+VITE_API_URL=https://openshield-api.onrender.com npm run dev
+```
+
+No token required — all read endpoints are public. Only scan trigger and AI endpoints require a JWT (POST only).
 
 ---
 
@@ -193,7 +216,7 @@ Contributors are credited below.
 - [x] 30+ scan rules
 - [x] Flask API + PostgreSQL schema
 - [x] Post-quantum cryptography scanner (AZ-PQC-001 to AZ-PQC-003)
-- [ ] React dashboard MVP
+- [x] React dashboard (live on Vercel)
 - [x] CIS Benchmark compliance mapping
 - [x] SOC 2 compliance mapping
 - [x] Sentinel alert integration
@@ -202,6 +225,8 @@ Contributors are credited below.
 - [x] Azure CLI remediation playbook library
 - [x] NIST CSF + ISO 27001 mappings
 - [x] GitHub Actions CI pipeline
+- [x] Project website with docs, blog, rules gallery, and playground
+- [x] Live end-to-end data wiring (all API endpoints serving real data)
 - [ ] Multi-cloud support (AWS, GCP)
 
 ---
@@ -212,20 +237,12 @@ MIT — free to use, modify, and distribute.
 
 ---
 
-> Built with ❤️ by security engineers and students who believe cloud security tooling should be accessible to everyone.
+> Built by security engineers and students who believe cloud security tooling should be accessible to everyone.
 
 ---
 
 ## Learn OpenShield
 
-Explore the OpenShield learning portal to understand:
+Full documentation, the security rules gallery, blog, and interactive playground are available at the project website:
 
-- Azure CSPM fundamentals
-- OpenShield architecture
-- Compliance mappings
-- Remediation workflows
-- Contributor onboarding
-- Documentation navigation
-
-👉 [OpenShield Learn](docs/learn/index.html)
-> Built by security engineers and students who believe cloud security tooling should be accessible to everyone.
+**[openshield-website.vercel.app](https://openshield-website.vercel.app)**

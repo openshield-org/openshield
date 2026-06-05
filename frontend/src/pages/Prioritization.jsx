@@ -37,7 +37,7 @@ export default function Prioritization() {
   });
 
   const selectedItem = selectedId ? data.rankings.find((r) => r.ruleId === selectedId) : null;
-  // Match the ruleId to a finding for portal/CLI steps; may be null if not in scan.json
+  // Match the ruleId to a finding for portal/CLI steps from the live API
   const selectedFinding = selectedId ? findings.find((f) => f.ruleId === selectedId) : null;
 
   const handleSelect = (ruleId) => setSelectedId(ruleId);

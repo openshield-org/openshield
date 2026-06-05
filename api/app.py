@@ -9,7 +9,6 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
 from api.models.finding import DatabaseManager
-from api.routes.ai import ai_bp
 
 load_dotenv()
 
@@ -20,7 +19,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Paths that do not require a JWT token
-_PUBLIC_PATHS = {"/health", "/"}
+# All GET requests are public — the dashboard is a public demo of seeded data.
+# POST endpoints (scan trigger, AI) remain JWT-protected.
+def _is_public_get(path: str) -> bool:
+    if path in ("/", "/health"):
+        return True
+    return path.startswith("/api/")
 
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
@@ -108,7 +112,7 @@ def create_app() -> Flask:
             "For production deployments, set this to your specific frontend domain(s)."
         )
     allowed_origins = allowed_origins_raw.split(",")
-    CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
+    CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
     # ------------------------------------------------------------------ #
     # Database Management                                                   #
@@ -140,7 +144,7 @@ def create_app() -> Flask:
         """Validate the Bearer token on every non-public, non-OPTIONS request."""
         if request.method == "OPTIONS":
             return None
-        if request.path in _PUBLIC_PATHS:
+        if request.method == "GET" and _is_public_get(request.path):
             return None
 
         auth = request.headers.get("Authorization", "")
@@ -167,15 +171,21 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     from api.routes.ai import ai_bp
     from api.routes.compliance import compliance_bp
+    from api.routes.drift import drift_bp
     from api.routes.findings import findings_bp
+    from api.routes.prioritization import prioritization_bp
+    from api.routes.resources import resources_bp
     from api.routes.scans import scans_bp
     from api.routes.score import score_bp
 
     app.register_blueprint(ai_bp)
+    app.register_blueprint(compliance_bp)
+    app.register_blueprint(drift_bp)
     app.register_blueprint(findings_bp)
+    app.register_blueprint(prioritization_bp)
+    app.register_blueprint(resources_bp)
     app.register_blueprint(scans_bp)
     app.register_blueprint(score_bp)
-    app.register_blueprint(compliance_bp)
 
     # ------------------------------------------------------------------ #
     # Routes (public)                                                      #

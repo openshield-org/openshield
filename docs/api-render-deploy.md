@@ -4,24 +4,24 @@
 
 ## 1. Overview
 
-This test plan covers the verification of the OpenShield API deployment 
-to the Render free tier. The goal is to confirm:
+This test plan covers the verification of the OpenShield API deployment
+to Render (Starter instance or higher). The goal is to confirm:
 
 - The Render Web Service builds and deploys the Flask app successfully.
 - The database is automatically initialized on startup via `init_db`.
 - The pre-commit hook and GitHub Actions CI pipeline gate the code properly.
 - The CI pipeline is **community-friendly**, allowing forks to pass even without custom secrets.
 - Real Azure scan tests are gated behind `RUN_REAL_SCAN=true` so contributor CI never depends on live Azure credentials.
-- All 23 API edge cases (routing, filtering, authentication) function correctly in the live cloud environment.
+- All 32 API test cases (health, findings, score, scans, compliance, dashboard contract, auth, edge cases) pass against the live deployment.
 
 ---
 
 ## 2. Methodology and Test Rationale
 
-To ensure the highest reliability of the deployment while accommodating free-tier constraints and community contributions, specific methods and test strategies were chosen:
+To ensure the highest reliability of the deployment while remaining community-friendly, specific methods and test strategies were chosen:
 
 ### 2.1 Infrastructure and Pipeline Strategy
-* **Targeting Render over Azure F1:** Azure App Service's F1 tier imposes a strict 60 CPU-minute daily cap. Render provides unmetered CPU on the free tier, making it significantly more reliable for demo and development environments.
+* **Targeting Render over Azure F1:** Azure App Service's F1 tier imposes a strict 60 CPU-minute daily cap. Render provides unmetered CPU and always-on availability on paid instances, making it significantly more reliable for production environments.
 * **Database Initialization:** The `api/models/finding.py` was updated with an `init_db` method. This method ensures that all required tables (`scans`, `findings`) are created automatically during the first deployment, preventing HTTP 500 errors.
 * **Pre-commit Hook:** Fails fast. By running syntax checks and local API smoke tests *before* the commit is allowed, we prevent broken code from polluting the remote branch.
 * **Community-Friendly CI Gate:** The GitHub Action is designed to be zero-friction for contributors.
@@ -40,12 +40,16 @@ To ensure the highest reliability of the deployment while accommodating free-tie
 > ```
 > Local development runs (no production signal set) are allowed to use the default and will log a loud warning.
 
-### 2.3 API Smoke Test Strategy (The 23 Cases)
-The 23 test cases were selected to prove the API is structurally sound and resilient:
-* **Health Check (TC-01 to TC-03):** Confirms base app connectivity and ensures public routes are not locked.
-* **Core Endpoints (TC-04 to TC-17):** Verifies the actual business logic and JSON structure.
-* **Auth/Security (TC-18 to TC-19):** Confirms the JWT middleware is strictly enforced.
-* **Edge Cases and Resilience (TC-20 to TC-23):** Ensures the app does not crash when given bad input or non-existent routes.
+### 2.3 API Smoke Test Strategy (The 32 Cases)
+The 32 test cases prove the API is structurally sound, contract-correct, and resilient:
+* **Health (TC-01 to TC-03):** Confirms base connectivity and that `/health` is public.
+* **Findings (TC-04 to TC-08):** Verifies shape, filtering, and bad-input handling.
+* **Score (TC-09 to TC-11):** Confirms numeric result bounded 0–100.
+* **Scans (TC-12 to TC-14):** List endpoint always runs; real scan trigger is maintainer-gated.
+* **Compliance (TC-15 to TC-18):** All four frameworks — CIS, NIST, ISO 27001, SOC 2.
+* **Auth/Security (TC-19 to TC-20):** POST endpoints reject missing and malformed JWTs. All GET endpoints are intentionally public.
+* **Dashboard Contract (TC-21 to TC-28):** Validates the four v0.2.0 endpoints — `/api/resources`, `/api/prioritization`, `/api/drift`, `/api/findings/<id>/playbook` — against their documented response shapes.
+* **Edge Cases (TC-29 to TC-32):** 404 routing, empty body, bad query param, Content-Type.
 
 #### Conditional vs Always-Run Tests
 
@@ -53,6 +57,8 @@ The 23 test cases were selected to prove the API is structurally sound and resil
 |---|---|---|
 | Contributor / fork (no `RUN_REAL_SCAN`) | `SKIP` — printed with reason, not a failure | Always run |
 | Maintainer deployment (`RUN_REAL_SCAN=true` + Azure credentials) | Run real scan against live subscription | Always run |
+
+TC-27 and TC-28 (playbook) are automatically skipped with a clear reason if the database has no findings. Seed the database first with `seed_render_db.py` to enable them.
 
 Run modes:
 ```bash
@@ -102,7 +108,7 @@ API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> \
 ### 4.2 Create Test Resources in Render
 1.  **Render PostgreSQL Database (Free Tier)**
     - Name: `openshield-db`
-2.  **Render Web Service (Free Tier)**
+2.  **Render Web Service (Starter instance or higher)**
     - Connected to your branch.
     - Start Command: `./startup.sh`
     - Environment Variables set: `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `AZURE_SUBSCRIPTION_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`.
@@ -186,21 +192,26 @@ API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> \
 * **TC-16:** GET `/api/compliance/nist` returns HTTP 200.
 * **TC-17:** GET `/api/compliance/iso27001` returns HTTP 200.
 
+#### Compliance Endpoints (continued)
+* **TC-18:** GET `/api/compliance/soc2` returns HTTP 200.
+
 #### Auth & Security Edge Cases
-* **TC-18:** GET `/api/findings` without any auth header returns HTTP 401.
-* **TC-19:** GET `/api/findings` with a malformed JWT returns HTTP 401.
+* **TC-19:** POST `/api/scans/trigger` without any auth header returns HTTP 401.
+* **TC-20:** POST `/api/scans/trigger` with a malformed JWT returns HTTP 401.
+
+> **Note:** All `GET /api/*` routes are public — no token required. Auth is enforced only on `POST` endpoints (`/api/scans/trigger`, `/api/ai/*`).
 
 #### General Edge Cases
-* **TC-20:** GET `/nonexistent-endpoint-xyz` returns HTTP 404 (requires auth to pass middleware).
-* **TC-21:** POST `/api/scans/trigger` with an empty JSON body returns HTTP 400 (missing `subscription_id`) without crashing.
-* **TC-22:** GET `/api/findings?limit=0` does not crash the server.
-* **TC-23:** All valid endpoint responses include the `application/json` Content-Type.
+* **TC-21:** GET `/nonexistent-endpoint-xyz` returns HTTP 404.
+* **TC-22:** POST `/api/scans/trigger` with an empty JSON body returns HTTP 400 (missing `subscription_id`) without crashing.
+* **TC-23:** GET `/api/findings?limit=0` does not crash the server.
+* **TC-24:** All valid endpoint responses include the `application/json` Content-Type.
 
 ---
 
 ## 6. Cleanup
 
-Render Free Tier Web Services spin down after 15 minutes of inactivity. The Free PostgreSQL database will automatically be deleted by Render after 90 days. To clean up manually, delete both resources from the Render dashboard Settings page.
+To clean up, delete both the Web Service and the PostgreSQL database from the Render dashboard Settings page. Note: free-tier PostgreSQL databases are automatically deleted by Render after 90 days; paid instances do not have this limit.
 
 ---
 
@@ -228,12 +239,21 @@ Render Free Tier Web Services spin down after 15 minutes of inactivity. The Free
 | **TC-15** | `/api/compliance/cis` works | Pass | [ ] |
 | **TC-16** | `/api/compliance/nist` works | Pass | [ ] |
 | **TC-17** | `/api/compliance/iso27001` works | Pass | [ ] |
-| **TC-18** | Missing auth returns 401 | Pass | [ ] |
-| **TC-19** | Bad token returns 401 | Pass | [ ] |
-| **TC-20** | 404 routing works safely | Pass | [ ] |
-| **TC-21** | Empty body payload handled | Pass (400) | [ ] |
-| **TC-22** | Limit=0 query handled safely | Pass | [ ] |
-| **TC-23** | Content-Type is JSON | Pass | [ ] |
+| **TC-18** | `/api/compliance/soc2` works | Pass | [ ] |
+| **TC-19** | POST trigger without auth returns 401 | Pass | [ ] |
+| **TC-20** | POST trigger bad token returns 401 | Pass | [ ] |
+| **TC-21** | `/api/resources` returns 200 | Pass | [ ] |
+| **TC-22** | `/api/resources` returns correct shape | Pass | [ ] |
+| **TC-23** | `/api/prioritization` returns 200 | Pass | [ ] |
+| **TC-24** | `/api/prioritization` returns correct shape | Pass | [ ] |
+| **TC-25** | `/api/drift` returns 200 | Pass | [ ] |
+| **TC-26** | `/api/drift` returns correct shape | Pass | [ ] |
+| **TC-27** | `/api/findings/<id>/playbook` returns 200 | Pass (skip if DB empty) | [ ] |
+| **TC-28** | `/api/findings/<id>/playbook` returns correct shape | Pass (skip if DB empty) | [ ] |
+| **TC-29** | 404 routing works safely | Pass | [ ] |
+| **TC-30** | Empty body payload handled | Pass (400) | [ ] |
+| **TC-31** | Limit=0 query handled safely | Pass | [ ] |
+| **TC-32** | Content-Type is JSON | Pass | [ ] |
 
-**Maintainer repo:** All 26 checks (3 Pipeline + 23 API) must pass before merging to `dev` or `main`.
-**Fork / contributor:** 24 checks (3 Pipeline + 21 API) must pass; TC-13 and TC-14 are expected `SKIP`.
+**Maintainer repo:** All 35 checks (3 Pipeline + 32 API) must pass before merging to `dev` or `main`.
+**Fork / contributor:** 33 checks (3 Pipeline + 30 API) must pass; TC-13 and TC-14 are expected `SKIP`.

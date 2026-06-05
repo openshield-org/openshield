@@ -25,3 +25,4 @@ azure-keyvault-certificates==4.8.0
 azure-keyvault-keys==4.9.0
 chromadb==0.4.24
 sentence-transformers==2.7.0
+numpy<2.0

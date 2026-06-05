@@ -134,12 +134,18 @@ class ScanEngine:
 
         completed_at = datetime.now(timezone.utc).isoformat()
 
+        severity_weights = {"HIGH": 10, "MEDIUM": 5, "LOW": 2}
+        deduction = sum(severity_weights.get((f.get("severity") or "").upper(), 0) for f in findings)
+        score = max(0, 100 - deduction)
+
         result = {
             "scan_id": scan_id,
             "subscription_id": self.subscription_id,
+            "status": "completed",
             "started_at": started_at,
             "completed_at": completed_at,
             "total_findings": len(findings),
+            "score": score,
             "findings": findings,
         }
 

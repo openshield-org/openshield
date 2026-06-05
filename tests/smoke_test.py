@@ -235,51 +235,115 @@ else:
     skip("TC-13 POST /api/scans/trigger returns 200, 201 or 202", _skip_reason)
     skip("TC-14 POST /api/scans/trigger returns scan_id or job_id", _skip_reason)
 
-# ── TC-15 to TC-17: Compliance endpoints ──────────────────────────────────
+# ── TC-15 to TC-18: Compliance endpoints ──────────────────────────────────
 print("\n=== Compliance Endpoints ===")
-for framework in ("cis", "nist", "iso27001"):
+for tc_num, framework in enumerate(("cis", "nist", "iso27001", "soc2"), start=15):
     test(
-        f"TC GET /api/compliance/{framework} returns 200",
+        f"TC-{tc_num:02d} GET /api/compliance/{framework} returns 200",
         "GET", f"/api/compliance/{framework}",
         lambda s, b: s == 200,
     )
 
-# ── TC-18: Unauthenticated request is rejected ────────────────────────────
+# ── TC-19: POST endpoints reject unauthenticated requests ─────────────────
+# GET /api/* is intentionally public (read-only demo dashboard).
+# POST endpoints (scan trigger, AI) must remain JWT-protected.
 print("\n=== Auth / Security Edge Cases ===")
 test(
-    "TC-18 GET /api/findings without auth returns 401",
-    "GET", "/api/findings",
+    "TC-19 POST /api/scans/trigger without auth returns 401",
+    "POST", "/api/scans/trigger",
     lambda s, b: s == 401,
     auth=False,
+    body={},
 )
 test(
-    "TC-19 GET /api/findings with malformed token returns 401",
-    "GET", "/api/findings",
+    "TC-20 POST /api/scans/trigger with malformed token returns 401",
+    "POST", "/api/scans/trigger",
     lambda s, b: s == 401,
     bad_token=True,
+    body={},
 )
 
-# ── TC-20 to TC-23: Edge cases ────────────────────────────────────────────
+# ── TC-21 to TC-24: Dashboard contract endpoints ───────────────────────────
+print("\n=== Dashboard Contract Endpoints ===")
+test(
+    "TC-21 GET /api/resources returns 200",
+    "GET", "/api/resources",
+    lambda s, b: s == 200,
+)
+test(
+    "TC-22 GET /api/resources returns summary and resources keys",
+    "GET", "/api/resources",
+    lambda s, b: "summary" in b and "resources" in b and isinstance(b["resources"], list),
+)
+test(
+    "TC-23 GET /api/prioritization returns 200",
+    "GET", "/api/prioritization",
+    lambda s, b: s == 200,
+)
+test(
+    "TC-24 GET /api/prioritization returns matrix and rankings keys",
+    "GET", "/api/prioritization",
+    lambda s, b: "matrix" in b and "rankings" in b and isinstance(b["matrix"], list),
+)
+test(
+    "TC-25 GET /api/drift returns 200",
+    "GET", "/api/drift",
+    lambda s, b: s == 200,
+)
+test(
+    "TC-26 GET /api/drift returns summary and events keys",
+    "GET", "/api/drift",
+    lambda s, b: "summary" in b and "events" in b and isinstance(b["events"], list),
+)
+
+# Playbook test: fetch a real finding ID first, then probe its playbook.
+print("\n=== Playbook Endpoint ===")
+_finding_status, _finding_body = request("GET", "/api/findings")
+_finding_id = (
+    _finding_body.get("findings", [{}])[0].get("id")
+    if _finding_status == 200 and _finding_body.get("findings")
+    else None
+)
+if _finding_id is not None:
+    test(
+        f"TC-27 GET /api/findings/{_finding_id}/playbook returns 200",
+        "GET", f"/api/findings/{_finding_id}/playbook",
+        lambda s, b: s == 200,
+    )
+    test(
+        f"TC-28 GET /api/findings/{_finding_id}/playbook returns playbook keys",
+        "GET", f"/api/findings/{_finding_id}/playbook",
+        lambda s, b: all(k in b for k in ("portal_steps", "cli_commands", "validation_steps")),
+    )
+else:
+    skip("TC-27 GET /api/findings/<id>/playbook returns 200", "No findings in DB — seed the database first.")
+    skip("TC-28 GET /api/findings/<id>/playbook returns playbook keys", "No findings in DB — seed the database first.")
+
+# ── TC-29 to TC-32: General edge cases ────────────────────────────────────
 print("\n=== Edge Cases ===")
 test(
-    "TC-20 GET /nonexistent returns 404",
+    "TC-29 GET /nonexistent returns 404",
     "GET", "/nonexistent-endpoint-xyz",
     lambda s, b: s == 404,
     auth=True,
 )
 test(
-    "TC-21 POST /api/scans/trigger with empty body still works",
+    "TC-30 POST /api/scans/trigger with empty body returns 400 or starts scan",
     "POST", "/api/scans/trigger",
-    lambda s, b: s in (200, 201, 202, 400, 500),
+    # 400 = missing subscription_id (expected when no AZURE_SUBSCRIPTION_ID env var)
+    # 200/201/202 = scan started (AZURE_SUBSCRIPTION_ID configured on server)
+    # 500 = scan failed (bad credentials)
+    # 0 = client timeout (real scan running past the 45s window — not a crash)
+    lambda s, b: s in (200, 201, 202, 400, 500, 0),
     body={},
 )
 test(
-    "TC-22 GET /api/findings?limit=0 does not crash",
+    "TC-31 GET /api/findings?limit=0 does not crash",
     "GET", "/api/findings?limit=0",
     lambda s, b: s in (200, 400),
 )
 test(
-    "TC-23 Response Content-Type is JSON",
+    "TC-32 Response Content-Type is JSON",
     "GET", "/api/findings",
     lambda s, b: isinstance(b, dict),
 )

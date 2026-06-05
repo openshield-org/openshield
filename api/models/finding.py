@@ -135,7 +135,8 @@ class DatabaseManager:
                     subscription_id TEXT NOT NULL,
                     started_at      TIMESTAMPTZ NOT NULL,
                     completed_at    TIMESTAMPTZ,
-                    total_findings  INTEGER DEFAULT 0
+                    total_findings  INTEGER DEFAULT 0,
+                    score           INTEGER DEFAULT NULL
                 );
             """)
             cur.execute("""
@@ -218,8 +219,8 @@ class DatabaseManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO NOTHING
                 """,
                 (
@@ -228,6 +229,7 @@ class DatabaseManager:
                     scan_result["started_at"],
                     scan_result["completed_at"],
                     scan_result["total_findings"],
+                    scan_result.get("score"),
                 ),
             )
             for f in scan_result.get("findings", []):
@@ -290,6 +292,11 @@ class DatabaseManager:
         if "scan_id" in filters:
             clauses.append("scan_id = %s")
             params.append(filters["scan_id"])
+        else:
+            # Default to the latest scan so historical findings do not inflate counts
+            clauses.append(
+                "scan_id = (SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1)"
+            )
 
         where = "WHERE " + " AND ".join(clauses) if clauses else ""
         sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"
@@ -350,15 +357,23 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def get_score(self) -> int:
-        """Return a 0-100 security posture score based on open findings.
+        """Return a 0-100 security posture score based on the latest scan's findings.
 
-        HIGH findings deduct 10 points each, MEDIUM 5, LOW 2.
-        Score floors at 0.
+        Scoped to the most recent scan so historical findings from older scans
+        do not accumulate and drive the score to zero.
+        HIGH findings deduct 10 points each, MEDIUM 5, LOW 2. Floors at 0.
         """
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT severity, COUNT(*) FROM findings GROUP BY severity"
+                """
+                SELECT severity, COUNT(*)
+                FROM findings
+                WHERE scan_id = (
+                    SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1
+                )
+                GROUP BY severity
+                """
             )
             rows = cur.fetchall()
 
@@ -379,6 +394,9 @@ class DatabaseManager:
                     AVG(cvss_score) as avg_cvss_score,
                     COUNT(CASE WHEN cvss_score >= 9.0 THEN 1 END) as critical_cve_count
                 FROM findings
+                WHERE scan_id = (
+                    SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1
+                )
             """)
             row = cur.fetchone()
 

@@ -5,6 +5,7 @@ import {
   FiLoader, FiZap, FiCheckCircle, FiAlertCircle, FiClock,
 } from 'react-icons/fi';
 import { api } from '../../utils/api';
+import Logo from '../shared/Logo';
 
 const PAGE_TITLES = {
   '/monitoring':     { title: 'Security Monitoring',  subtitle: 'Overall health score and trends' },
@@ -49,7 +50,7 @@ function ConnectionErrorPopup({ apiBase, onClose }) {
           </div>
           <div className="px-5 pb-5">
             <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-brand-primary hover:bg-brand-secondary text-white text-sm font-semibold transition-colors">
-              Back to Demo Mode
+              Dismiss
             </button>
           </div>
         </div>
@@ -174,48 +175,37 @@ export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation();
   const page = PAGE_TITLES[pathname] || { title: 'OpenShield', subtitle: '' };
 
-  const [demoMode, setDemoMode]     = useState(api.isDemoMode());
-  const [testing, setTesting]       = useState(false);
   const [showConnErr, setConnErr]   = useState(false);
   const [scanning, setScanning]     = useState(false);
   const [elapsed, setElapsed]       = useState(0);
   const [scanToast, setScanToast]   = useState(null);
   const [showScanInput, setShowScanInput] = useState(false);
+  const [lastScanAt, setLastScanAt] = useState(null);
+  const [isLive, setIsLive]         = useState(false);
   const scanBtnRef = useRef(null);
 
-  // ── Demo/Live toggle ─────────────────────────────────────────────────────
-  const handleToggle = async () => {
-    if (!demoMode) {
-      api.setDemoMode(true);
-      setDemoMode(true);
-      window.location.reload();
-      return;
-    }
-    setTesting(true);
-    const ok = await api.testConnection();
-    setTesting(false);
-    if (!ok) { setConnErr(true); return; }
-    api.setDemoMode(false);
-    setDemoMode(false);
-    window.location.reload();
-  };
+  useEffect(() => {
+    // Probe the backend to set the live indicator accurately
+    api.testConnection().then((ok) => setIsLive(ok));
+  }, []);
 
-  const closeConnErr = () => {
-    setConnErr(false);
-    api.setDemoMode(true);
-    setDemoMode(true);
-  };
+  useEffect(() => {
+    if (!isLive) return;
+    api.getScans().then((data) => {
+      const latest = data?.scans?.[0];
+      const raw = latest?.started_at || latest?.startedAt;
+      if (raw) {
+        setLastScanAt(new Date(raw).toLocaleString(undefined, {
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit',
+        }));
+      }
+    }).catch(() => {});
+  }, [isLive]);
 
-  // ── Scan button click ────────────────────────────────────────────────────
-  const handleScanClick = () => {
-    if (demoMode) {
-      // Demo mode: run immediately with no subscription input
-      executeScan(undefined);
-    } else {
-      // Live mode: show subscription ID input first
-      setShowScanInput(true);
-    }
-  };
+  const closeConnErr = () => setConnErr(false);
+
+  const handleScanClick = () => setShowScanInput(true);
 
   // ── Execute scan (after optional subscription ID is provided) ─────────────
   const executeScan = async (subscriptionId) => {
@@ -286,7 +276,7 @@ export default function Header({ onMenuToggle }) {
               onClick={handleScanClick}
               disabled={scanning}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-primary hover:bg-brand-secondary disabled:opacity-60 disabled:cursor-wait text-white transition-all duration-200"
-              title={demoMode ? 'Trigger a demo scan' : 'Trigger a real Azure scan'}
+              title="Trigger an Azure scan"
             >
               {scanning
                 ? <FiLoader size={12} className="animate-spin" />
@@ -305,28 +295,30 @@ export default function Header({ onMenuToggle }) {
             )}
           </div>
 
-          {/* Demo / Live badge */}
-          <button
-            onClick={handleToggle}
-            disabled={testing}
-            title={demoMode ? 'Switch to Live API' : 'Switch to Demo Mode'}
-            className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 disabled:opacity-60 disabled:cursor-wait ${
-              demoMode
-                ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-                : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-            }`}
-          >
-            {testing
-              ? <FiLoader size={11} className="animate-spin" />
-              : <span className={`w-1.5 h-1.5 rounded-full ${demoMode ? 'bg-amber-500' : 'bg-green-500'}`} />
-            }
-            {testing ? 'Connecting…' : demoMode ? 'DEMO' : 'LIVE'}
-          </button>
+          {/* Last scanned — only shown when live data confirmed */}
+          {lastScanAt && isLive && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-tertiary dark:text-text-dark-tertiary">
+              <FiClock size={13} />
+              <span>Last scanned: {lastScanAt}</span>
+            </div>
+          )}
 
-          {/* Last scanned */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-tertiary dark:text-text-dark-tertiary">
-            <FiClock size={13} />
-            <span>Last scanned: May 29, 2026 6:00 PM</span>
+          {/* Live / Reconnecting status dot */}
+          <div
+            title={isLive ? 'Connected to live API' : 'Reconnecting to backend…'}
+            className="hidden sm:flex items-center gap-1.5 cursor-default select-none"
+          >
+            {isLive ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+            ) : (
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+            )}
+            <span className={`text-xs font-medium ${isLive ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              {isLive ? 'Live' : 'Reconnecting'}
+            </span>
           </div>
         </div>
       </header>

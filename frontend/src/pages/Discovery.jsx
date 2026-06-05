@@ -28,7 +28,7 @@ function applyFilters(resources, filters) {
   });
 }
 
-// Merge findings from scan.json + prioritization matrix, deduplicate by (ruleId, resourceName).
+// Merge findings + prioritization matrix, deduplicate by (ruleId, resourceName).
 function buildIssueCounts(findings, matrix) {
   const seen = new Set();
   const counts = {};

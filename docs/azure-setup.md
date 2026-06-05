@@ -186,7 +186,7 @@ Compliance posture is available through `/api/compliance/cis`, `/api/compliance/
 
 ## Render Deployment (Recommended for API)
 
-Render provides a free tier that is better suited for the OpenShield API than Azure App Service F1.
+Render is recommended for hosting the OpenShield API. Use the Starter instance or higher for always-on availability.
 
 ### Steps
 
@@ -221,11 +221,10 @@ JWT_SECRET=your-secret-key
 8. Your API will be live at:
    `https://openshield-api.onrender.com`
 
-### Known Limitations
+### Instance Notes
 
-- Free tier spins down after 15 minutes of inactivity
-- First request after spin down takes 30 to 60 seconds
-- Suitable for demo and testing, not production
+- Starter instance or higher provides always-on availability
+- Free-tier instances spin down after inactivity — not recommended for production use
 
 ---
 
