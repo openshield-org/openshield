@@ -88,12 +88,26 @@ def enrich_scan(scan_id):
     """Trigger CVE enrichment for an existing scan."""
     try:
         db = _get_db()
-        findings = db.get_findings({"scan_id": scan_id})
+        
+        # Check current status to avoid redundant NVD calls
+        scans = db.get_scans()
+        current_scan = next((s for s in scans if str(s["scan_id"]) == scan_id), None)
+        
+        if not current_scan:
+            return jsonify({"error": "Scan not found"}), 404
+            
+        status = current_scan.get("cve_enrichment_status")
+        if status == "COMPLETED":
+            return jsonify({"message": "Scan already enriched", "scan_id": scan_id}), 200
+        if status == "ENRICHING":
+            return jsonify({"message": "Enrichment already in progress", "scan_id": scan_id}), 202
 
+        findings = db.get_findings({"scan_id": scan_id})
         if not findings:
             return jsonify({"error": "No findings found for this scan"}), 404
 
         logger.info("Enriching %d findings for scan %s", len(findings), scan_id)
+        db.update_scan_enrichment_status(scan_id, "ENRICHING")
 
         try:
             enriched = enrich_findings(findings)
