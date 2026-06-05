@@ -3,13 +3,11 @@
 import importlib.util
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
 from scanner.azure_client import AzureClient
-from scanner.cve_correlator import enrich_findings
 
 logger = logging.getLogger(__name__)
 
@@ -129,9 +127,6 @@ class ScanEngine:
             except Exception as exc:
                 logger.error("Rule %s raised an exception: %s", rule_id, exc, exc_info=True)
 
-        logger.info("Enriching %d findings with CVE data...", len(findings))
-        findings = enrich_findings(findings)
-
         completed_at = datetime.now(timezone.utc).isoformat()
 
         severity_weights = {"HIGH": 10, "MEDIUM": 5, "LOW": 2}
@@ -142,6 +137,7 @@ class ScanEngine:
             "scan_id": scan_id,
             "subscription_id": self.subscription_id,
             "status": "completed",
+            "cve_enrichment_status": "PENDING",
             "started_at": started_at,
             "completed_at": completed_at,
             "total_findings": len(findings),

@@ -18,20 +18,22 @@ The CVE Correlation feature integrates the MITRE National Vulnerability Database
 
 | File | Change | Why |
 |---|---|---|
-| scanner/engine.py | Enrichment-at-Source. Integrated enrich_findings directly into the scan lifecycle. | Performance: By enriching during the scan, CVE data is saved once to the database. The frontend does not have to wait for an NVD API call when loading the dashboard. |
-| api/models/finding.py | Updated Finding dataclass and added run_migrations and get_cve_summary. | Persistence: Adds cve_references, cvss_score, and exploit_available columns to PostgreSQL. get_cve_summary provides stats for dashboard widgets. |
+| scanner/engine.py | Decoupled Scan. Removed synchronous enrichment from the scan lifecycle. | Performance: Azure scans now return immediately without waiting for NVD rate limits (7s per resource type). |
+| api/routes/scans.py | New Endpoint. Added `POST /api/scans/<scan_id>/enrich`. | Flexibility: CVE enrichment can now be triggered on-demand or by a background job after the scan completes. |
+| api/models/finding.py | Updated Scan model and added enrichment status tracking. | Persistence: Adds `cve_enrichment_status` to track `PENDING`, `COMPLETED`, or `FAILED` states. |
 | api/app.py | Added db.run_migrations call at startup. | Auto-Deployment: Ensures the database schema is updated automatically on any environment where the app is launched. |
-| api/routes/score.py | Added GET /api/score/cve-summary endpoint. | Dashboard UI: Provides the frontend with high-level data like Total Known Exploits in a single lightweight request. |
-| api/routes/findings.py | Returns findings from the database and enriches only legacy rows missing CVE fields. | Performance: Avoids extra NVD calls on every request while still backfilling older records. |
+| api/routes/score.py | Added GET /api/score/cve-summary endpoint. | Dashboard UI: Provides the frontend with high-level data like Total Known Exploits and enrichment status. |
+| api/routes/findings.py | Returns findings from the database without JIT enrichment. | Performance: Ensures predictable and fast API responses for findings. |
 
 ## Frontend Integration Design
 
-To ensure the frontend dashboard works perfectly, the architecture uses an Enrichment-at-Source model:
+To ensure the frontend dashboard works perfectly, the architecture uses a Decoupled Enrichment model:
 
-1. Zero-Latency Dashboard Loads: The scan engine pre-enriches findings. When the frontend calls the API, it receives static data from the database. Legacy rows missing CVE fields are enriched on-demand only once.
-2. Dashboard-Ready Summary Endpoint: The /api/score/cve-summary endpoint allows the frontend to fetch high-level statistics (Total Findings, Exploit Count, Max CVSS) in one call instead of processing thousands of records locally.
-3. Actionable Risk (CISA KEV): The exploit_available flag uses the CISA Known Exploited Vulnerabilities catalogue, allowing the dashboard to highlight high-priority risks that are being exploited in the wild.
-4. Persistent Historical State: Enrichment happens at the time of scan, meaning the dashboard shows the CVE status as it existed on that day. This ensures accurate compliance and historical reporting.
+1. Fast Dashboard Loads: The scan engine completes rapidly. The dashboard can check the enrichment status of the latest scan.
+2. Manual/Job Enrichment: A "Trigger Enrichment" button or a background task calls `POST /api/scans/<scan_id>/enrich` to populate CVE data.
+3. Dashboard-Ready Summary Endpoint: The /api/score/cve-summary endpoint includes the `status` field, allowing the UI to show a "Scan Enriched" badge or a "Pending" spinner.
+4. Actionable Risk (CISA KEV): The exploit_available flag uses the CISA Known Exploited Vulnerabilities catalogue, allowing the dashboard to highlight high-priority risks that are being exploited in the wild.
+5. Persistent Historical State: Enrichment happens at the time of the enrichment call, and the result is persisted.
 
 ## Security and Compliance Audit
 
@@ -55,17 +57,9 @@ Response shape (abridged):
          "rule_id": "AZ-STOR-003",
          "severity": "HIGH",
          "resource_id": "/subscriptions/...",
-         "cve_references": [
-            {
-               "cve_id": "CVE-2023-12345",
-               "cvss_score": 9.8,
-               "cvss_severity": "CRITICAL",
-               "exploit_available": true,
-               "nvd_url": "https://nvd.nist.gov/vuln/detail/CVE-2023-12345"
-            }
-         ],
-         "cvss_score": 9.8,
-         "exploit_available": true
+         "cve_references": [],
+         "cvss_score": null,
+         "exploit_available": false
       }
    ]
 }
@@ -73,7 +67,7 @@ Response shape (abridged):
 
 Notes:
 1. Results are ordered by detected_at descending and capped at 1000.
-2. CVE fields are always present. Legacy rows are backfilled on request.
+2. CVE fields are present but empty if enrichment has not been triggered.
 
 ### GET /api/score/cve-summary
 
@@ -81,6 +75,7 @@ Response shape:
 
 ```json
 {
+   "status": "COMPLETED",
    "total_findings": 74,
    "exploit_count": 5,
    "max_cvss_score": 9.8,

@@ -136,7 +136,8 @@ class DatabaseManager:
                     started_at      TIMESTAMPTZ NOT NULL,
                     completed_at    TIMESTAMPTZ,
                     total_findings  INTEGER DEFAULT 0,
-                    score           INTEGER DEFAULT NULL
+                    score           INTEGER DEFAULT NULL,
+                    cve_enrichment_status TEXT DEFAULT 'PENDING'
                 );
             """)
             cur.execute("""
@@ -203,6 +204,10 @@ class DatabaseManager:
                         ADD COLUMN IF NOT EXISTS cvss_score        FLOAT   DEFAULT NULL,
                         ADD COLUMN IF NOT EXISTS exploit_available BOOLEAN DEFAULT FALSE
                 """)
+                cur.execute("""
+                    ALTER TABLE scans
+                        ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'PENDING'
+                """)
             conn.commit()
             logger.info("CVE migrations applied successfully")
         except Exception as e:
@@ -219,8 +224,8 @@ class DatabaseManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score, cve_enrichment_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO NOTHING
                 """,
                 (
@@ -230,6 +235,7 @@ class DatabaseManager:
                     scan_result["completed_at"],
                     scan_result["total_findings"],
                     scan_result.get("score"),
+                    scan_result.get("cve_enrichment_status", "PENDING"),
                 ),
             )
             for f in scan_result.get("findings", []):
@@ -345,6 +351,17 @@ class DatabaseManager:
                 )
         conn.commit()
 
+    def update_scan_enrichment_status(self, scan_id: str, status: str) -> None:
+        """Update the CVE enrichment status for a specific scan."""
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE scans SET cve_enrichment_status = %s WHERE scan_id = %s",
+                (status, scan_id),
+            )
+        conn.commit()
+        logger.info("Updated scan %s enrichment status to %s", scan_id, status)
+
     def get_scans(self) -> List[Dict[str, Any]]:
         """Return all scan records ordered by most recent first."""
         conn = self._get_conn()
@@ -387,21 +404,25 @@ class DatabaseManager:
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT
-                    COUNT(*) as total_findings,
-                    COUNT(CASE WHEN exploit_available = TRUE THEN 1 END) as exploit_count,
-                    MAX(cvss_score) as max_cvss_score,
-                    AVG(cvss_score) as avg_cvss_score,
-                    COUNT(CASE WHEN cvss_score >= 9.0 THEN 1 END) as critical_cve_count
-                FROM findings
-                WHERE scan_id = (
+                SELECT 
+                    s.cve_enrichment_status,
+                    COUNT(f.*) as total_findings,
+                    COUNT(CASE WHEN f.exploit_available = TRUE THEN 1 END) as exploit_count,
+                    MAX(f.cvss_score) as max_cvss_score,
+                    AVG(f.cvss_score) as avg_cvss_score,
+                    COUNT(CASE WHEN f.cvss_score >= 9.0 THEN 1 END) as critical_cve_count
+                FROM scans s
+                LEFT JOIN findings f ON s.scan_id = f.scan_id
+                WHERE s.scan_id = (
                     SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1
                 )
+                GROUP BY s.cve_enrichment_status
             """)
             row = cur.fetchone()
 
         if not row:
             return {
+                "status": "UNKNOWN",
                 "total_findings": 0,
                 "exploit_count": 0,
                 "max_cvss_score": None,
@@ -410,11 +431,12 @@ class DatabaseManager:
             }
 
         return {
-            "total_findings": row[0],
-            "exploit_count": row[1],
-            "max_cvss_score": row[2],
-            "avg_cvss_score": round(row[3], 2) if row[3] is not None else None,
-            "critical_cve_count": row[4],
+            "status": row[0],
+            "total_findings": row[1],
+            "exploit_count": row[2],
+            "max_cvss_score": row[3],
+            "avg_cvss_score": round(row[4], 2) if row[4] is not None else None,
+            "critical_cve_count": row[5],
         }
 
     def get_compliance_score(self, framework: str) -> Dict[str, Any]:

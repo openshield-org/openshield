@@ -5,6 +5,7 @@ import os
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
+from scanner.cve_correlator import enrich_findings
 
 scans_bp = Blueprint("scans", __name__)
 logger = logging.getLogger(__name__)
@@ -80,3 +81,35 @@ def trigger_scan():
     except Exception as exc:
         logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)
         return jsonify({"error": "Critical route failure", "detail": str(exc)}), 500
+
+
+@scans_bp.post("/api/scans/<scan_id>/enrich")
+def enrich_scan(scan_id):
+    """Trigger CVE enrichment for an existing scan."""
+    try:
+        db = _get_db()
+        findings = db.get_findings({"scan_id": scan_id})
+
+        if not findings:
+            return jsonify({"error": "No findings found for this scan"}), 404
+
+        logger.info("Enriching %d findings for scan %s", len(findings), scan_id)
+
+        try:
+            enriched = enrich_findings(findings)
+            db.update_cve_fields(enriched)
+            db.update_scan_enrichment_status(scan_id, "COMPLETED")
+        except Exception as exc:
+            logger.error("Enrichment failed for scan %s: %s", scan_id, exc)
+            db.update_scan_enrichment_status(scan_id, "FAILED")
+            return jsonify({"error": "Enrichment failed", "detail": str(exc)}), 500
+
+        return jsonify({
+            "scan_id": scan_id,
+            "status": "COMPLETED",
+            "enriched_count": len(enriched)
+        })
+
+    except Exception as exc:
+        logger.error("Failed to enrich scan %s: %s", scan_id, exc)
+        return jsonify({"error": "Internal server error", "detail": str(exc)}), 500
