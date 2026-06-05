@@ -9,6 +9,7 @@ azure-mgmt-sql==3.0.1
 azure-mgmt-keyvault==10.3.0
 azure-mgmt-rdbms==10.1.0
 azure-mgmt-authorization==4.0.0
+azure-mgmt-web==7.3.1
 azure-monitor-ingestion==1.0.3
 azure-mgmt-monitor==6.0.0
 psycopg2-binary==2.9.9
@@ -21,5 +22,6 @@ cryptography==42.0.5
 msrest==0.7.1
 azure-mgmt-postgresqlflexibleservers==1.0.0b1
 azure-keyvault-certificates==4.8.0
+azure-keyvault-keys==4.9.0
 chromadb==0.4.24
 sentence-transformers==2.7.0

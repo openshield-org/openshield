@@ -54,7 +54,7 @@ def _generate_token(secret: str) -> str:
 
 
 API_URL = os.environ.get("API_URL", "http://localhost:5000").rstrip("/")
-_JWT_VAL = os.environ.get("JWT_SECRET", "change-me-in-production")
+_JWT_VAL = os.environ.get("JWT_SECRET", "")
 _REAL_SUB = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
 
 # Real scan gate — requires explicit opt-in AND all four Azure credentials.
@@ -67,9 +67,11 @@ _AZURE_CREDS_PRESENT = all([
     os.environ.get("AZURE_TENANT_ID"),
 ])
 
-if not _JWT_VAL or _JWT_VAL == "change-me-in-production":
-    print("INFO: Using default JWT_SECRET ('change-me-in-production').")
-    print("To use a custom one, set the JWT_SECRET environment variable.")
+if not _JWT_VAL:
+    print("ERROR: JWT_SECRET environment variable is not set.")
+    print("The smoke test requires an explicit JWT_SECRET that matches the running API.")
+    print("Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+    sys.exit(1)
 
 JWT_TOKEN = _generate_token(_JWT_VAL)
 

@@ -31,10 +31,14 @@ To ensure the highest reliability of the deployment while accommodating free-tie
 
 ### 2.2 Token Generation Method
 * **Dynamic HS256 Signing:** Instead of using a hardcoded dummy string, the test script dynamically generates a real token signed with the environment's `JWT_SECRET`.
-* **Default Secret Alignment:** The smoke test defaults to `change-me-in-production`, matching the API's default. This allows tests to run "out of the box" in local environments without extra configuration.
+* **Explicit `JWT_SECRET` Required:** The smoke test no longer falls back to the insecure default. `JWT_SECRET` must be set explicitly before running the script, whether locally or in CI.
 
 > [!CAUTION]
-> **ABSOLUTE SECURITY REQUIREMENT:** For any production deployment (Render, Azure, etc.), you **MUST** override the default `JWT_SECRET` with a long, random, and unique string. Leaving the default value in place makes your API vulnerable to unauthorized access via token forging.
+> **PRODUCTION FAIL-CLOSED:** The API refuses to start in production (`OPENSHIELD_ENV=production` or `RENDER=true`) if `JWT_SECRET` is missing, equals the known default `change-me-in-production`, or is shorter than 32 characters. Generate a strong secret with:
+> ```
+> python -c "import secrets; print(secrets.token_urlsafe(32))"
+> ```
+> Local development runs (no production signal set) are allowed to use the default and will log a loud warning.
 
 ### 2.3 API Smoke Test Strategy (The 23 Cases)
 The 23 test cases were selected to prove the API is structurally sound and resilient:

@@ -1,6 +1,6 @@
 # OpenShield
 
-> **Open source Cloud Security Posture Management (CSPM) for Azure - built by the community, for the community.**
+> **Open source Cloud Security Posture Management (CSPM) for Azure - detect misconfigurations, map to CIS/NIST/ISO27001/SOC2, fix them with one command, and identify cryptographic assets requiring quantum-safe migration.**
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/network/members)
@@ -26,13 +26,25 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 
 **OpenShield changes that.**
 
+## Why Post-Quantum Cryptography Matters Now
+
+Adversaries are collecting encrypted Azure traffic today to decrypt it when quantum computers become available. This is called a Harvest Now Decrypt Later attack and it is happening right now.
+
+OpenShield scans Azure for classical cryptographic assets that need migration before it is too late:
+
+- TLS configurations using RSA or ECDH key exchange on App Services
+- Key Vault keys using RSA or ECC algorithms vulnerable to Shor's algorithm
+- Certificates using classical signature algorithms
+
+Findings map to NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA) and feed directly into post-quantum migration planning.
+
 ---
 
 ## What OpenShield Does
 
 | Feature | Description |
 |---|---|
-| **Misconfiguration Scanner** | Runs 20 Azure security rules across storage, network, identity, database, compute, and Key Vault |
+| **Misconfiguration Scanner** | Runs 30+ Azure security rules across storage, network, identity, database, compute, Key Vault, and post-quantum cryptography |
 | **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
 | **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, and compliance posture over REST |
 | **Remediation Playbooks** | Every current rule ships with a matching Azure CLI remediation script |
@@ -47,11 +59,11 @@ Startups, SMEs, universities, and student teams are left with **zero visibility*
 flowchart TD
     A["React Dashboard MVP\nPlanned frontend"]
     B["Flask REST API\nJWT · CORS · Blueprints"]
-    C["Scanner Engine\n20 Python rules"]
+    C["Scanner Engine\n30+ Python rules"]
     D["Azure Subscription\nScanned via Azure SDK + Graph"]
     E["Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
     F["PostgreSQL Database\nFindings · Scans"]
-    G["Azure CLI Playbooks\n20 remediation scripts"]
+    G["Azure CLI Playbooks\n30+ remediation scripts"]
     H["sentinel/ingest.py\nNormalise + HMAC upload"]
     I["Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
@@ -76,7 +88,11 @@ The OpenShield API is deployed to the Render free tier and is accessible at:
 > **Note:** As this is hosted on the Render free tier, the service may spin down after 15 minutes of inactivity. The first request after a spin-down can take 30-60 seconds to complete.
 
 > [!IMPORTANT]
-> **Security Requirement:** For absolute security, any production deployment **must** override the default `JWT_SECRET` with a strong, unique value in the environment variables.
+> **Security Requirement:** Production deployments **fail at startup** if `JWT_SECRET` is missing, set to the insecure default, or shorter than 32 characters. Generate a strong secret with:
+> ```
+> python -c "import secrets; print(secrets.token_urlsafe(32))"
+> ```
+> Set `OPENSHIELD_ENV=production` (or rely on Render's automatic `RENDER=true`) to enable this enforcement. Local development runs without these signals are allowed to use the default with a warning.
 
 ---
 
@@ -174,8 +190,9 @@ Contributors are credited below.
 
 - [x] Project scaffolding
 - [x] Core scanner engine (Azure SDK integration)
-- [x] 20 scan rules
+- [x] 30+ scan rules
 - [x] Flask API + PostgreSQL schema
+- [x] Post-quantum cryptography scanner (AZ-PQC-001 to AZ-PQC-003)
 - [ ] React dashboard MVP
 - [x] CIS Benchmark compliance mapping
 - [x] SOC 2 compliance mapping

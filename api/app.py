@@ -22,6 +22,64 @@ logger = logging.getLogger(__name__)
 # Paths that do not require a JWT token
 _PUBLIC_PATHS = {"/health", "/"}
 
+_INSECURE_JWT_DEFAULT = "change-me-in-production"
+_MIN_JWT_SECRET_LENGTH = 32
+_GENERATE_CMD = "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+
+
+def _is_production() -> bool:
+    return (
+        os.environ.get("OPENSHIELD_ENV", "").lower() == "production"
+        or os.environ.get("RENDER", "").lower() == "true"
+    )
+
+
+def _is_development() -> bool:
+    return (
+        os.environ.get("OPENSHIELD_ENV", "").lower() == "development"
+        or os.environ.get("FLASK_DEBUG", "").lower() == "true"
+    )
+
+
+def _resolve_jwt_secret() -> str:
+    """Return the JWT signing secret, enforcing production safety rules.
+
+    Production (OPENSHIELD_ENV=production or RENDER=true): raises RuntimeError
+    if the secret is missing, is the known insecure default, or is shorter than
+    32 characters.  All other environments allow the default with a loud warning.
+    """
+    jwt_key = os.environ.get("JWT_SECRET", "")
+    if _is_production():
+        if not jwt_key:
+            raise RuntimeError(
+                "FATAL: JWT_SECRET is not set. "
+                "Production deployments require a strong, unique JWT_SECRET. "
+                f"Generate one with: {_GENERATE_CMD}"
+            )
+        if jwt_key == _INSECURE_JWT_DEFAULT:
+            raise RuntimeError(
+                "FATAL: JWT_SECRET is set to the insecure default value. "
+                "Production deployments must use a unique secret. "
+                f"Generate one with: {_GENERATE_CMD}"
+            )
+        if len(jwt_key) < _MIN_JWT_SECRET_LENGTH:
+            raise RuntimeError(
+                f"FATAL: JWT_SECRET must be at least {_MIN_JWT_SECRET_LENGTH} characters. "
+                f"Generate one with: {_GENERATE_CMD}"
+            )
+        return jwt_key
+
+    if not jwt_key:
+        logger.warning(
+            "!!! SECURITY WARNING: JWT_SECRET NOT SET. "
+            "Using insecure default for local development only. "
+            "Set OPENSHIELD_ENV=production (or RENDER=true) to enforce a strong "
+            "secret and block startup when it is missing. !!!"
+        )
+        return _INSECURE_JWT_DEFAULT
+
+    return jwt_key
+
 
 def create_app() -> Flask:
     """Create and configure the Flask application.
@@ -38,14 +96,7 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Configuration & Security                                             #
     # ------------------------------------------------------------------ #
-    jwt_key = os.environ.get("JWT_SECRET")
-    if not jwt_key:
-        logger.warning(
-            "!!! SECURITY WARNING: JWT_SECRET NOT SET. USING INSECURE DEFAULT !!! "
-            "For production deployments, you MUST set a strong, unique JWT_SECRET."
-        )
-        jwt_key = "change-me-in-production"
-    app.config["JWT_SECRET"] = jwt_key
+    app.config["JWT_SECRET"] = _resolve_jwt_secret()
 
     # ------------------------------------------------------------------ #
     # CORS                                                                  #

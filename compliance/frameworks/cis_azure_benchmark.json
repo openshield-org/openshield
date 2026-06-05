@@ -107,7 +107,7 @@
       "control_id": "8.3",
       "control_name": "Ensure that 'OS patching' is enabled for virtual machines",
       "description": "The virtual machine does not have automatic OS patching enabled. CIS 8.3 requires that OS patches are applied in a timely manner. Unpatched VMs are vulnerable to known exploits targeting unpatched OS vulnerabilities."
-    },  
+    },
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
@@ -172,6 +172,21 @@
       "control_id": "6.4",
       "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
       "description": "VNet peering connections with allowGatewayTransit or useRemoteGateways enabled allow traffic to route between network segments through shared gateways. This can break network segmentation and enable lateral movement between zones that should remain isolated. Peering connections should be reviewed and gateway transit disabled unless explicitly required and documented."
+    },
+    "AZ-PQC-001": {
+      "control_id": "9.1",
+      "control_name": "Ensure TLS is enforced with quantum-safe configuration",
+      "description": "App Services configured with TLS versions below 1.3 use classical key exchange algorithms vulnerable to Harvest Now Decrypt Later attacks. CIS 9.1 requires that data in transit is protected using current encryption standards. Enforcing TLS 1.3 minimum reduces exposure to quantum-enabled decryption of captured traffic."
+    },
+    "AZ-PQC-002": {
+      "control_id": "8.1",
+      "control_name": "Ensure Key Vault keys use quantum-safe algorithms",
+      "description": "Key Vault keys using RSA or ECC algorithms are vulnerable to Shor's algorithm on quantum computers. CIS 8.1 requires that cryptographic key management follows current standards. Keys should be inventoried in a Cryptographic Bill of Materials and migration to post-quantum safe algorithms planned."
+    },
+    "AZ-PQC-003": {
+      "control_id": "8.5",
+      "control_name": "Ensure certificates use quantum-safe signature algorithms",
+      "description": "Key Vault certificates signed with RSA or ECDSA are vulnerable to quantum attacks. CIS 8.5 requires that certificate management includes monitoring of algorithm strength. Certificates should be migrated to post-quantum safe signature algorithms such as ML-DSA when CA support is available."
     }
   }
 }

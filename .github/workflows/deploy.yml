@@ -94,7 +94,7 @@ jobs:
         if: steps.check_config.outputs.is_configured == 'true' || github.event_name == 'workflow_dispatch'
         env:
           API_URL: ${{ secrets.API_URL || 'https://openshield-api.onrender.com' }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'change-me-in-production' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
