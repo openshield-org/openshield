@@ -137,7 +137,9 @@ class DatabaseManager:
                     completed_at    TIMESTAMPTZ,
                     total_findings  INTEGER DEFAULT 0,
                     score           INTEGER DEFAULT NULL,
-                    cve_enrichment_status TEXT DEFAULT 'PENDING'
+                    cve_enrichment_status TEXT DEFAULT 'PENDING',
+                    status          TEXT DEFAULT 'pending',
+                    error_message   TEXT
                 );
             """)
             cur.execute("""
@@ -206,7 +208,9 @@ class DatabaseManager:
                 """)
                 cur.execute("""
                     ALTER TABLE scans
-                        ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'PENDING'
+                        ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'PENDING',
+                        ADD COLUMN IF NOT EXISTS status                TEXT DEFAULT 'pending',
+                        ADD COLUMN IF NOT EXISTS error_message         TEXT
                 """)
             conn.commit()
             logger.info("CVE migrations applied successfully")
@@ -224,18 +228,25 @@ class DatabaseManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score, cve_enrichment_status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (scan_id) DO NOTHING
+                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score, cve_enrichment_status, status, error_message)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (scan_id) DO UPDATE SET
+                    completed_at = EXCLUDED.completed_at,
+                    total_findings = EXCLUDED.total_findings,
+                    score = EXCLUDED.score,
+                    status = EXCLUDED.status,
+                    error_message = EXCLUDED.error_message
                 """,
                 (
                     scan_result["scan_id"],
                     scan_result["subscription_id"],
                     scan_result["started_at"],
-                    scan_result["completed_at"],
-                    scan_result["total_findings"],
+                    scan_result.get("completed_at"),
+                    scan_result.get("total_findings", 0),
                     scan_result.get("score"),
                     scan_result.get("cve_enrichment_status", "PENDING"),
+                    scan_result.get("status", "completed"),
+                    scan_result.get("error_message"),
                 ),
             )
             for f in scan_result.get("findings", []):
@@ -361,6 +372,54 @@ class DatabaseManager:
             )
         conn.commit()
         logger.info("Updated scan %s enrichment status to %s", scan_id, status)
+
+    def create_pending_scan(self, scan_id: str, subscription_id: str) -> None:
+        """Create a scan record in the 'pending' state."""
+        conn = self._get_conn()
+        from datetime import datetime, timezone
+        started_at = datetime.now(timezone.utc).isoformat()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO scans (scan_id, subscription_id, started_at, status)
+                VALUES (%s, %s, %s, 'pending')
+                """,
+                (scan_id, subscription_id, started_at),
+            )
+        conn.commit()
+        logger.info("Created pending scan %s for %s", scan_id, subscription_id)
+
+    def update_scan_status(self, scan_id: str, status: str, error_message: Optional[str] = None) -> None:
+        """Update the status of a scan (running, completed, failed)."""
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            if status == "completed":
+                cur.execute(
+                    "UPDATE scans SET status = %s, completed_at = CURRENT_TIMESTAMP WHERE scan_id = %s",
+                    (status, scan_id),
+                )
+            else:
+                cur.execute(
+                    "UPDATE scans SET status = %s, error_message = %s WHERE scan_id = %s",
+                    (status, error_message, scan_id),
+                )
+        conn.commit()
+        logger.info("Updated scan %s status to %s", scan_id, status)
+
+    def get_pending_scans(self) -> List[Dict[str, Any]]:
+        """Return all scans in the 'pending' state."""
+        conn = self._get_conn()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM scans WHERE status = 'pending' ORDER BY started_at ASC")
+            return [dict(row) for row in cur.fetchall()]
+
+    def get_scan(self, scan_id: str) -> Optional[Dict[str, Any]]:
+        """Return a single scan record by its UUID."""
+        conn = self._get_conn()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM scans WHERE scan_id = %s", (scan_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
 
     def get_scans(self) -> List[Dict[str, Any]]:
         """Return all scan records ordered by most recent first."""

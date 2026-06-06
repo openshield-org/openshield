@@ -133,9 +133,32 @@ Example response:
 
 ---
 
+## GET /api/scans/&lt;scan_id&gt;
+
+Returns the details and current status of a specific scan.
+
+Path parameters: `scan_id` — UUID of the scan.
+
+Example response:
+
+```json
+{
+  "scan_id": "6f4a08ac-7d3a-4d9a-a4b4-2a26e5f63c8a",
+  "subscription_id": "00000000-0000-0000-0000-000000000000",
+  "status": "completed",
+  "started_at": "2026-05-09T12:00:00Z",
+  "completed_at": "2026-05-09T12:02:00Z",
+  "total_findings": 3,
+  "score": 85,
+  "error_message": null
+}
+```
+
+---
+
 ## POST /api/scans/trigger
 
-Runs a synchronous scan and saves the result to PostgreSQL. The request body may include `subscription_id`; otherwise the API uses `AZURE_SUBSCRIPTION_ID`.
+Triggers an asynchronous scan against the configured subscription. Returns `202 Accepted` with the `scan_id` immediately. The actual scan execution happens in a background worker process.
 
 Request body:
 
@@ -150,32 +173,8 @@ Example response:
 ```json
 {
   "scan_id": "6f4a08ac-7d3a-4d9a-a4b4-2a26e5f63c8a",
-  "subscription_id": "00000000-0000-0000-0000-000000000000",
-  "started_at": "2026-05-09T12:00:00+00:00",
-  "completed_at": "2026-05-09T12:02:00+00:00",
-  "total_findings": 1,
-  "findings": [
-    {
-      "rule_id": "AZ-STOR-001",
-      "rule_name": "Public Blob Access Enabled on Storage Account",
-      "severity": "HIGH",
-      "category": "Storage",
-      "resource_id": "/subscriptions/example/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/example",
-      "resource_name": "example",
-      "resource_type": "Microsoft.Storage/storageAccounts",
-      "description": "Storage accounts with public blob access enabled allow unauthenticated read access to blob data over the internet.",
-      "remediation": "Disable public blob access on the storage account.",
-      "playbook": "playbooks/cli/fix_az_stor_001.sh",
-      "frameworks": {
-        "CIS": "3.5",
-        "NIST": "PR.AC-3",
-        "ISO27001": "A.9.4.1"
-      },
-      "metadata": {},
-      "detected_at": "2026-05-09T12:00:00+00:00",
-      "scan_id": "6f4a08ac-7d3a-4d9a-a4b4-2a26e5f63c8a"
-    }
-  ]
+  "status": "pending",
+  "message": "Scan has been queued and will start shortly."
 }
 ```
 
@@ -437,4 +436,3 @@ The following endpoints are called by the frontend but have no backend implement
 | Endpoint | Used by | Status |
 |---|---|---|
 | `GET /api/monitoring` | Monitoring page — score trend chart, category distribution | Deferred. Score and findings data come from `GET /api/score` and `GET /api/findings` instead. |
-| `GET /api/scans/<scan_id>` | Header scan poller | Deferred. The frontend falls back to `GET /api/scans` and matches by `scan_id` in the response list. The poller is rarely entered because `POST /api/scans/trigger` now returns `status: completed` immediately. |
