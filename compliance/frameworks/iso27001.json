@@ -158,10 +158,20 @@
       "control_name": "Network controls",
       "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive cryptographic material."
     },
+    "AZ-KV-003": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Azure Key Vault diagnostic logging records access to secrets, keys, and certificates. Event logs recording security-relevant activities should be produced, kept, and reviewed to support monitoring and investigation."
+    },
     "AZ-NET-011": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
       "description": "Network Watcher must be enabled in all regions where resources are deployed to ensure network events are logged and available for investigation. Event logs recording network activities should be produced and kept available."
+    },
+    "AZ-NET-012": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Network Security Group flow logs record network traffic activity for investigation and monitoring. Without flow logs, event records needed to reconstruct suspicious network activity are not produced."
     },
     "AZ-DB-003": {
       "control_id": "A.10.1.1",

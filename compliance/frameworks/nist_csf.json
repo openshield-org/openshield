@@ -143,6 +143,11 @@
       "control_name": "Remote access",
       "description": "Key Vaults that allow public network access expose sensitive secrets, keys, and certificates to remote access attempts from outside trusted networks. Restricting access through private endpoints or trusted networks helps manage remote access paths."
     },
+    "AZ-KV-003": {
+      "control_id": "DE.CM-7",
+      "control_name": "Monitoring for unauthorized personnel, connections, devices, and software is performed",
+      "description": "Key Vault diagnostic logs provide the audit trail needed to monitor access to secrets, keys, and certificates. Without logging, unauthorized access and destructive changes cannot be detected or investigated."
+    },
     "AZ-STOR-003": {
       "control_id": "PR.DS-3",
       "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
@@ -162,6 +167,11 @@
       "control_id": "DE.CM-7",
       "control_name": "Monitoring for unauthorized personnel, connections, devices, and software is performed",
       "description": "Network Watcher must be enabled in all active regions to support continuous monitoring of network activity. Without it, unauthorized connections and anomalous network behaviour cannot be detected or investigated."
+    },
+    "AZ-NET-012": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored to detect potential cybersecurity events",
+      "description": "Network Security Group flow logs provide visibility into network traffic patterns and blocked or allowed flows. Without flow logs, potential cybersecurity events in network traffic cannot be detected or reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "PR.DS-2",

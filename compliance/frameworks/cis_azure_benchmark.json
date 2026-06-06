@@ -158,10 +158,20 @@
       "control_name": "Ensure that public network access to Key Vault is disabled",
       "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
     },
+    "AZ-KV-003": {
+      "control_id": "8.4",
+      "control_name": "Ensure that logging is enabled for Azure Key Vault",
+      "description": "Azure Key Vault diagnostic logging should be enabled so access to secrets, keys, and certificates is recorded. Without diagnostic logs, unauthorized access attempts and destructive operations cannot be investigated effectively."
+    },
     "AZ-NET-011": {
       "control_id": "6.5",
       "control_name": "Ensure that Network Watcher is enabled in all regions",
       "description": "Network Watcher should be enabled in all regions where Azure resources are deployed. Network Watcher provides network monitoring, diagnostics, and logging capabilities essential for investigating network-level incidents."
+    },
+    "AZ-NET-012": {
+      "control_id": "6.5",
+      "control_name": "Ensure that Network Watcher flow logs are enabled for Network Security Groups",
+      "description": "Network Security Group flow logs should be enabled through Network Watcher so network traffic can be audited and investigated. Without flow logs, lateral movement and suspicious network activity cannot be reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "4.3.6",
