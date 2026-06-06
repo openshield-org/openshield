@@ -8,7 +8,7 @@ using mocks. No live database or Azure calls are made.
 """
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from scanner.worker import run_worker, POLL_INTERVAL_SECONDS
 import uuid
 
