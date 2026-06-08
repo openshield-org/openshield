@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 RULE_ID = "AZ-KV-005"
 RULE_NAME = "Key Vault Certificate Expiring Within 30 Days"
 SEVERITY = "MEDIUM"
-CATEGORY = "Key Vault"
+CATEGORY = "KeyVault"
 FRAMEWORKS = {
     "CIS": "8.5",
     "NIST": "PR.MA-1",
@@ -88,6 +88,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "frameworks": FRAMEWORKS,
                         "metadata": {
                             "resource_group": rg,
+                            "location": getattr(vault, "location", ""),
                             "vault_name": vault_name,
                             "days_until_expiry": days_until_expiry,
                             "expires": expires.isoformat(),

@@ -15,8 +15,9 @@ version: '1.0'
 author: openshield
 license: Apache-2.0
 nist_csf:
-- PR.DS-2
 - PR.DS-1
+- PR.DS-2
+- PR.AC-4
 ---
 
 # Post-Quantum Cryptography Assessment for Azure

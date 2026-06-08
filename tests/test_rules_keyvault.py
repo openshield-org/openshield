@@ -61,6 +61,6 @@ def test_kv_002_noncompliant_returns_one_finding(mock_azure, subscription_id):
     assert _REQUIRED_FIELDS.issubset(finding.keys())
     assert finding["rule_id"] == "AZ-KV-002"
     assert finding["severity"] == "HIGH"
-    assert finding["category"] == "Key Vault"
+    assert finding["category"] == "KeyVault"
     assert finding["resource_name"] == "kv-public"
     assert finding["metadata"]["resource_group"] == _RG

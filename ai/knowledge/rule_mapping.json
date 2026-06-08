@@ -1,0 +1,9 @@
+{
+  "Identity": ["entra-id", "active-directory", "rbac", "iam", "aad", "identity", "privilege-escalation", "pim", "mfa", "guest", "service-principal", "hybrid", "saml", "federation", "governance", "managed-identity", "managed identity"],
+  "Storage": ["blob", "storage", "storage-account", "data-exfiltration", "lifecycle", "geo-redundant", "https", "public-access", "sas"],
+  "Network": ["nsg", "vnet", "firewall", "network", "vpn", "ddos", "waf", "peering", "ssh", "rdp", "port-443", "flow-logs", "public-ip", "ssrf", "waf-bypass"],
+  "Compute": ["vm", "compute", "virtual-machine", "endpoint-protection", "patching", "encryption", "disk", "ade", "cmk"],
+  "Database": ["sql", "postgresql", "cosmosdb", "database", "auditing", "ssl", "sqli", "injection"],
+  "KeyVault": ["keyvault", "secrets", "pqc", "quantum-safe", "certificates", "keys", "soft-delete", "purge-protection", "diagnostic-logging", "expiry"],
+  "PostQuantum": ["pqc", "quantum-safe", "harvest-now-decrypt-later", "shor", "ml-kem", "ml-dsa", "slh-dsa", "cbom"]
+}

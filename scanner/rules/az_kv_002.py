@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 RULE_ID = "AZ-KV-002"
 RULE_NAME = "Key Vault Allows Public Network Access Without Private Endpoint"
 SEVERITY = "HIGH"
-CATEGORY = "Key Vault"
+CATEGORY = "KeyVault"
 FRAMEWORKS = {
     "CIS": "8.3",
     "NIST": "AC-17",

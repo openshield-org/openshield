@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 RULE_ID = "AZ-KV-003"
 RULE_NAME = "Key Vault Without Diagnostic Logging Enabled"
 SEVERITY = "MEDIUM"
-CATEGORY = "Key Vault"
+CATEGORY = "KeyVault"
 
 FRAMEWORKS = {
     "CIS": "8.4",
