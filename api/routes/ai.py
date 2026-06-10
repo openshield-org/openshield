@@ -93,6 +93,35 @@ def _build_remediation_prompt(sorted_findings: list) -> str:
         "Prioritised Remediation Plan:"
     )
 
+def _build_threat_simulation_prompt(findings_text: str, context: str) -> str:
+    return (
+        "You are a red team security analyst. Using the Azure cloud security "
+        "findings below and the grounded knowledge provided, construct a realistic "
+        "attacker kill chain narrative showing how a real attacker would exploit "
+        "these misconfigurations in sequence.\n\n"
+        "Respond with valid JSON only, no markdown. Use this exact structure:\n"
+        '{\n'
+        '  "summary": "<one sentence overall attack narrative>",\n'
+        '  "overall_risk": "<CRITICAL|HIGH|MEDIUM|LOW>",\n'
+        '  "stages": [\n'
+        '    {\n'
+        '      "stage": "<initial_access|reconnaissance|lateral_movement|privilege_escalation|persistence|impact>",\n'
+        '      "title": "<short stage title>",\n'
+        '      "description": "<what the attacker does and why this finding enables it>",\n'
+        '      "findings_used": ["<rule_id>"],\n'
+        '      "technique": "<MITRE ATT&CK technique name if applicable>"\n'
+        '    }\n'
+        '  ]\n'
+        '}\n\n'
+        "Rules:\n"
+        "- Only include stages directly enabled by the findings provided.\n"
+        "- Map each stage to at least one rule_id from the findings list.\n"
+        "- Do not invent findings or capabilities not present in the data.\n"
+        "- If findings are insufficient for a full kill chain, only include supported stages.\n\n"
+        f"GROUNDED KNOWLEDGE:\n{context}\n\n"
+        f"FINDINGS:\n{findings_text}"
+    )
+
 
 def _findings_to_text(findings):
     ordered = sorted(
@@ -296,6 +325,46 @@ def ai_ask():
 
     return jsonify({
         "answer": answer,
+        "sources": sources,
+        "provider": body["provider"],
+        "model": body.get("model"),
+    })
+
+
+@ai_bp.post("/api/ai/threat-simulation")
+def ai_threat_simulation():
+    body, error = _read_request()
+    if error:
+        return error
+    findings = body.get("findings", [])
+    if not isinstance(findings, list):
+        return jsonify({"error": "findings must be a list"}), 400
+    if not findings:
+        return jsonify({"error": "findings must not be empty"}), 400
+
+    findings_text = _findings_to_text(findings)
+    try:
+        context, sources = _context_for(findings_text)
+    except VectorStoreNotBuilt as exc:
+        return jsonify({"error": str(exc)}), 503
+
+    prompt = _build_threat_simulation_prompt(findings_text, context)
+    try:
+        raw = get_completion(
+            body["provider"], body["api_key"], prompt, model=body.get("model")
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 502
+
+    try:
+        simulation = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        simulation = raw
+
+    return jsonify({
+        "threat_simulation": simulation,
         "sources": sources,
         "provider": body["provider"],
         "model": body.get("model"),
