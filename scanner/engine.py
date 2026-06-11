@@ -152,4 +152,4 @@ class ScanEngine:
             "Scan %s complete — %d total finding(s). Normalising results...", scan_id, len(findings)
         )
 
-        return result
+        return make_serializable(result)

@@ -30,10 +30,9 @@ class TestWorker(unittest.TestCase):
     def test_worker_processes_pending_scan_successfully(self, mock_sleep, mock_env, mock_engine_class, mock_db_class):
         """
         Verify the happy path:
-        1. Worker finds a pending scan.
-        2. Updates status to 'running'.
-        3. Executes scan via ScanEngine.
-        4. Saves findings and updates status to 'completed'.
+        1. Worker claims a pending scan atomically.
+        2. Executes scan via ScanEngine.
+        3. Saves findings and updates status to 'completed'.
         """
         mock_env.return_value = self.mock_db_url
         
@@ -50,17 +49,19 @@ class TestWorker(unittest.TestCase):
             "started_at": "2026-06-05T12:00:00Z"
         }
 
-        # We need to stop the infinite loop. We'll raise StopWorker on the second call to get_pending_scans.
-        mock_db.get_pending_scans.side_effect = [
-            [{"scan_id": self.scan_id, "subscription_id": self.subscription_id}],
-            StopWorker()
+        # We need to stop the infinite loop. We'll raise StopWorker on the second call to recover_stale_scans.
+        mock_db.recover_stale_scans.side_effect = [None, StopWorker()]
+        mock_db.claim_next_pending_scan.side_effect = [
+            {"scan_id": self.scan_id, "subscription_id": self.subscription_id},
+            None
         ]
 
         with self.assertRaises(StopWorker):
             run_worker()
 
         # Verify state transitions
-        mock_db.update_scan_status.assert_any_call(self.scan_id, "running")
+        mock_db.recover_stale_scans.assert_called()
+        mock_db.claim_next_pending_scan.assert_called()
         mock_engine.run_scan.assert_called_once_with(self.scan_id)
         mock_db.save_scan.assert_called_once()
         
@@ -76,16 +77,17 @@ class TestWorker(unittest.TestCase):
     def test_worker_handles_scan_failure_gracefully(self, mock_sleep, mock_env, mock_engine_class, mock_db_class):
         """
         Verify the error path:
-        1. Worker finds a pending scan.
+        1. Worker claims a pending scan.
         2. ScanEngine raises an exception.
-        3. Worker catches it and marks the scan as 'failed' with the error message.
+        3. Worker catches it and marks the scan as 'failed' with a sanitized error message.
         """
         mock_env.return_value = self.mock_db_url
         mock_db = mock_db_class.return_value
         
-        mock_db.get_pending_scans.side_effect = [
-            [{"scan_id": self.scan_id, "subscription_id": self.subscription_id}],
-            StopWorker()
+        mock_db.recover_stale_scans.side_effect = [None, StopWorker()]
+        mock_db.claim_next_pending_scan.side_effect = [
+            {"scan_id": self.scan_id, "subscription_id": self.subscription_id},
+            None
         ]
         
         # Mock Engine to fail
@@ -95,8 +97,10 @@ class TestWorker(unittest.TestCase):
         with self.assertRaises(StopWorker):
             run_worker()
 
-        # Verify status was updated to failed
-        mock_db.update_scan_status.assert_any_call(self.scan_id, "failed", error_message="Azure Authentication Failed")
+        # Verify status was updated to failed with sanitized message
+        mock_db.update_scan_status.assert_any_call(
+            self.scan_id, "failed", error_message="Azure Error: Azure Authentication Failed"
+        )
         # Ensure findings were NOT saved on failure
         mock_db.save_scan.assert_not_called()
 
@@ -108,10 +112,8 @@ class TestWorker(unittest.TestCase):
         mock_env.return_value = self.mock_db_url
         mock_db = mock_db_class.return_value
         
-        mock_db.get_pending_scans.side_effect = [
-            [],
-            StopWorker()
-        ]
+        mock_db.recover_stale_scans.side_effect = [None, StopWorker()]
+        mock_db.claim_next_pending_scan.return_value = None
 
         with self.assertRaises(StopWorker):
             run_worker()

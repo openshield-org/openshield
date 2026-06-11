@@ -208,8 +208,8 @@ class DatabaseManager:
                 """)
                 cur.execute("""
                     ALTER TABLE scans
-                        ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'PENDING',
-                        ADD COLUMN IF NOT EXISTS status                TEXT DEFAULT 'pending',
+                        ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'COMPLETED',
+                        ADD COLUMN IF NOT EXISTS status                TEXT DEFAULT 'completed',
                         ADD COLUMN IF NOT EXISTS error_message         TEXT
                 """)
             conn.commit()
@@ -225,6 +225,8 @@ class DatabaseManager:
     def save_scan(self, scan_result: Dict[str, Any]) -> None:
         """Persist a full scan result (scan header + all findings)."""
         conn = self._get_conn()
+        from datetime import datetime, timezone
+        completed_at = scan_result.get("completed_at") or datetime.now(timezone.utc).isoformat()
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -241,7 +243,7 @@ class DatabaseManager:
                     scan_result["scan_id"],
                     scan_result["subscription_id"],
                     scan_result["started_at"],
-                    scan_result.get("completed_at"),
+                    completed_at,
                     scan_result.get("total_findings", 0),
                     scan_result.get("score"),
                     scan_result.get("cve_enrichment_status", "PENDING"),
@@ -392,11 +394,13 @@ class DatabaseManager:
     def update_scan_status(self, scan_id: str, status: str, error_message: Optional[str] = None) -> None:
         """Update the status of a scan (running, completed, failed)."""
         conn = self._get_conn()
+        from datetime import datetime, timezone
         with conn.cursor() as cur:
             if status == "completed":
+                completed_at = datetime.now(timezone.utc).isoformat()
                 cur.execute(
-                    "UPDATE scans SET status = %s, completed_at = CURRENT_TIMESTAMP WHERE scan_id = %s",
-                    (status, scan_id),
+                    "UPDATE scans SET status = %s, completed_at = %s WHERE scan_id = %s",
+                    (status, completed_at, scan_id),
                 )
             else:
                 cur.execute(
@@ -405,6 +409,54 @@ class DatabaseManager:
                 )
         conn.commit()
         logger.info("Updated scan %s status to %s", scan_id, status)
+
+    def claim_next_pending_scan(self) -> Optional[Dict[str, Any]]:
+        """Atomically claim the next pending scan using SKIP LOCKED."""
+        conn = self._get_conn()
+        from datetime import datetime, timezone
+        started_at = datetime.now(timezone.utc).isoformat()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                UPDATE scans 
+                SET status = 'running', started_at = %s
+                WHERE scan_id = (
+                    SELECT scan_id 
+                    FROM scans 
+                    WHERE status = 'pending' 
+                    ORDER BY started_at ASC 
+                    FOR UPDATE SKIP LOCKED 
+                    LIMIT 1
+                ) 
+                RETURNING *
+                """,
+                (started_at,)
+            )
+            row = cur.fetchone()
+            if row:
+                conn.commit()
+                return dict(row)
+            return None
+
+    def recover_stale_scans(self, timeout_minutes: int = 60) -> int:
+        """Mark scans that have been 'running' for too long as 'failed'."""
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE scans 
+                SET status = 'failed', 
+                    error_message = 'Scan timed out after remaining in running state for too long.'
+                WHERE status = 'running' 
+                  AND started_at < (CURRENT_TIMESTAMP - INTERVAL '%s minutes')
+                """,
+                (timeout_minutes,)
+            )
+            count = cur.rowcount
+        conn.commit()
+        if count > 0:
+            logger.info("Recovered %d stale 'running' scans", count)
+        return count
 
     def get_pending_scans(self) -> List[Dict[str, Any]]:
         """Return all scans in the 'pending' state."""
