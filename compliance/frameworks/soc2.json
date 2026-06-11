@@ -93,7 +93,7 @@
       "control_name": "Logical Access Security Measures",
       "description": "Unrestricted guest user invitations allow any organisation member to introduce unreviewed external identities into the tenant. CC6.1 requires that logical access to information assets is controlled and verified through authentication procedures."
     },
-        "AZ-IDN-005": {
+    "AZ-IDN-005": {
       "control_id": "CC6.3",
       "control_name": "Role-based access control",
       "description": "Guest users assigned high privilege roles in Entra ID give external parties administrative control over the Azure tenant. CC6.3 requires that role-based access controls restrict access to authorised internal users based on their responsibilities. Privileged roles must be removed from all guest accounts."
@@ -176,7 +176,7 @@
     "AZ-DB-004": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource \u2014 including services from other tenants \u2014 to connect to the database. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Disabling this setting and replacing it with explicit firewall rules or private endpoints enforces the network boundary and ensures only known and trusted systems can reach the SQL Server."
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the database. CC6.6 requires that access from outside the network boundary is restricted to authorised sources. Disabling this setting and replacing it with explicit firewall rules or private endpoints enforces the network boundary and ensures only known and trusted systems can reach the SQL Server."
     },
     "AZ-IDN-004": {
       "control_id": "CC6.3",
@@ -192,6 +192,11 @@
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
       "description": "VNet peering with allowGatewayTransit or useRemoteGateways enabled allows traffic to cross network boundaries through shared gateways, weakening the logical separation between network zones. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Gateway transit on peering connections should be disabled to enforce boundary separation."
+    },
+    "AZ-NET-015": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "Public DNS zones that expose RFC1918 IP addresses or internal service hostnames provide attackers with reconnaissance data about the organisation's private network topology. CC6.6 requires that logical access from outside the network boundary is restricted and controlled. Records referencing private infrastructure must be removed from public DNS zones to prevent external enumeration of internal services."
     },
     "AZ-PQC-001": {
       "control_id": "CC6.7",

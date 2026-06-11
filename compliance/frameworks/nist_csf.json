@@ -78,7 +78,7 @@
       "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
       "description": "Unrestricted guest user invitations allow any organisation member to introduce external identities into the tenant without centralised review. PR.AC-1 requires that identities and credentials are managed and verified. Restricting guest invitations to administrators ensures external identity provisioning is controlled and audited."
     },
-        "AZ-IDN-005": {
+    "AZ-IDN-005": {
       "control_id": "PR.AC-4",
       "control_name": "Access permissions and authorizations are managed",
       "description": "Guest users with high privilege roles in Entra ID violate the principle of least privilege and separation of duties. PR.AC-4 requires that access permissions and authorisations are managed, incorporating the principles of least privilege and separation of duties. External guest accounts must not hold privileged directory roles."
@@ -197,6 +197,11 @@
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
       "description": "VNet peering with gateway transit enabled allows traffic to cross network boundaries through shared gateways, undermining network segmentation. PR.AC-5 requires that network integrity is protected. Disabling gateway transit on peering connections enforces boundary integrity between network zones."
+    },
+    "AZ-NET-015": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Public DNS zones containing RFC1918 IP addresses or internal service hostnames in record names expose the internal network layout to external parties and assist attackers in identifying targets. PR.AC-5 requires that network integrity is protected through appropriate boundary controls. Private infrastructure references must be removed from public DNS and hosted in Azure Private DNS zones to prevent external reconnaissance."
     },
     "AZ-PQC-001": {
       "control_id": "PR.DS-2",
