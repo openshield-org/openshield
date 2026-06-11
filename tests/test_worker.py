@@ -99,7 +99,7 @@ class TestWorker(unittest.TestCase):
 
         # Verify status was updated to failed with sanitized message
         mock_db.update_scan_status.assert_any_call(
-            self.scan_id, "failed", error_message="Azure Error: Azure Authentication Failed"
+            self.scan_id, "failed", error_message="An internal error occurred during the scan. Please check the logs."
         )
         # Ensure findings were NOT saved on failure
         mock_db.save_scan.assert_not_called()

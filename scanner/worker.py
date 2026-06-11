@@ -65,9 +65,6 @@ def run_worker():
                 
                 # Sanitize public error message
                 public_error = "An internal error occurred during the scan. Please check the logs."
-                if "Authentication" in str(exc) or "Permission" in str(exc):
-                    public_error = f"Azure Error: {str(exc)}"
-                
                 db.update_scan_status(scan_id, "failed", error_message=public_error)
 
         except Exception as exc:

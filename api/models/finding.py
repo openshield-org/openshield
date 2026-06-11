@@ -86,16 +86,10 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def connect(self) -> None:
-        """Open a persistent database connection and set the search path."""
+        """Open a persistent database connection."""
         self.conn = psycopg2.connect(self.dsn)
-        self.conn.autocommit = True  # Set to True for schema management
-        with self.conn.cursor() as cur:
-            # Ensure the openshield schema exists and is preferred in the search path.
-            # This avoids 'permission denied for schema public' in restricted environments.
-            cur.execute("CREATE SCHEMA IF NOT EXISTS openshield;")
-            cur.execute("SET search_path TO openshield, public;")
         self.conn.autocommit = False
-        logger.info("Database connection established (schema: openshield)")
+        logger.info("Database connection established")
 
     def _get_conn(self) -> Any:
         if self.conn is None or self.conn.closed:
@@ -134,6 +128,7 @@ class DatabaseManager:
                     scan_id         UUID PRIMARY KEY,
                     subscription_id TEXT NOT NULL,
                     started_at      TIMESTAMPTZ NOT NULL,
+                    claimed_at      TIMESTAMPTZ,
                     completed_at    TIMESTAMPTZ,
                     total_findings  INTEGER DEFAULT 0,
                     score           INTEGER DEFAULT NULL,
@@ -210,8 +205,17 @@ class DatabaseManager:
                     ALTER TABLE scans
                         ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'COMPLETED',
                         ADD COLUMN IF NOT EXISTS status                TEXT DEFAULT 'completed',
-                        ADD COLUMN IF NOT EXISTS error_message         TEXT
+                        ADD COLUMN IF NOT EXISTS error_message         TEXT,
+                        ADD COLUMN IF NOT EXISTS claimed_at            TIMESTAMPTZ
                 """)
+                # Fix: If status already existed but was backfilled as 'pending' (e.g. from 
+                # a previous buggy deploy), force it to 'completed' for all historical 
+                # scans that have already finished.
+                cur.execute("UPDATE scans SET status = 'completed' WHERE status = 'pending' AND completed_at IS NOT NULL")
+                
+                # Backfill claimed_at for any currently running scans so they don't get 
+                # immediately marked as stale by the new recovery logic.
+                cur.execute("UPDATE scans SET claimed_at = started_at WHERE status = 'running' AND claimed_at IS NULL")
             conn.commit()
             logger.info("CVE migrations applied successfully")
         except Exception as e:
@@ -414,12 +418,12 @@ class DatabaseManager:
         """Atomically claim the next pending scan using SKIP LOCKED."""
         conn = self._get_conn()
         from datetime import datetime, timezone
-        started_at = datetime.now(timezone.utc).isoformat()
+        claimed_at = datetime.now(timezone.utc).isoformat()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """
                 UPDATE scans 
-                SET status = 'running', started_at = %s
+                SET status = 'running', claimed_at = %s
                 WHERE scan_id = (
                     SELECT scan_id 
                     FROM scans 
@@ -430,7 +434,7 @@ class DatabaseManager:
                 ) 
                 RETURNING *
                 """,
-                (started_at,)
+                (claimed_at,)
             )
             row = cur.fetchone()
             if row:
@@ -448,7 +452,7 @@ class DatabaseManager:
                 SET status = 'failed', 
                     error_message = 'Scan timed out after remaining in running state for too long.'
                 WHERE status = 'running' 
-                  AND started_at < (CURRENT_TIMESTAMP - INTERVAL '%s minutes')
+                  AND claimed_at < (CURRENT_TIMESTAMP - INTERVAL '%s minutes')
                 """,
                 (timeout_minutes,)
             )
