@@ -1,6 +1,7 @@
 import os
 import sys
 import pytest
+import json
 from pathlib import Path
 
 # Add project root to path
@@ -109,6 +110,57 @@ class TestHallucinationGuard:
         # The AI should say it doesn't know or it's not in the context
         assert "az-fake-999" not in response or "not find" in response or "no information" in response, \
             "AI hallucinated information for a non-existent rule!"
+
+def test_dynamic_grounding_matching_boundaries(monkeypatch, tmp_path):
+    """
+    Deterministic test: Ensures dynamic grounding uses word boundaries 
+    so short keywords like 'vm' don't match inside unrelated words 
+    (e.g., 'devmac') and 'shor' doesn't match inside 'shortest'.
+    """
+    import ai.loader
+    
+    # 1. Setup mock directory structure
+    mock_root = tmp_path / "openshield"
+    mock_root.mkdir()
+    
+    skills_dir = mock_root / "ai" / "knowledge" / "skills" / "offensive-idor"
+    skills_dir.mkdir(parents=True)
+    (skills_dir / "skill.md").write_text("This skill discusses shortest paths and devmac scenarios.", encoding="utf-8")
+    
+    mapping_file = mock_root / "ai" / "knowledge" / "rule_mapping.json"
+    mapping_file.parent.mkdir(parents=True, exist_ok=True)
+    mapping_data = {
+        "Compute": ["vm"],
+        "Identity": ["shor"]
+    }
+    with open(mapping_file, "w", encoding="utf-8") as f:
+        json.dump(mapping_data, f)
+        
+    # 2. Mock loader dependencies
+    monkeypatch.setattr(ai.loader, "PROJECT_ROOT", mock_root)
+    monkeypatch.setattr(ai.loader, "load_rule_documents", lambda: [
+        {"metadata": {"category": "Compute", "rule_id": "AZ-CMP-001", "rule_name": "Compute Rule"}},
+        {"metadata": {"category": "Identity", "rule_id": "AZ-IDN-001", "rule_name": "Identity Rule"}}
+    ])
+    
+    # 3. Execute
+    docs = ai.loader.load_skill_documents()
+    
+    # 4. Verify
+    assert len(docs) == 1
+    content = docs[0]["content"]
+    
+    # Neither 'vm' nor 'shor' should have matched because they are inside 'devmac' and 'shortest'
+    assert "OpenShield Implementation Capabilities" not in content, \
+        "Dynamic grounding matched keywords inside other words (missing word boundaries)!"
+    
+    # Now verify it DOES match if the word is standalone
+    (skills_dir / "skill.md").write_text("This skill discusses vm and shor scenarios.", encoding="utf-8")
+    docs = ai.loader.load_skill_documents()
+    content = docs[0]["content"]
+    assert "OpenShield Implementation Capabilities" in content
+    assert "AZ-CMP-001" in content
+    assert "AZ-IDN-001" in content
 
 if __name__ == "__main__":
     # Allow running directly for quick verification

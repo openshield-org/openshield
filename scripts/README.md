@@ -16,18 +16,6 @@ This directory contains utility scripts for maintaining the OpenShield platform,
 
 These scripts manage the "Brain" of OpenShield's AI, ensuring it stays grounded in Azure security and synchronized with our scanner rules.
 
-### `import_azure_skills.py`
-**Purpose:** Imports offensive security methodologies (Skills) from the Claude-Red repository and specialized audit skills from community sources.
-
-**Why it's used:**
-- **Purity:** It uses an aggressive "Cloud Slicer" (regex state machine) to physically remove AWS and GCP content from markdown files, ensuring the AI never provides non-Azure advice.
-- **Efficiency:** Uses Git sparse-checkout to minimize RAM and disk usage during cloning (safe for 8GB RAM machines).
-
-**How to use:**
-```bash
-python3 scripts/import_azure_skills.py
-```
-
 ### `generate_rule_keywords.py`
 **Purpose:** Uses an LLM to "read" a Python scanner rule and automatically suggest semantic keywords for the AI mapping registry.
 

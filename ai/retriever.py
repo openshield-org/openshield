@@ -54,14 +54,17 @@ def retrieve(query, n_results=5):
         
         # Build structured source for the frontend
         source_id = "General"
+        source_resource = ""
         source_type = meta.get("source", "unknown")
         
         if source_type == "openShield_rule":
             source_id = meta.get("rule_id", "Rule")
+            source_resource = meta.get("rule_name", "")
         elif source_type == "claude_red_skill":
             source_id = meta.get("skill_name", "Skill")
         elif source_type == "compliance_framework":
             source_id = f"{meta.get('framework', 'Compliance')} {meta.get('control_id', '')}".strip()
+            source_resource = meta.get("control_name", "")
             
         chunks.append({
             "text": text,
@@ -69,6 +72,7 @@ def retrieve(query, n_results=5):
             "source_meta": {
                 "id": source_id,
                 "type": source_type,
+                "resource": source_resource,
                 "file": meta.get("file", "")
             }
         })

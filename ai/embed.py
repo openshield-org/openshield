@@ -30,32 +30,31 @@ def build_vectorstore():
     if chromadb is None:
         raise RuntimeError("chromadb is not installed. Install it with 'pip install chromadb'.")
 
+    # 1. Load and chunk documents FIRST (if this fails, existing DB is untouched)
+    documents = load_all_documents()
+    if not documents:
+        raise RuntimeError("No documents found to embed. Check repo paths.")
+
+    chunks = chunk_documents(documents)
+    logger.info("Created %d chunks from %d source documents", len(chunks), len(documents))
+
+    # 2. Initialize client
     VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # Initialize client with telemetry disabled via settings
     from chromadb.config import Settings
     client = chromadb.PersistentClient(
         path=str(VECTORSTORE_DIR),
         settings=Settings(anonymized_telemetry=False)
     )
 
+    # 3. Create a temporary collection for safe building
+    temp_name = f"{COLLECTION_NAME}_temp"
     try:
-        client.delete_collection(COLLECTION_NAME)
+        client.delete_collection(temp_name)
     except Exception:
         pass
-        
-    collection = client.create_collection(COLLECTION_NAME)
+    collection = client.create_collection(temp_name)
 
-    # 1. Load grounded documents from all sources (Rules, Compliance, Skills)
-    documents = load_all_documents()
-    if not documents:
-        raise RuntimeError("No documents found to embed. Check repo paths.")
-
-    # 2. Chunk documents for better retrieval and lower memory usage during embedding
-    chunks = chunk_documents(documents)
-    logger.info("Created %d chunks from %d source documents", len(chunks), len(documents))
-
-    # 3. Add to vector store in batches to prevent memory spikes
+    # 4. Add to vector store in batches to prevent memory spikes
     batch_size = 50 # Small batch size for 8GB RAM machines
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i : i + batch_size]
@@ -67,7 +66,15 @@ def build_vectorstore():
         )
         print(f"  Progress: {min(i + batch_size, len(chunks))}/{len(chunks)} chunks embedded...")
     
-    logger.info("Embedded all chunks into '%s'.", COLLECTION_NAME)
+    # 5. Atomic Swap: Delete main and rename temp to main
+    try:
+        client.delete_collection(COLLECTION_NAME)
+    except Exception:
+        pass
+    
+    collection.modify(name=COLLECTION_NAME)
+    
+    logger.info("Successfully rebuilt vector store '%s' with %d chunks.", COLLECTION_NAME, len(chunks))
     return len(chunks)
 
 

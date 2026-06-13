@@ -6,6 +6,7 @@ into structured documents ready for chunking and embedding.
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -191,10 +192,13 @@ def load_skill_documents() -> List[Dict[str, Any]]:
             content_lower = content.lower()
             
             for category, keywords in mapping.items():
-                # If any keyword from the mapping appears in the skill content, 
-                # inject all rules from that category.
-                if any(keyword in content_lower for keyword in keywords):
-                    relevant_rules.extend(rules_by_category.get(category, []))
+                for keyword in keywords:
+                    # Use boundary-aware matching to avoid short tokens matching inside unrelated words
+                    # e.g., 'vm' inside 'devmac', or 'shor' inside 'shortest'
+                    pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                    if re.search(pattern, content_lower):
+                        relevant_rules.extend(rules_by_category.get(category, []))
+                        break # Only need one keyword match per category
             
             if relevant_rules:
                 # Remove duplicates while preserving order
