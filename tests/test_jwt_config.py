@@ -1,6 +1,7 @@
 """Tests for environment-aware JWT secret resolution in create_app()."""
 
 import secrets
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -122,6 +123,9 @@ def test_render_strong_secret_accepted(monkeypatch):
 
 def test_create_app_production_uses_strong_secret(monkeypatch):
     """create_app() in production mode wires the config correctly."""
+    # Mock DatabaseManager to avoid DB connection in CI
+    monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
+    
     secret = secrets.token_urlsafe(32)
     monkeypatch.setenv("OPENSHIELD_ENV", "production")
     monkeypatch.setenv("JWT_SECRET", secret)
@@ -131,6 +135,9 @@ def test_create_app_production_uses_strong_secret(monkeypatch):
 
 def test_create_app_development_starts_without_secret(monkeypatch):
     """create_app() in development mode starts without a JWT_SECRET set."""
+    # Mock DatabaseManager to avoid DB connection in CI
+    monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
+    
     monkeypatch.setenv("OPENSHIELD_ENV", "development")
     monkeypatch.delenv("JWT_SECRET", raising=False)
     app = create_app()
