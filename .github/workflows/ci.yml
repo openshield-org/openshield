@@ -333,6 +333,7 @@ jobs:
         id: all_tests
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost/ci_db"
+          OPENSHIELD_ENV: "testing"
         run: |
           echo "=== Running all regression tests ==="
           pytest tests/test_*.py -v --tb=short

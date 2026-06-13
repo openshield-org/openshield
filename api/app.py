@@ -233,9 +233,13 @@ def create_app() -> Flask:
     return app
 
 
+import sys
+
 # Global application object for WSGI servers (e.g. Gunicorn, Render)
 # We wrap this in a check to avoid running migrations/connecting during test collection
-if os.environ.get("OPENSHIELD_ENV") != "testing" and os.environ.get("PYTEST_CURRENT_TEST") is None:
+if os.environ.get("OPENSHIELD_ENV") != "testing" and \
+   os.environ.get("PYTEST_CURRENT_TEST") is None and \
+   "pytest" not in sys.modules:
     application = create_app()
 else:
     # During testing, we provide a placeholder or let conftest handle it
