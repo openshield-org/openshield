@@ -2,6 +2,22 @@
 
 The OpenShield API is a Flask app registered in `api/app.py`. All `GET` requests (including `/health` and all `/api/*` GET routes) are public — no token needed. `POST` endpoints (`/api/scans/trigger`, `/api/ai/*`) require an `Authorization: Bearer <jwt>` header signed with `JWT_SECRET`.
 
+The OpenShield API is a Flask app registered in `api/app.py`.
+
+## Authentication
+
+`/health` and `/` are always public. All other routes — including all `/api/*` GET endpoints — require an `Authorization: Bearer <jwt>` header signed with `JWT_SECRET`.
+
+### Public demo mode
+
+Set `OPENSHIELD_PUBLIC_DEMO=true` to allow unauthenticated GET requests to `/api/*`. This is intended for local development and public demo dashboards where the data is not sensitive. POST endpoints (scan trigger, AI) always require a valid JWT regardless of this setting.
+
+| Environment variable | Value | GET /api/* behavior |
+|---|---|---|
+| `OPENSHIELD_PUBLIC_DEMO` | not set or `false` | JWT required (default) |
+| `OPENSHIELD_PUBLIC_DEMO` | `true` | public, no JWT needed |
+
+Do not enable `OPENSHIELD_PUBLIC_DEMO` in a deployment that holds real Azure scan data.
 ---
 
 ## GET /health
