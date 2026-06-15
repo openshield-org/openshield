@@ -335,7 +335,7 @@ jobs:
           DATABASE_URL: "postgresql://ci:ci@localhost/ci_db"
         run: |
           echo "=== Running rule regression tests ==="
-          pytest tests/test_rules_*.py -v --tb=short
+          pytest tests/test_rules_*.py tests/test_auth.py -v --tb=short
 
       # ── Final summary — always runs, shows per-check pass/fail ────────
       - name: CI Summary
