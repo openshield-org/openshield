@@ -18,13 +18,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Paths that do not require a JWT token
-# All GET requests are public — the dashboard is a public demo of seeded data.
-# POST endpoints (scan trigger, AI) remain JWT-protected.
-def _is_public_get(path: str) -> bool:
-    if path in ("/", "/health"):
-        return True
-    return path.startswith("/api/")
+# Paths that are always public regardless of environment or demo mode
+_ALWAYS_PUBLIC = {"/", "/health"}
 
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
@@ -115,11 +110,28 @@ def create_app() -> Flask:
     CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
     # ------------------------------------------------------------------ #
+    # Demo mode                                                             #
+    # ------------------------------------------------------------------ #
+    public_demo = os.environ.get("OPENSHIELD_PUBLIC_DEMO", "false").lower() == "true"
+    if public_demo:
+        logger.warning(
+            "PUBLIC DEMO MODE ENABLED (OPENSHIELD_PUBLIC_DEMO=true): "
+            "Unauthenticated GET requests to /api/* are permitted. "
+            "Do not use this setting with real Azure scan data in production."
+        )
+
+    # ------------------------------------------------------------------ #
     # Database Management                                                   #
     # ------------------------------------------------------------------ #
-    with app.app_context():
-        db = DatabaseManager()
-        db.run_migrations()
+    if os.environ.get("DATABASE_URL"):
+        with app.app_context():
+            db = DatabaseManager()
+            db.run_migrations()
+    else:
+        logger.info(
+            "DATABASE_URL not set — skipping database migrations. "
+            "Set DATABASE_URL to connect to PostgreSQL."
+        )
 
     @app.teardown_appcontext
     def close_db(error=None):
@@ -144,7 +156,9 @@ def create_app() -> Flask:
         """Validate the Bearer token on every non-public, non-OPTIONS request."""
         if request.method == "OPTIONS":
             return None
-        if request.method == "GET" and _is_public_get(request.path):
+        if request.path in _ALWAYS_PUBLIC:
+            return None
+        if public_demo and request.method == "GET":
             return None
 
         auth = request.headers.get("Authorization", "")
