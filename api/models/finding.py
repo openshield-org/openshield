@@ -316,11 +316,11 @@ class DatabaseManager:
             clauses.append("scan_id = %s")
             params.append(filters["scan_id"])
         else:
-            # Default to the latest scan so historical findings do not inflate counts
+            # Default to the latest completed scan (includes clean scans with 0 findings)
             clauses.append(
-                "scan_id = (SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1)"
+                "scan_id = (SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1)"
             )
-
+            
         where = "WHERE " + " AND ".join(clauses) if clauses else ""
         sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"
 
