@@ -336,6 +336,7 @@ jobs:
         run: |
           echo "=== Running rule regression tests ==="
           pytest tests/test_rules_*.py -v --tb=short
+          pytest tests/test_rules_*.py tests/test_auth.py tests/test_clean_scan.py -v --tb=short
 
       # ── Final summary — always runs, shows per-check pass/fail ────────
       - name: CI Summary
