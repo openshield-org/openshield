@@ -502,8 +502,9 @@ class DatabaseManager:
                 SELECT severity, COUNT(*)
                 FROM findings
                 WHERE scan_id = (
-                    SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1
+                    SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1
                 )
+                GROUP BY severity
                 GROUP BY severity
                 """
             )
