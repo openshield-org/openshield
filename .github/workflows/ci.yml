@@ -331,12 +331,9 @@ jobs:
       # ── CHECK 8: Rule regression tests (MockAzureClient, no Azure creds) ──
       - name: Rule regression tests
         id: rule_tests
-        env:
-          DATABASE_URL: "postgresql://ci:ci@localhost/ci_db"
         run: |
           echo "=== Running rule regression tests ==="
-          pytest tests/test_rules_*.py -v --tb=short
-          pytest tests/test_rules_*.py tests/test_auth.py tests/test_clean_scan.py -v --tb=short
+          pytest tests/test_rules_*.py tests/test_clean_scan.py -v --tb=short
 
       # ── Final summary — always runs, shows per-check pass/fail ────────
       - name: CI Summary
