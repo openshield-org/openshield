@@ -78,7 +78,7 @@
       "control_name": "Ensure that 'Guest invite restrictions' is set to 'Only users assigned to specific admin roles can invite guest users'",
       "description": "Unrestricted guest user invitation settings allow any member of the organisation to invite external users into the tenant without administrative review. This bypasses centralised approval for external identity provisioning and increases the risk of unauthorised access by untrusted parties."
     },
-        "AZ-IDN-005": {
+    "AZ-IDN-005": {
       "control_id": "1.3",
       "control_name": "Ensure guest users are reviewed on a monthly basis",
       "description": "Guest accounts assigned to high privilege roles in Entra ID allow external identities to perform administrative actions in the tenant. CIS 1.3 requires that guest users are reviewed and that privileged access is restricted to internal accounts only. Any guest user holding a role such as Global Administrator, Security Administrator, or User Administrator must have that assignment removed immediately."
@@ -136,7 +136,7 @@
     "AZ-KV-001": {
       "control_id": "8.5",
       "control_name": "Ensure the Key Vault is Recoverable",
-      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7\u201390 days), protecting against accidental or malicious deletion."
+      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
     },
     "AZ-STOR-003": {
       "control_id": "3.7",
@@ -158,10 +158,20 @@
       "control_name": "Ensure that public network access to Key Vault is disabled",
       "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
     },
+    "AZ-KV-003": {
+      "control_id": "8.4",
+      "control_name": "Ensure that logging is enabled for Azure Key Vault",
+      "description": "Azure Key Vault diagnostic logging should be enabled so access to secrets, keys, and certificates is recorded. Without diagnostic logs, unauthorized access attempts and destructive operations cannot be investigated effectively."
+    },
     "AZ-NET-011": {
       "control_id": "6.5",
       "control_name": "Ensure that Network Watcher is enabled in all regions",
       "description": "Network Watcher should be enabled in all regions where Azure resources are deployed. Network Watcher provides network monitoring, diagnostics, and logging capabilities essential for investigating network-level incidents."
+    },
+    "AZ-NET-012": {
+      "control_id": "6.5",
+      "control_name": "Ensure that Network Watcher flow logs are enabled for Network Security Groups",
+      "description": "Network Security Group flow logs should be enabled through Network Watcher so network traffic can be audited and investigated. Without flow logs, lateral movement and suspicious network activity cannot be reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "4.3.6",
@@ -176,7 +186,7 @@
     "AZ-DB-004": {
       "control_id": "4.1.2",
       "control_name": "Ensure that 'Allow access to Azure services' for SQL Servers is disabled",
-      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource \u2014 including services from other tenants \u2014 to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
+      "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
     },
     "AZ-IDN-004": {
       "control_id": "1.14",
@@ -197,6 +207,11 @@
       "control_id": "6.4",
       "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
       "description": "VNet peering connections with allowGatewayTransit or useRemoteGateways enabled allow traffic to route between network segments through shared gateways. This can break network segmentation and enable lateral movement between zones that should remain isolated. Peering connections should be reviewed and gateway transit disabled unless explicitly required and documented."
+    },
+    "AZ-NET-015": {
+      "control_id": "9.1",
+      "control_name": "Ensure public DNS zones do not expose private infrastructure details",
+      "description": "Public DNS zones that contain A records referencing RFC1918 private IP addresses or record names matching internal service keywords (such as admin, vpn, db, or internal) expose the organisation's internal network topology to external parties. CIS 9.1 requires that unnecessary public exposure is minimised. Such records should be removed from public DNS zones and migrated to Azure Private DNS zones linked to the appropriate virtual networks."
     },
     "AZ-PQC-001": {
       "control_id": "9.1",

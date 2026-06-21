@@ -78,7 +78,7 @@
       "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
       "description": "Unrestricted guest user invitations allow any organisation member to introduce external identities into the tenant without centralised review. PR.AC-1 requires that identities and credentials are managed and verified. Restricting guest invitations to administrators ensures external identity provisioning is controlled and audited."
     },
-        "AZ-IDN-005": {
+    "AZ-IDN-005": {
       "control_id": "PR.AC-4",
       "control_name": "Access permissions and authorizations are managed",
       "description": "Guest users with high privilege roles in Entra ID violate the principle of least privilege and separation of duties. PR.AC-4 requires that access permissions and authorisations are managed, incorporating the principles of least privilege and separation of duties. External guest accounts must not hold privileged directory roles."
@@ -143,6 +143,11 @@
       "control_name": "Remote access",
       "description": "Key Vaults that allow public network access expose sensitive secrets, keys, and certificates to remote access attempts from outside trusted networks. Restricting access through private endpoints or trusted networks helps manage remote access paths."
     },
+    "AZ-KV-003": {
+      "control_id": "DE.CM-7",
+      "control_name": "Monitoring for unauthorized personnel, connections, devices, and software is performed",
+      "description": "Key Vault diagnostic logs provide the audit trail needed to monitor access to secrets, keys, and certificates. Without logging, unauthorized access and destructive changes cannot be detected or investigated."
+    },
     "AZ-STOR-003": {
       "control_id": "PR.DS-3",
       "control_name": "Assets are formally managed throughout removal, transfers, and disposition",
@@ -162,6 +167,11 @@
       "control_id": "DE.CM-7",
       "control_name": "Monitoring for unauthorized personnel, connections, devices, and software is performed",
       "description": "Network Watcher must be enabled in all active regions to support continuous monitoring of network activity. Without it, unauthorized connections and anomalous network behaviour cannot be detected or investigated."
+    },
+    "AZ-NET-012": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored to detect potential cybersecurity events",
+      "description": "Network Security Group flow logs provide visibility into network traffic patterns and blocked or allowed flows. Without flow logs, potential cybersecurity events in network traffic cannot be detected or reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "PR.DS-2",
@@ -197,6 +207,11 @@
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
       "description": "VNet peering with gateway transit enabled allows traffic to cross network boundaries through shared gateways, undermining network segmentation. PR.AC-5 requires that network integrity is protected. Disabling gateway transit on peering connections enforces boundary integrity between network zones."
+    },
+    "AZ-NET-015": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Public DNS zones containing RFC1918 IP addresses or internal service hostnames in record names expose the internal network layout to external parties and assist attackers in identifying targets. PR.AC-5 requires that network integrity is protected through appropriate boundary controls. Private infrastructure references must be removed from public DNS and hosted in Azure Private DNS zones to prevent external reconnaissance."
     },
     "AZ-PQC-001": {
       "control_id": "PR.DS-2",

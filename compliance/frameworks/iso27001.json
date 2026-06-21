@@ -78,7 +78,7 @@
       "control_name": "User registration and de-registration",
       "description": "Unrestricted guest user invitations allow any organisation member to register external identities into the tenant without centralised review or approval. A.9.2.1 requires that users and external parties should be registered before access."
     },
-        "AZ-IDN-005": {
+    "AZ-IDN-005": {
       "control_id": "A.9.2.3",
       "control_name": "Management of privileged access rights",
       "description": "The allocation and use of privileged access rights must be restricted and controlled. Guest accounts in Entra ID with high privilege roles represent uncontrolled privileged access by external identities. A.9.2.3 requires that the allocation of privileged access rights is controlled through a formal authorisation process and that privileged roles are assigned only to internal accounts with a verified business need."
@@ -158,10 +158,20 @@
       "control_name": "Network controls",
       "description": "Networks should be managed and controlled to protect information systems and applications. Allowing public network access to Azure Key Vault increases exposure of sensitive cryptographic material."
     },
+    "AZ-KV-003": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Azure Key Vault diagnostic logging records access to secrets, keys, and certificates. Event logs recording security-relevant activities should be produced, kept, and reviewed to support monitoring and investigation."
+    },
     "AZ-NET-011": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
       "description": "Network Watcher must be enabled in all regions where resources are deployed to ensure network events are logged and available for investigation. Event logs recording network activities should be produced and kept available."
+    },
+    "AZ-NET-012": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Network Security Group flow logs record network traffic activity for investigation and monitoring. Without flow logs, event records needed to reconstruct suspicious network activity are not produced."
     },
     "AZ-DB-003": {
       "control_id": "A.10.1.1",
@@ -197,6 +207,11 @@
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "VNet peering connections with gateway transit enabled allow traffic to flow between network segments through shared gateways, potentially bypassing network controls. Networks should be managed and controlled to protect information in systems and applications. Gateway transit on peering connections should be disabled unless explicitly required."
+    },
+    "AZ-NET-015": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Public DNS zones containing A records that reference RFC1918 private IP addresses or record names that suggest internal services expose the organisation's internal network layout. A.13.1.1 requires that networks are managed and controlled to protect information in systems and applications. Private infrastructure references must be removed from public DNS and served only through Azure Private DNS zones to prevent information leakage."
     },
     "AZ-PQC-001": {
       "control_id": "A.10.1.1",

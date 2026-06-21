@@ -117,9 +117,20 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Database Management                                                   #
     # ------------------------------------------------------------------ #
-    with app.app_context():
-        db = DatabaseManager()
-        db.run_migrations()
+    # Skip migrations when DATABASE_URL is not set (e.g. during unit tests).
+    # Deployment startup always sets DATABASE_URL so migrations still run in
+    # production and staging. Tests that need a real database should set
+    # DATABASE_URL explicitly in their environment.
+    if os.environ.get("DATABASE_URL"):
+        with app.app_context():
+            db = DatabaseManager()
+            db.run_migrations()
+    else:
+        logger.info(
+            "DATABASE_URL not set — skipping migrations. "
+            "This is expected during unit tests and local development "
+            "without a database."
+        )
 
     @app.teardown_appcontext
     def close_db(error=None):

@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from scanner.azure_client import AzureClient
 
@@ -89,14 +89,17 @@ class ScanEngine:
     # Scan execution                                                        #
     # ------------------------------------------------------------------ #
 
-    def run_scan(self) -> Dict[str, Any]:
+    def run_scan(self, scan_id: Optional[str] = None) -> Dict[str, Any]:
         """Execute all loaded rules and return a normalised scan result.
+
+        Args:
+            scan_id: Optional existing UUID. If not provided, a new one is generated.
 
         Returns:
             dict with keys: scan_id, subscription_id, started_at,
             completed_at, total_findings, findings.
         """
-        scan_id = str(uuid.uuid4())
+        scan_id = scan_id or str(uuid.uuid4())
         started_at = datetime.now(timezone.utc).isoformat()
         findings: List[Dict[str, Any]] = []
         detected_at = datetime.now(timezone.utc).isoformat()

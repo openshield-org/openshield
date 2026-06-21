@@ -337,6 +337,21 @@ jobs:
         run: |
           echo "=== Running all regression tests ==="
           pytest tests/test_*.py -v --tb=short
+      # ── CHECK 8: Rule regression tests (MockAzureClient, no Azure creds) ──
+      - name: Rule regression tests
+        id: rule_tests
+        run: |
+          echo "=== Running rule regression tests ==="
+          pytest tests/test_rules_*.py tests/test_clean_scan.py -v --tb=short
+
+      # ── CHECK 8: Full Python test suite ──────────────────────────────
+      - name: Run Python test suite
+        id: pytest_check
+        run: |
+          echo "=== Running full Python test suite ==="
+          python -m pytest tests/             --ignore=tests/smoke_test.py             -v --tb=short -q
+        env:
+          OPENSHIELD_ENV: "development"
 
       # ── Final summary — always runs, shows per-check pass/fail ────────
       - name: CI Summary
@@ -350,6 +365,8 @@ jobs:
           API:        ${{ steps.api_check.outcome }}
           XREF:       ${{ steps.xref_check.outcome }}
           ALL_TESTS:  ${{ steps.all_tests.outcome }}
+          PYTEST:     ${{ steps.pytest_check.outcome }}
+          RULE_TESTS: ${{ steps.rule_tests.outcome }}
         run: |
           python - <<'PYEOF'
           import os
@@ -363,6 +380,8 @@ jobs:
               ("API syntax check",                     os.environ["API"]),
               ("Compliance vs rule cross-reference",   os.environ["XREF"]),
               ("All regression tests",                 os.environ["ALL_TESTS"]),
+              ("Python test suite",                      os.environ["PYTEST"]),
+              ("Rule regression tests",                os.environ["RULE_TESTS"]),
           ]
 
           labels = {

@@ -76,11 +76,6 @@ class AzureClient:
                     Caller must NOT create a finding - skip with a warning
                     to avoid false positives.
 
-        The StorageManagementClient is created fresh here following the same
-        pattern as every other method in AzureClient (one client per call).
-        The credential is reused from self.credential so no new auth round-
-        trip occurs.
-
         Args:
             resource_group: Resource group containing the storage account.
             account_name:   Name of the storage account.
@@ -93,14 +88,10 @@ class AzureClient:
             policy = client.management_policies.get(
                 resource_group, account_name, "default"
             )
-            # A policy shell can exist with an empty rules list -
-            # treat that the same as no policy (non-compliant).
             rules = getattr(getattr(policy, "policy", None), "rules", None)
             return bool(rules)
 
         except ResourceNotFoundError:
-            # Expected path: the account genuinely has no lifecycle policy.
-            # This is the non-compliant condition - return False to flag it.
             logger.debug(
                 "get_storage_lifecycle_policy(%s): ResourceNotFound - no policy",
                 account_name,
@@ -108,9 +99,6 @@ class AzureClient:
             return False
 
         except HttpResponseError as exc:
-            # 403 = service principal lacks
-            # Microsoft.Storage/storageAccounts/managementPolicies/read.
-            # Return None - cannot determine compliance, do not flag.
             logger.error(
                 "get_storage_lifecycle_policy(%s) HTTP %s - "
                 "check service principal permissions: %s",
@@ -121,8 +109,6 @@ class AzureClient:
             return None
 
         except Exception as exc:
-            # Unexpected failure (network, SDK bug, etc.).
-            # Return None - skip rather than create a false positive.
             logger.error(
                 "get_storage_lifecycle_policy(%s) unexpected error: %s",
                 account_name,
@@ -283,6 +269,26 @@ class AzureClient:
             return list(client.virtual_network_peerings.list(resource_group, vnet_name))
         except Exception as exc:
             logger.error("get_vnet_peerings(%s) failed: %s", vnet_name, exc)
+            return []
+
+    def get_dns_zones(self) -> List[Any]:
+        """List all DNS zones in the subscription."""
+        try:
+            from azure.mgmt.dns import DnsManagementClient
+            client = DnsManagementClient(self.credential, self.subscription_id)
+            return list(client.zones.list())
+        except Exception as exc:
+            logger.error("get_dns_zones failed: %s", exc)
+            return []
+
+    def get_dns_record_sets(self, resource_group: str, zone_name: str) -> List[Any]:
+        """List all record sets in a DNS zone."""
+        try:
+            from azure.mgmt.dns import DnsManagementClient
+            client = DnsManagementClient(self.credential, self.subscription_id)
+            return list(client.record_sets.list_by_dns_zone(resource_group, zone_name))
+        except Exception as exc:
+            logger.error("get_dns_record_sets failed for zone %s: %s", zone_name, exc)
             return []
 
     # ------------------------------------------------------------------ #

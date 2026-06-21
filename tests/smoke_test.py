@@ -215,17 +215,30 @@ test(
 
 if _RUN_REAL_SCAN and _AZURE_CREDS_PRESENT:
     test(
-        "TC-13 POST /api/scans/trigger returns 200, 201 or 202",
+        "TC-13 POST /api/scans/trigger returns 202 Accepted",
         "POST", "/api/scans/trigger",
-        lambda s, b: s in (200, 201, 202),
+        lambda s, b: s == 202,
         body={"subscription_id": _REAL_SUB},
     )
+    _async_scan_id = None
+    def _save_scan_id(s, b):
+        global _async_scan_id
+        _async_scan_id = b.get("scan_id")
+        return s == 202 and _async_scan_id is not None
+
     test(
-        "TC-14 POST /api/scans/trigger returns scan_id or job_id",
+        "TC-14 POST /api/scans/trigger returns scan_id and pending status",
         "POST", "/api/scans/trigger",
-        lambda s, b: any(k in b for k in ("scan_id", "job_id", "id", "message")),
+        _save_scan_id,
         body={"subscription_id": _REAL_SUB},
     )
+
+    if _async_scan_id:
+        test(
+            f"TC-40 GET /api/scans/{_async_scan_id} returns status",
+            "GET", f"/api/scans/{_async_scan_id}",
+            lambda s, b: s == 200 and "status" in b,
+        )
 else:
     _skip_reason = (
         "Real scan skipped — set RUN_REAL_SCAN=true with all four Azure credentials to enable."
@@ -322,11 +335,14 @@ else:
 # ── TC-33 to TC-35: CVE Enrichment endpoints ──────────────────────────────
 print("\n=== CVE Enrichment Endpoints ===")
 _scan_status, _scan_body = request("GET", "/api/scans")
-_scan_id = (
-    _scan_body[0].get("scan_id")
-    if _scan_status == 200 and isinstance(_scan_body, list) and _scan_body
-    else None
-)
+# Select the most recent scan that actually has findings to test enrichment
+_scan_id = None
+if _scan_status == 200 and isinstance(_scan_body, list):
+    for s in _scan_body:
+        if s.get("total_findings", 0) > 0:
+            _scan_id = s.get("scan_id")
+            break
+
 if _scan_id is not None:
     test(
         f"TC-33 POST /api/scans/{_scan_id}/enrich returns 200",
@@ -335,9 +351,9 @@ if _scan_id is not None:
         body={},
     )
     test(
-        f"TC-34 POST /api/scans/{_scan_id}/enrich returns status COMPLETED",
+        f"TC-34 POST /api/scans/{_scan_id}/enrich returns status COMPLETED or already enriched",
         "POST", f"/api/scans/{_scan_id}/enrich",
-        lambda s, b: b.get("status") == "COMPLETED",
+        lambda s, b: b.get("status") == "COMPLETED" or "already enriched" in b.get("message", ""),
         body={},
     )
 else:

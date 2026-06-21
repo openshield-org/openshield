@@ -24,5 +24,13 @@ except Exception as e:
     sys.exit(1)
 "
 
-echo "Startup complete. Starting Gunicorn..."
+echo "Startup complete. Starting background worker and Gunicorn..."
+# Start the background worker process with a simple restart loop
+(
+  until python3 -m scanner.worker; do
+    echo "Worker process crashed with exit code $?. Respawning in 5 seconds..." >&2
+    sleep 5
+  done
+) &
+
 exec gunicorn --bind=0.0.0.0:$PORT --timeout 120 --workers 2 api.app:application
