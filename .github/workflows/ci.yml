@@ -122,10 +122,6 @@ jobs:
         id: cred_scan
         run: |
           echo "=== Scanning for hardcoded credentials ==="
-          # Each credential-name pattern requires a quoted string literal on the
-          # right-hand side. This flags real hardcoded values (api_key = "sk-...")
-          # while ignoring safe assignments to function calls or expressions
-          # (api_key = str(data.get(...)) , _SECRET = secrets.token_urlsafe(32)).
           PATTERNS=(
             "password\s*=\s*['\"]"
             "secret\s*=\s*['\"]"
@@ -328,13 +324,33 @@ jobs:
               print(f"All compliance controls map to existing rule files. ({len(existing_ids)} rules checked)")
           PYEOF
 
+      # ── CHECK 8: All regression tests (Mocked dependencies) ──────────
+      - name: All regression tests
+        id: all_tests
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost/ci_db"
+          OPENSHIELD_ENV: "testing"
+        run: |
+          echo "=== Running all regression tests ==="
+          pytest tests/test_*.py -v --tb=short
+
       # ── CHECK 8: Rule regression tests (MockAzureClient, no Azure creds) ──
       - name: Rule regression tests
         id: rule_tests
-      
         run: |
           echo "=== Running rule regression tests ==="
-          pytest tests/test_rules_*.py tests/test_auth.py -v --tb=short
+          pytest tests/test_rules_*.py tests/test_clean_scan.py -v --tb=short
+
+      # ── CHECK 8: Full Python test suite ──────────────────────────────
+      - name: Run Python test suite
+        id: pytest_check
+        run: |
+          echo "=== Running full Python test suite ==="
+          python -m pytest tests/ \
+            --ignore=tests/smoke_test.py \
+            -v --tb=short -q
+        env:
+          OPENSHIELD_ENV: "development"
 
       # ── Final summary — always runs, shows per-check pass/fail ────────
       - name: CI Summary
@@ -347,6 +363,8 @@ jobs:
           JSON:       ${{ steps.json_check.outcome }}
           API:        ${{ steps.api_check.outcome }}
           XREF:       ${{ steps.xref_check.outcome }}
+          ALL_TESTS:  ${{ steps.all_tests.outcome }}
+          PYTEST:     ${{ steps.pytest_check.outcome }}
           RULE_TESTS: ${{ steps.rule_tests.outcome }}
         run: |
           python - <<'PYEOF'
@@ -360,6 +378,8 @@ jobs:
               ("Compliance JSON validation",           os.environ["JSON"]),
               ("API syntax check",                     os.environ["API"]),
               ("Compliance vs rule cross-reference",   os.environ["XREF"]),
+              ("All regression tests",                 os.environ["ALL_TESTS"]),
+              ("Python test suite",                    os.environ["PYTEST"]),
               ("Rule regression tests",                os.environ["RULE_TESTS"]),
           ]
 
