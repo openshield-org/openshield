@@ -1,12 +1,10 @@
 """Tests for JWT authentication middleware — production and demo modes."""
-
 import os
 import secrets
 import time
-
 import jwt
 import pytest
-
+from unittest.mock import MagicMock
 
 _SECRET = secrets.token_urlsafe(32)
 
@@ -22,8 +20,9 @@ def _make_token() -> str:
 
 
 @pytest.fixture
-def prod_client():
+def prod_client(monkeypatch):
     """Flask test client with default (JWT-required) auth mode."""
+    monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
     os.environ.pop("OPENSHIELD_PUBLIC_DEMO", None)
     from api.app import create_app
     app = create_app()
@@ -33,8 +32,9 @@ def prod_client():
 
 
 @pytest.fixture
-def demo_client():
+def demo_client(monkeypatch):
     """Flask test client with OPENSHIELD_PUBLIC_DEMO=true."""
+    monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
     os.environ["OPENSHIELD_PUBLIC_DEMO"] = "true"
     try:
         from api.app import create_app
@@ -47,7 +47,6 @@ def demo_client():
 
 
 # ── /health is always public ─────────────────────────────────────────────────
-
 def test_health_public_in_default_mode(prod_client):
     assert prod_client.get("/health").status_code == 200
 
@@ -57,7 +56,6 @@ def test_health_public_in_demo_mode(demo_client):
 
 
 # ── Default mode: GET /api/* requires JWT ────────────────────────────────────
-
 def test_api_get_requires_jwt_no_header(prod_client):
     assert prod_client.get("/api/findings").status_code == 401
 
@@ -70,7 +68,6 @@ def test_api_get_requires_jwt_bad_token(prod_client):
 def test_api_get_passes_auth_with_valid_jwt(prod_client):
     headers = {"Authorization": f"Bearer {_make_token()}"}
     resp = prod_client.get("/api/findings", headers=headers)
-    # Auth passed — downstream may be 200 or 500 (no DB in CI), but must not be 401
     assert resp.status_code != 401
 
 
@@ -80,7 +77,6 @@ def test_api_post_requires_jwt_in_default_mode(prod_client):
 
 
 # ── Demo mode: GET /api/* is public, POST still requires JWT ─────────────────
-
 def test_demo_get_allowed_without_jwt(demo_client):
     resp = demo_client.get("/api/findings")
     assert resp.status_code != 401
