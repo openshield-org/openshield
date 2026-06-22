@@ -123,6 +123,10 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------ #
     # Database Management                                                   #
     # ------------------------------------------------------------------ #
+    # Skip migrations when DATABASE_URL is not set (e.g. during unit tests).
+    # Deployment startup always sets DATABASE_URL so migrations still run in
+    # production and staging. Tests that need a real database should set
+    # DATABASE_URL explicitly in their environment.
     if os.environ.get("DATABASE_URL"):
         with app.app_context():
             db = DatabaseManager()
@@ -247,9 +251,21 @@ def create_app() -> Flask:
     return app
 
 
-application = create_app()
+import sys
+
+# Global application object for WSGI servers (e.g. Gunicorn, Render)
+# We wrap this in a check to avoid running migrations/connecting during test collection
+if os.environ.get("OPENSHIELD_ENV") != "testing" and \
+   os.environ.get("PYTEST_CURRENT_TEST") is None and \
+   "pytest" not in sys.modules:
+    application = create_app()
+else:
+    # During testing, we provide a placeholder or let conftest handle it
+    application = None
 
 if __name__ == "__main__":
+    if not application:
+        application = create_app()
     application.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000)),

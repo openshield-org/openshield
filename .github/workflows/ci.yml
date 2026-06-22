@@ -346,9 +346,7 @@ jobs:
         id: pytest_check
         run: |
           echo "=== Running full Python test suite ==="
-          python -m pytest tests/ \
-            --ignore=tests/smoke_test.py \
-            -v --tb=short -q
+          python -m pytest tests/             --ignore=tests/smoke_test.py             -v --tb=short -q
         env:
           OPENSHIELD_ENV: "development"
 

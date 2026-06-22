@@ -40,13 +40,40 @@ def _get_collection():
 def retrieve(query, n_results=5):
     """Return the most relevant knowledge chunks for a query.
 
-    Each result is a dict with 'text' and 'source'.
+    Each result is a dict with 'text' and 'source_meta'.
     """
     collection = _get_collection()
     results = collection.query(query_texts=[query], n_results=n_results)
+    
     documents = results.get("documents", [[]])[0]
     metadatas = results.get("metadatas", [[]])[0]
+    
     chunks = []
     for text, meta in zip(documents, metadatas):
-        chunks.append({"text": text, "source": (meta or {}).get("source", "")})
+        meta = meta or {}
+        
+        # Build structured source for the frontend
+        source_id = "General"
+        source_resource = ""
+        source_type = meta.get("source", "unknown")
+        
+        if source_type == "openShield_rule":
+            source_id = meta.get("rule_id", "Rule")
+            source_resource = meta.get("rule_name", "")
+        elif source_type == "claude_red_skill":
+            source_id = meta.get("skill_name", "Skill")
+        elif source_type == "compliance_framework":
+            source_id = f"{meta.get('framework', 'Compliance')} {meta.get('control_id', '')}".strip()
+            source_resource = meta.get("control_name", "")
+            
+        chunks.append({
+            "text": text,
+            "source": source_id, # for LLM prompt context
+            "source_meta": {
+                "id": source_id,
+                "type": source_type,
+                "resource": source_resource,
+                "file": meta.get("file", "")
+            }
+        })
     return chunks

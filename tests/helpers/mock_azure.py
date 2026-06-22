@@ -14,7 +14,7 @@ Usage:
 """
 
 from types import SimpleNamespace
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 
 def make_resource(**kwargs: Any) -> SimpleNamespace:
@@ -33,6 +33,8 @@ class MockAzureClient:
         self._sql_servers: List[Any] = []
         self._service_principals: List[Any] = []
         self._sql_firewall_rules: Dict[Tuple[str, str], List[Any]] = {}
+        self._diagnostic_settings: Dict[str, Optional[bool]] = {}
+        self._key_vault_certificates: Dict[str, List[Any]] = {}
 
     def set_storage_accounts(self, accounts: List[Any]) -> "MockAzureClient":
         self._storage_accounts = accounts
@@ -64,6 +66,14 @@ class MockAzureClient:
         self._sql_firewall_rules[(resource_group, server_name)] = rules
         return self
 
+    def set_diagnostic_settings(self, resource_id: str, status: Optional[bool]) -> "MockAzureClient":
+        self._diagnostic_settings[resource_id] = status
+        return self
+
+    def set_key_vault_certificates(self, vault_name: str, certificates: List[Any]) -> "MockAzureClient":
+        self._key_vault_certificates[vault_name] = certificates
+        return self
+
     def get_storage_accounts(self) -> List[Any]:
         return self._storage_accounts
 
@@ -86,6 +96,12 @@ class MockAzureClient:
         self, resource_group: str, server_name: str
     ) -> List[Any]:
         return self._sql_firewall_rules.get((resource_group, server_name), [])
+
+    def get_diagnostic_settings(self, resource_id: str) -> Optional[bool]:
+        return self._diagnostic_settings.get(resource_id, False)
+
+    def get_key_vault_certificates(self, vault_name: str) -> List[Any]:
+        return self._key_vault_certificates.get(vault_name, [])
 
     @staticmethod
     def parse_resource_id(resource_id: str) -> Dict[str, str]:

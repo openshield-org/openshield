@@ -27,6 +27,10 @@ Also reads all four compliance framework JSON files:
 - ISO 27001
 - SOC2
 
+Finally, it reads all Claude-Red AI skills from `ai/knowledge/skills/*.md`:
+- Extracts the full markdown content as a document for offensive methodology knowledge.
+- **Dynamic Grounding:** Automatically injects relevant OpenShield scanner rules into each skill document using the mapping registry at `ai/knowledge/rule_mapping.json`. This ensures the AI provides application-specific responses rather than generic advice.
+
 ## How chunker.py works
 
 Splits documents into 512-character overlapping chunks with 64-character

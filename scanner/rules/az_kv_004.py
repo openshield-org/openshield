@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 RULE_ID = "AZ-KV-004"
 RULE_NAME = "Key Vault Purge Protection Disabled"
 SEVERITY = "MEDIUM"
-CATEGORY = "Key Vault"
+CATEGORY = "KeyVault"
 FRAMEWORKS = {
     "CIS": "8.6",
     "NIST": "PR.IP-4",
@@ -52,7 +52,10 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "remediation": REMEDIATION,
                 "playbook": PLAYBOOK,
                 "frameworks": FRAMEWORKS,
-                "metadata": {"resource_group": resource_group}
+                "metadata": {
+                    "resource_group": resource_group,
+                    "location": getattr(vault, "location", ""),
+                }
             })
 
     return findings

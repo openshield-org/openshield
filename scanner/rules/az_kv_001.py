@@ -48,6 +48,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "frameworks": FRAMEWORKS,
                 "metadata": {
                     "resource_group": parsed.get("resource_group", ""),
+                    "location": getattr(vault, "location", ""),
                     "purge_protection": getattr(props, "enable_purge_protection", False),
                 },
             })

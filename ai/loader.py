@@ -6,6 +6,7 @@ into structured documents ready for chunking and embedding.
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -146,16 +147,98 @@ def load_compliance_documents() -> List[Dict[str, Any]]:
     return documents
 
 
+def load_skill_documents() -> List[Dict[str, Any]]:
+    """
+    Load Claude-Red AI skills from markdown files.
+    Injects relevant OpenShield scanner rules based on tags and mapping.
+
+    Returns:
+        List of document dicts with content and metadata.
+    """
+    documents = []
+    skills_dir = PROJECT_ROOT / "ai" / "knowledge" / "skills"
+    mapping_file = PROJECT_ROOT / "ai" / "knowledge" / "rule_mapping.json"
+
+    if not skills_dir.exists():
+        logger.warning("Skills directory not found: %s", skills_dir)
+        return documents
+
+    # Load mapping registry
+    mapping = {}
+    if mapping_file.exists():
+        try:
+            with open(mapping_file, "r") as f:
+                mapping = json.load(f)
+        except Exception as exc:
+            logger.error("Failed to load rule_mapping.json: %s", exc)
+
+    # Pre-load all rule IDs and names grouped by category for quick lookup
+    all_rules = load_rule_documents()
+    rules_by_category = {}
+    for rule in all_rules:
+        cat = rule["metadata"].get("category")
+        if cat:
+            rules_by_category.setdefault(cat, []).append(
+                f"- `{rule['metadata']['rule_id']}`: {rule['metadata']['rule_name']}"
+            )
+
+    for skill_file in sorted(skills_dir.rglob("*.md")):
+        try:
+            content = skill_file.read_text(encoding="utf-8")
+            skill_name = skill_file.parent.name
+            
+            # Dynamic Grounding: Find relevant rules for this skill
+            relevant_rules = []
+            content_lower = content.lower()
+            
+            for category, keywords in mapping.items():
+                for keyword in keywords:
+                    # Use boundary-aware matching to avoid short tokens matching inside unrelated words
+                    # e.g., 'vm' inside 'devmac', or 'shor' inside 'shortest'
+                    pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                    if re.search(pattern, content_lower):
+                        relevant_rules.extend(rules_by_category.get(category, []))
+                        break # Only need one keyword match per category
+            
+            if relevant_rules:
+                # Remove duplicates while preserving order
+                unique_rules = list(dict.fromkeys(relevant_rules))
+                injection = "\n\n## OpenShield Implementation Capabilities\n"
+                injection += "The following automated scanner rules in OpenShield implement or detect the methodologies described above:\n\n"
+                injection += "\n".join(unique_rules)
+                injection += "\n\nWhen these rules trigger findings, use the investigation steps in this skill for deep-dive analysis."
+                content += injection
+
+            documents.append({
+                "id": f"skill_{skill_name.lower().replace('-', '_')}",
+                "content": content,
+                "metadata": {
+                    "source": "claude_red_skill",
+                    "skill_name": skill_name,
+                    "file": skill_file.name,
+                },
+            })
+
+            logger.debug("Loaded grounded skill: %s", skill_name)
+
+        except Exception as exc:
+            logger.error("Failed to load skill %s: %s", skill_file.name, exc)
+
+    logger.info("Loaded %d skill documents with dynamic grounding", len(documents))
+    return documents
+
+
 def load_all_documents() -> List[Dict[str, Any]]:
     """
-    Load all OpenShield documents — rules and compliance frameworks.
+    Load all OpenShield documents — rules, compliance, and grounded skills.
 
     Returns:
         Combined list of all document dicts.
     """
     rules = load_rule_documents()
     compliance = load_compliance_documents()
-    all_docs = rules + compliance
+    skills = load_skill_documents()
+    all_docs = rules + compliance + skills
     logger.info("Total documents loaded: %d", len(all_docs))
     return all_docs
 

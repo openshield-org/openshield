@@ -1,80 +1,73 @@
 ---
 name: analyzing-azure-activity-logs-for-threats
-description: 'Queries Azure Monitor activity logs and sign-in logs via azure-monitor-query to detect suspicious administrative
-  operations, impossible travel, privilege escalation, and resource modifications. Builds KQL queries for threat hunting in
-  Azure environments. Use when investigating suspicious Azure tenant activity or building cloud SIEM detections.
-
-  '
+description: Queries Azure Monitor activity logs and sign-in logs to detect suspicious administrative operations, impossible travel, and privilege escalation.
 domain: cybersecurity
 subdomain: security-operations
 tags:
 - azure
-- cloud-security
-- azure-monitor
+- monitoring
 - kql
 - threat-hunting
 - activity-logs
 version: '1.0'
-author: mahipal
+author: openshield
 license: Apache-2.0
 nist_csf:
-- DE.CM-01
-- RS.MA-01
-- GV.OV-01
-- DE.AE-02
+- DE.CM-1
+- DE.CM-3
+- DE.CM-7
+- DE.AE-3
+- RS.AN-1
 ---
 
 # Analyzing Azure Activity Logs for Threats
 
-
 ## When to Use
+- When investigating suspicious administrative activity in an Azure subscription.
+- When performing a post-incident forensic analysis of a compromised tenant.
+- When building custom KQL analytics rules for Microsoft Sentinel.
+- When hunting for signs of privilege escalation or persistence.
 
-- When investigating security incidents that require analyzing azure activity logs for threats
-- When building detection rules or threat hunting queries for this domain
-- When SOC analysts need structured procedures for this analysis type
-- When validating security monitoring coverage for related attack techniques
+## Key Concepts
 
-## Prerequisites
+| Term | Definition |
+|------|------------|
+| AzureActivity | Log table containing all administrative (write/delete) operations in Azure |
+| SigninLogs | Log table containing all user and service principal authentication events |
+| KQL | Kusto Query Language, used to query Azure Monitor and Sentinel data |
+| Resource Provider | The Azure service (e.g., Microsoft.Compute) that performed the logged action |
 
-- Familiarity with security operations concepts and tools
-- Access to a test or lab environment for safe execution
-- Python 3.8+ with required dependencies installed
-- Appropriate authorization for any testing activities
+## OpenShield Visibility Rules
 
-## Instructions
+OpenShield helps ensure you have the visibility required for these queries:
+- **Logging**: `AZ-STOR-004` (Diagnostic Logs), `AZ-IDN-009` (Assignment Alerts)
+- **Identity**: `AZ-IDN-007` (MFA Status), `AZ-IDN-002` (Conditional Access)
 
-Use azure-monitor-query to execute KQL queries against Azure Log Analytics workspaces,
-detecting suspicious admin operations and sign-in anomalies.
+## Hunting Queries (KQL)
 
-```python
-from azure.identity import DefaultAzureCredential
-from azure.monitor.query import LogsQueryClient
-from datetime import timedelta
-
-credential = DefaultAzureCredential()
-client = LogsQueryClient(credential)
-
-response = client.query_workspace(
-    workspace_id="WORKSPACE_ID",
-    query="AzureActivity | where OperationNameValue has 'MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE' | take 10",
-    timespan=timedelta(hours=24),
-)
+### 1. Detect Suspicious Role Assignments
+```kql
+AzureActivity
+| where OperationNameValue == "Microsoft.Authorization/roleAssignments/write"
+| where ActivityStatusValue == "Succeeded"
+| extend Role = tostring(parse_json(Properties).roleDefinitionId)
 ```
 
-Key detection queries:
-1. Role assignment changes (privilege escalation)
-2. Resource group and subscription modifications
-3. Key vault secret access from new IPs
-4. Network security group rule changes
-5. Conditional access policy modifications
-
-## Examples
-
-```python
-# Detect new Global Admin role assignments
-query = '''
-AuditLogs
-| where OperationName == "Add member to role"
-| where TargetResources[0].modifiedProperties[0].newValue has "Global Administrator"
-'''
+### 2. Detect Cross-Tenant Data Access
+```kql
+StorageBlobLogs
+| where OperationName == "GetBlob"
+| where CallerIpAddress !in ("List_of_Trusted_IPs")
 ```
+
+### 3. Detect Key Vault Secret Access
+```kql
+AzureDiagnostics
+| where ResourceProvider == "MICROSOFT.KEYVAULT"
+| where OperationName in ("SecretGet", "KeyGet")
+```
+
+## Remediation Reference
+- **Centralize Logs**: Send all subscription logs to a central Log Analytics workspace.
+- **Set Alerts**: Create analytics rules in Sentinel based on these queries for real-time alerting.
+- **Harden RBAC**: Limit who can perform the `Microsoft.Authorization/roleAssignments/write` operation.

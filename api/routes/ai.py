@@ -142,7 +142,8 @@ def _findings_to_text(findings):
 def _context_for(query):
     chunks = retrieve(query, n_results=5)
     context = "\n".join(f"- ({c['source']}) {c['text']}" for c in chunks)
-    sources = [c["source"] for c in chunks if c["source"]]
+    # Extract structured source_meta for the frontend badges
+    sources = [c["source_meta"] for c in chunks if c["source_meta"]]
     return context, sources
 
 
