@@ -270,6 +270,14 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_vnet_peerings(%s) failed: %s", vnet_name, exc)
             return []
+    def get_load_balancers(self) -> List[Any]:
+        """List all load balancers in the subscription."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.load_balancers.list_all())
+        except Exception as exc:
+            logger.error("get_load_balancers failed: %s", exc)
+            return []
 
     def get_dns_zones(self) -> List[Any]:
         """List all DNS zones in the subscription."""
