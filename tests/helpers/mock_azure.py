@@ -35,6 +35,7 @@ class MockAzureClient:
         self._sql_firewall_rules: Dict[Tuple[str, str], List[Any]] = {}
         self._diagnostic_settings: Dict[str, Optional[bool]] = {}
         self._key_vault_certificates: Dict[str, List[Any]] = {}
+        self._sql_auditing_policies: Dict[Tuple[str, str], Any] = {}
 
     def set_storage_accounts(self, accounts: List[Any]) -> "MockAzureClient":
         self._storage_accounts = accounts
@@ -74,6 +75,17 @@ class MockAzureClient:
         self._key_vault_certificates[vault_name] = certificates
         return self
 
+    def set_sql_server_auditing_policy(
+        self, resource_group: str, server_name: str, policy: Optional[Any]
+    ) -> "MockAzureClient":
+        """Configure the auditing policy returned for a server.
+
+        Pass None to simulate an API failure (e.g. throttling, auth error),
+        distinct from a real policy object with state="Disabled".
+        """
+        self._sql_auditing_policies[(resource_group, server_name)] = policy
+        return self
+
     def get_storage_accounts(self) -> List[Any]:
         return self._storage_accounts
 
@@ -103,11 +115,24 @@ class MockAzureClient:
     def get_key_vault_certificates(self, vault_name: str) -> List[Any]:
         return self._key_vault_certificates.get(vault_name, [])
 
+    def get_sql_server_auditing_policy(
+        self, resource_group: str, server_name: str
+    ) -> Optional[Any]:
+        return self._sql_auditing_policies.get((resource_group, server_name))
+
     @staticmethod
     def parse_resource_id(resource_id: str) -> Dict[str, str]:
-        """Parse an Azure resource ID into a dict with name and resource_group."""
-        parts = resource_id.split("/")
-        result: Dict[str, str] = {"name": parts[-1] if parts else ""}
+        """Parse an Azure resource ID into a dict with name and resource_group.
+
+        Always returns both keys, even for malformed or empty IDs, so
+        callers can safely use parsed["resource_group"] without risking
+        a KeyError.
+        """
+        parts = (resource_id or "").split("/")
+        result: Dict[str, str] = {
+            "name": parts[-1] if parts else "",
+            "resource_group": "",
+        }
         for idx, segment in enumerate(parts):
             if segment.lower() == "resourcegroups" and idx + 1 < len(parts):
                 result["resource_group"] = parts[idx + 1]

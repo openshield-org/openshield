@@ -1,5 +1,6 @@
 """AZ-DB-002: Azure SQL server has no auditing configured."""
 
+import logging
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-DB-002"
@@ -19,6 +20,8 @@ REMEDIATION = (
 )
 PLAYBOOK = "playbooks/cli/fix_az_db_002.sh"
 
+logger = logging.getLogger(__name__)
+
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect SQL servers where server-level blob auditing is disabled."""
@@ -32,11 +35,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
         policy = azure_client.get_sql_server_auditing_policy(resource_group, server.name)
         if policy is None:
-            # Could not retrieve policy — treat as unaudited
-            is_disabled = True
-        else:
-            state = str(getattr(policy, "state", "Disabled"))
-            is_disabled = state.lower() != "enabled"
+            # Could not retrieve the policy (API/auth failure, throttling, etc).
+            # Skip this resource rather than flagging it — we don't actually
+            # know its auditing state, so treating a failed call as
+            # "disabled" produces a false positive.
+            logger.warning(
+                "Skipping AZ-DB-002 check for %s: could not retrieve auditing policy",
+                server.name,
+            )
+            continue
+
+        state = str(getattr(policy, "state", "Disabled"))
+        is_disabled = state.lower() != "enabled"
 
         if is_disabled:
             findings.append({

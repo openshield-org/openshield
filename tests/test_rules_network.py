@@ -1,7 +1,8 @@
-"""Rule regression tests for AZ-NET-001 and AZ-NET-002."""
+"""Rule regression tests for AZ-NET-001, AZ-NET-002, and AZ-NET-003."""
 
 import scanner.rules.az_net_001 as az_net_001
 import scanner.rules.az_net_002 as az_net_002
+import scanner.rules.az_net_003 as az_net_003
 from tests.helpers.mock_azure import make_resource
 
 _REQUIRED_FIELDS = {
@@ -103,3 +104,70 @@ def test_net_002_noncompliant_returns_one_finding(mock_azure, subscription_id):
     assert finding["severity"] == "HIGH"
     assert finding["category"] == "Network"
     assert finding["resource_name"] == "nsg-rdp-open"
+
+
+def _net_003_rule(name, direction="Inbound", access="Allow",
+                   source="0.0.0.0/0", source_list=None, port="443"):
+    return make_resource(
+        name=name,
+        direction=direction,
+        access=access,
+        source_address_prefix=source,
+        source_address_prefixes=source_list or [],
+        destination_port_range=port,
+    )
+
+
+def test_net_003_noncompliant_returns_one_finding(mock_azure, subscription_id):
+    """An NSG with Allow-inbound-443-from-any must produce exactly one finding."""
+    nsg = make_resource(
+        id=_nsg_id("nsg-443-open"),
+        name="nsg-443-open",
+        security_rules=[_net_003_rule("AllowHTTPSFromInternet")],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-NET-003"
+
+
+def test_net_003_compliant_returns_no_findings(mock_azure, subscription_id):
+    """An NSG restricting 443 to a trusted IP range must produce no findings."""
+    nsg = make_resource(
+        id=_nsg_id("nsg-443-restricted"),
+        name="nsg-443-restricted",
+        security_rules=[_net_003_rule("AllowHTTPSFromTrusted", source="10.0.0.0/24")],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+def test_net_003_direction_is_case_insensitive(mock_azure, subscription_id):
+    """COR-001: lowercase/mixed-case direction values must still be detected."""
+    nsg = make_resource(
+        id=_nsg_id("nsg-lowercase-direction"),
+        name="nsg-lowercase-direction",
+        security_rules=[_net_003_rule("AllowHTTPSLower", direction="inbound")],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+
+
+def test_net_003_detects_plural_source_prefixes(mock_azure, subscription_id):
+    """COR-002: an open source listed only in source_address_prefixes must be detected."""
+    nsg = make_resource(
+        id=_nsg_id("nsg-plural-prefix"),
+        name="nsg-plural-prefix",
+        security_rules=[
+            _net_003_rule(
+                "AllowHTTPSPluralOpen",
+                source="",
+                source_list=["0.0.0.0/0"],
+            )
+        ],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1

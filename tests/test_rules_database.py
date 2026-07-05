@@ -1,5 +1,6 @@
-"""Rule regression tests for AZ-DB-004."""
+"""Rule regression tests for AZ-DB-002 and AZ-DB-004."""
 
+import scanner.rules.az_db_002 as az_db_002
 import scanner.rules.az_db_004 as az_db_004
 from tests.helpers.mock_azure import make_resource
 
@@ -60,5 +61,59 @@ def test_db_004_no_firewall_rules_returns_no_findings(mock_azure, subscription_i
     server = make_resource(id=_sql_id("sql-no-rules"), name="sql-no-rules")
     mock_azure.set_sql_servers([server])
     mock_azure.set_sql_server_firewall_rules(_RG, "sql-no-rules", [])
+    findings = az_db_004.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+def test_db_002_disabled_policy_returns_one_finding(mock_azure, subscription_id):
+    """A SQL Server with auditing explicitly disabled must produce one finding."""
+    server = make_resource(id=_sql_id("sql-unaudited"), name="sql-unaudited")
+    policy = make_resource(state="Disabled")
+    mock_azure.set_sql_servers([server])
+    mock_azure.set_sql_server_auditing_policy(_RG, "sql-unaudited", policy)
+    findings = az_db_002.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-DB-002"
+
+
+def test_db_002_enabled_policy_returns_no_findings(mock_azure, subscription_id):
+    """A SQL Server with auditing enabled must produce no findings."""
+    server = make_resource(id=_sql_id("sql-audited"), name="sql-audited")
+    policy = make_resource(state="Enabled")
+    mock_azure.set_sql_servers([server])
+    mock_azure.set_sql_server_auditing_policy(_RG, "sql-audited", policy)
+    findings = az_db_002.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+def test_db_002_api_failure_returns_no_findings(mock_azure, subscription_id):
+    """COR-003: a failed policy lookup (None) must be skipped, not flagged.
+
+    Previously, a None policy (API/auth failure) was treated the same as an
+    explicitly disabled policy, producing a false positive.
+    """
+    server = make_resource(id=_sql_id("sql-api-failed"), name="sql-api-failed")
+    mock_azure.set_sql_servers([server])
+    mock_azure.set_sql_server_auditing_policy(_RG, "sql-api-failed", None)
+    findings = az_db_002.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+def test_db_002_malformed_arm_id_does_not_raise(mock_azure, subscription_id):
+    """COR-004: a server with a malformed ARM ID must not raise an error."""
+    server = make_resource(id="not-a-valid-arm-id", name="sql-malformed")
+    mock_azure.set_sql_servers([server])
+    findings = az_db_002.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+def test_db_004_malformed_arm_id_does_not_raise_keyerror(mock_azure, subscription_id):
+    """COR-004: az_db_004 indexes parsed["resource_group"] directly, so a
+    malformed ARM ID with no resourceGroups segment previously raised a
+    KeyError. parse_resource_id must always include the key.
+    """
+    server = make_resource(id="not-a-valid-arm-id", name="sql-malformed")
+    mock_azure.set_sql_servers([server])
+    mock_azure.set_sql_server_firewall_rules("", "sql-malformed", [])
     findings = az_db_004.scan(mock_azure, subscription_id)
     assert findings == []

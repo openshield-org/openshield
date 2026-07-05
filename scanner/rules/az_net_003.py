@@ -33,10 +33,19 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for nsg in azure_client.get_network_security_groups():
         for rule in getattr(nsg, "security_rules", []) or []:
+            direction = str(getattr(rule, "direction", "") or "")
+            access = str(getattr(rule, "access", "") or "")
+            allowed_sources = {"*", "0.0.0.0/0", "internet", "any"}
+            single_prefix = str(getattr(rule, "source_address_prefix", "") or "")
+            plural_prefixes = getattr(rule, "source_address_prefixes", None) or []
+            source_matches = single_prefix.lower() in allowed_sources or any(
+                str(prefix or "").lower() in allowed_sources for prefix in plural_prefixes
+            )
+
             if (
-                getattr(rule, "direction", "") == "Inbound"
-                and getattr(rule, "access", "") == "Allow"
-                and getattr(rule, "source_address_prefix", "") in ("*", "0.0.0.0/0", "Internet", "Any")
+                direction.lower() == "inbound"
+                and access.lower() == "allow"
+                and source_matches
                 and getattr(rule, "destination_port_range", "") in ("443", "*")
             ):
                 findings.append({
