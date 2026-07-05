@@ -3,12 +3,11 @@
 from unittest.mock import MagicMock, patch
 
 import api.models.finding as finding_module
-from api.models.finding import DatabaseManager
 
 
 def _db(dsn="postgresql://mock/mock"):
     """Return a DatabaseManager with a mock DSN (no real connection used)."""
-    db = DatabaseManager.__new__(DatabaseManager)
+    db = finding_module.DatabaseManager.__new__(finding_module.DatabaseManager)
     db.dsn = dsn
     db.conn = None
     return db
@@ -75,7 +74,7 @@ def test_connect_acquires_connection_from_shared_pool():
     fake_pool.getconn.return_value = fake_conn
 
     with patch.object(finding_module, "_get_pool", return_value=fake_pool) as mock_get_pool:
-        db = DatabaseManager(dsn)
+        db = finding_module.DatabaseManager(dsn)
         db.connect()
 
     mock_get_pool.assert_called_once_with(dsn)

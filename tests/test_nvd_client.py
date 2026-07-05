@@ -19,8 +19,6 @@ import unittest
 import urllib.error
 from unittest.mock import patch, MagicMock
 
-import scanner.nvd_client as nvd_client
-
 # Clear the module cache before import so previous test runs don't bleed in
 from scanner.nvd_client import query_nvd, _parse_cve_item, _cache, _wait_for_rate_limit
 
@@ -268,9 +266,11 @@ class TestQueryNvd(unittest.TestCase):
 
 class TestRateLimitThreadSafety(unittest.TestCase):
     def setUp(self):
-        nvd_client._last_request_time = 0.0
+        patcher = patch("scanner.nvd_client._last_request_time", 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
-    @patch.object(nvd_client, "_REQUEST_DELAY_SECONDS", 0.05)
+    @patch("scanner.nvd_client._REQUEST_DELAY_SECONDS", 0.05)
     def test_concurrent_calls_are_serialized_not_interleaved(self):
         timestamps = []
         record_lock = threading.Lock()
