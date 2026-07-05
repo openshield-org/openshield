@@ -30,9 +30,7 @@ def _rule_allows_port_from_any(rule: Any, port: str) -> bool:
 
     source = getattr(rule, "source_address_prefix", "") or ""
     source_prefixes = getattr(rule, "source_address_prefixes", []) or []
-    source_open = source in _OPEN_SOURCES or any(
-        s in _OPEN_SOURCES for s in source_prefixes
-    )
+    source_open = source in _OPEN_SOURCES or any(s in _OPEN_SOURCES for s in source_prefixes)
 
     if not source_open:
         return False
@@ -49,20 +47,22 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     for nsg in azure_client.get_network_security_groups():
         for rule in getattr(nsg, "security_rules", []) or []:
             if _rule_allows_port_from_any(rule, "22"):
-                findings.append({
-                    "rule_id": RULE_ID,
-                    "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
-                    "category": CATEGORY,
-                    "resource_id": nsg.id,
-                    "resource_name": nsg.name,
-                    "resource_type": "Microsoft.Network/networkSecurityGroups",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
-                    "playbook": PLAYBOOK,
-                    "frameworks": FRAMEWORKS,
-                    "metadata": {"offending_rule": rule.name},
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": nsg.id,
+                        "resource_name": nsg.name,
+                        "resource_type": "Microsoft.Network/networkSecurityGroups",
+                        "description": DESCRIPTION,
+                        "remediation": REMEDIATION,
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {"offending_rule": rule.name},
+                    }
+                )
                 break  # one finding per NSG is enough
 
     return findings

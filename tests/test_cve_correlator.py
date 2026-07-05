@@ -53,6 +53,7 @@ _MOCK_CVE_NO_EXPLOIT = {
 # Pure function - no mocking needed.
 # ---------------------------------------------------------------------------
 
+
 class TestGetNvdKeyword(unittest.TestCase):
     """
     _get_nvd_keyword() supports exact matches and prefix fallback.
@@ -88,6 +89,7 @@ class TestGetNvdKeyword(unittest.TestCase):
 # _enrich_single_finding() adds CVE fields to one finding dict.
 # query_nvd is patched to avoid network calls.
 # ---------------------------------------------------------------------------
+
 
 class TestEnrichSingleFinding(unittest.TestCase):
     """
@@ -170,8 +172,8 @@ class TestEnrichSingleFinding(unittest.TestCase):
 # enrich_findings() is the public API - tests the list-level behaviour.
 # ---------------------------------------------------------------------------
 
-class TestEnrichFindings(unittest.TestCase):
 
+class TestEnrichFindings(unittest.TestCase):
     def setUp(self):
         _cache.clear()
 
@@ -181,7 +183,7 @@ class TestEnrichFindings(unittest.TestCase):
         mock_query.return_value = [_MOCK_CVE]
         findings = [
             {"rule_id": "AZ-STOR-003", "severity": "HIGH"},
-            {"rule_id": "AZ-KV-002",   "severity": "CRITICAL"},
+            {"rule_id": "AZ-KV-002", "severity": "CRITICAL"},
         ]
         results = enrich_findings(findings)
         self.assertEqual(len(results), 2)
@@ -203,8 +205,8 @@ class TestEnrichFindings(unittest.TestCase):
         mock_query.return_value = []
         findings = [
             {"rule_id": "AZ-STOR-003", "id": 1},
-            {"rule_id": "AZ-KV-002",   "id": 2},
-            {"rule_id": "AZ-VM",        "id": 3},
+            {"rule_id": "AZ-KV-002", "id": 2},
+            {"rule_id": "AZ-VM", "id": 3},
         ]
         results = enrich_findings(findings)
         self.assertEqual([r["id"] for r in results], [1, 2, 3])

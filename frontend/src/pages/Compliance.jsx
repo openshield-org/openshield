@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import FrameworkCards from '../components/compliance/FrameworkCards';
 import ComplianceTable from '../components/compliance/ComplianceTable';

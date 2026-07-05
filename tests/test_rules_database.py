@@ -4,9 +4,18 @@ import scanner.rules.az_db_004 as az_db_004
 from tests.helpers.mock_azure import make_resource
 
 _REQUIRED_FIELDS = {
-    "rule_id", "rule_name", "severity", "category",
-    "resource_id", "resource_name", "resource_type",
-    "description", "remediation", "playbook", "frameworks", "metadata",
+    "rule_id",
+    "rule_name",
+    "severity",
+    "category",
+    "resource_id",
+    "resource_name",
+    "resource_type",
+    "description",
+    "remediation",
+    "playbook",
+    "frameworks",
+    "metadata",
 }
 
 _SUB = "00000000-0000-0000-0000-000000000001"
@@ -14,10 +23,7 @@ _RG = "rg-test"
 
 
 def _sql_id(name):
-    return (
-        f"/subscriptions/{_SUB}/resourceGroups/{_RG}"
-        f"/providers/Microsoft.Sql/servers/{name}"
-    )
+    return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Sql/servers/{name}"
 
 
 def _firewall_rule(name, start_ip, end_ip):

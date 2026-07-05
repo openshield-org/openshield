@@ -8,17 +8,24 @@ import scanner.rules.az_idn_001 as az_idn_001
 from tests.helpers.mock_azure import make_resource
 
 _REQUIRED_FIELDS = {
-    "rule_id", "rule_name", "severity", "category",
-    "resource_id", "resource_name", "resource_type",
-    "description", "remediation", "playbook", "frameworks", "metadata",
+    "rule_id",
+    "rule_name",
+    "severity",
+    "category",
+    "resource_id",
+    "resource_name",
+    "resource_type",
+    "description",
+    "remediation",
+    "playbook",
+    "frameworks",
+    "metadata",
 }
 
 _SUB = "00000000-0000-0000-0000-000000000001"
 _OWNER_ROLE_GUID = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
 _CONTRIBUTOR_ROLE_GUID = "b24988ac-6180-42a0-ab88-20f7382dd24c"
-_ROLE_DEF_BASE = (
-    f"/subscriptions/{_SUB}/providers/Microsoft.Authorization/roleDefinitions"
-)
+_ROLE_DEF_BASE = f"/subscriptions/{_SUB}/providers/Microsoft.Authorization/roleDefinitions"
 
 
 def _assignment(role_guid, principal_id, assign_id):

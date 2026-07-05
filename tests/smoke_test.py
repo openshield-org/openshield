@@ -22,8 +22,10 @@ import json
 import time
 import urllib.request
 import urllib.error
+
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -34,10 +36,12 @@ except ImportError:
 # Passing the raw JWT_SECRET as a Bearer token will always return 401.
 # We must sign a real token using the same secret.
 
+
 def _generate_token(secret: str) -> str:
     """Generate a valid HS256 JWT signed with the app's JWT_SECRET."""
     try:
         import jwt as pyjwt
+
         payload = {
             "sub": "smoke-test",
             "role": "admin",
@@ -60,17 +64,19 @@ _REAL_SUB = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
 # Real scan gate — requires explicit opt-in AND all four Azure credentials.
 # Set RUN_REAL_SCAN=true in maintainer-controlled CI only.
 _RUN_REAL_SCAN = os.environ.get("RUN_REAL_SCAN", "").lower() == "true"
-_AZURE_CREDS_PRESENT = all([
-    os.environ.get("AZURE_SUBSCRIPTION_ID"),
-    os.environ.get("AZURE_CLIENT_ID"),
-    os.environ.get("AZURE_CLIENT_SECRET"),
-    os.environ.get("AZURE_TENANT_ID"),
-])
+_AZURE_CREDS_PRESENT = all(
+    [
+        os.environ.get("AZURE_SUBSCRIPTION_ID"),
+        os.environ.get("AZURE_CLIENT_ID"),
+        os.environ.get("AZURE_CLIENT_SECRET"),
+        os.environ.get("AZURE_TENANT_ID"),
+    ]
+)
 
 if not _JWT_VAL:
     print("ERROR: JWT_SECRET environment variable is not set.")
     print("The smoke test requires an explicit JWT_SECRET that matches the running API.")
-    print("Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+    print('Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"')
     sys.exit(1)
 
 JWT_TOKEN = _generate_token(_JWT_VAL)
@@ -139,19 +145,22 @@ def skip(name, reason):
 print("\n=== Health Check ===")
 test(
     "TC-01 GET /health returns 200",
-    "GET", "/health",
+    "GET",
+    "/health",
     lambda s, b: s == 200,
     auth=False,
 )
 test(
     "TC-02 GET /health returns status ok",
-    "GET", "/health",
+    "GET",
+    "/health",
     lambda s, b: b.get("status") == "ok",
     auth=False,
 )
 test(
     "TC-03 GET /health requires no auth token",
-    "GET", "/health",
+    "GET",
+    "/health",
     lambda s, b: s == 200,  # Public path — must not return 401
     auth=False,
 )
@@ -160,30 +169,32 @@ test(
 print("\n=== Findings Endpoint ===")
 test(
     "TC-04 GET /api/findings returns 200",
-    "GET", "/api/findings",
+    "GET",
+    "/api/findings",
     lambda s, b: s == 200,
 )
 test(
     "TC-05 GET /api/findings returns 'findings' key",
-    "GET", "/api/findings",
+    "GET",
+    "/api/findings",
     lambda s, b: "findings" in b,
 )
 test(
     "TC-06 GET /api/findings returns 'count' key",
-    "GET", "/api/findings",
+    "GET",
+    "/api/findings",
     lambda s, b: "count" in b and isinstance(b["count"], int),
 )
 test(
     "TC-07 GET /api/findings?severity=HIGH filters correctly",
-    "GET", "/api/findings?severity=HIGH",
-    lambda s, b: s == 200 and all(
-        f.get("severity") == "HIGH"
-        for f in b.get("findings", [])
-    ),
+    "GET",
+    "/api/findings?severity=HIGH",
+    lambda s, b: s == 200 and all(f.get("severity") == "HIGH" for f in b.get("findings", [])),
 )
 test(
     "TC-08 GET /api/findings?severity=INVALID returns 400 or empty",
-    "GET", "/api/findings?severity=INVALID",
+    "GET",
+    "/api/findings?severity=INVALID",
     lambda s, b: s in (200, 400),
 )
 
@@ -191,17 +202,20 @@ test(
 print("\n=== Score Endpoint ===")
 test(
     "TC-09 GET /api/score returns 200",
-    "GET", "/api/score",
+    "GET",
+    "/api/score",
     lambda s, b: s == 200,
 )
 test(
     "TC-10 GET /api/score returns numeric score",
-    "GET", "/api/score",
+    "GET",
+    "/api/score",
     lambda s, b: isinstance(b, (int, float)) or (isinstance(b, dict) and isinstance(b.get("score"), (int, float))),
 )
 test(
     "TC-11 GET /api/score is between 0 and 100",
-    "GET", "/api/score",
+    "GET",
+    "/api/score",
     lambda s, b: (0 <= b <= 100) if isinstance(b, (int, float)) else (0 <= b.get("score", -1) <= 100),
 )
 
@@ -209,18 +223,21 @@ test(
 print("\n=== Scans Endpoint ===")
 test(
     "TC-12 GET /api/scans returns 200",
-    "GET", "/api/scans",
+    "GET",
+    "/api/scans",
     lambda s, b: s == 200,
 )
 
 if _RUN_REAL_SCAN and _AZURE_CREDS_PRESENT:
     test(
         "TC-13 POST /api/scans/trigger returns 202 Accepted",
-        "POST", "/api/scans/trigger",
+        "POST",
+        "/api/scans/trigger",
         lambda s, b: s == 202,
         body={"subscription_id": _REAL_SUB},
     )
     _async_scan_id = None
+
     def _save_scan_id(s, b):
         global _async_scan_id
         _async_scan_id = b.get("scan_id")
@@ -228,7 +245,8 @@ if _RUN_REAL_SCAN and _AZURE_CREDS_PRESENT:
 
     test(
         "TC-14 POST /api/scans/trigger returns scan_id and pending status",
-        "POST", "/api/scans/trigger",
+        "POST",
+        "/api/scans/trigger",
         _save_scan_id,
         body={"subscription_id": _REAL_SUB},
     )
@@ -236,14 +254,15 @@ if _RUN_REAL_SCAN and _AZURE_CREDS_PRESENT:
     if _async_scan_id:
         test(
             f"TC-40 GET /api/scans/{_async_scan_id} returns status",
-            "GET", f"/api/scans/{_async_scan_id}",
+            "GET",
+            f"/api/scans/{_async_scan_id}",
             lambda s, b: s == 200 and "status" in b,
         )
 else:
     _skip_reason = (
         "Real scan skipped — set RUN_REAL_SCAN=true with all four Azure credentials to enable."
         if not _RUN_REAL_SCAN
-        else "Real scan skipped — one or more Azure credentials (SUBSCRIPTION_ID, CLIENT_ID, CLIENT_SECRET, TENANT_ID) are missing."
+        else "Real scan skipped — one or more Azure credentials (SUBSCRIPTION_ID, CLIENT_ID, CLIENT_SECRET, TENANT_ID) are missing."  # noqa: E501
     )
     skip("TC-13 POST /api/scans/trigger returns 200, 201 or 202", _skip_reason)
     skip("TC-14 POST /api/scans/trigger returns scan_id or job_id", _skip_reason)
@@ -253,7 +272,8 @@ print("\n=== Compliance Endpoints ===")
 for tc_num, framework in enumerate(("cis", "nist", "iso27001", "soc2"), start=15):
     test(
         f"TC-{tc_num:02d} GET /api/compliance/{framework} returns 200",
-        "GET", f"/api/compliance/{framework}",
+        "GET",
+        f"/api/compliance/{framework}",
         lambda s, b: s == 200,
     )
 
@@ -263,14 +283,16 @@ for tc_num, framework in enumerate(("cis", "nist", "iso27001", "soc2"), start=15
 print("\n=== Auth / Security Edge Cases ===")
 test(
     "TC-19 POST /api/scans/trigger without auth returns 401",
-    "POST", "/api/scans/trigger",
+    "POST",
+    "/api/scans/trigger",
     lambda s, b: s == 401,
     auth=False,
     body={},
 )
 test(
     "TC-20 POST /api/scans/trigger with malformed token returns 401",
-    "POST", "/api/scans/trigger",
+    "POST",
+    "/api/scans/trigger",
     lambda s, b: s == 401,
     bad_token=True,
     body={},
@@ -280,32 +302,38 @@ test(
 print("\n=== Dashboard Contract Endpoints ===")
 test(
     "TC-21 GET /api/resources returns 200",
-    "GET", "/api/resources",
+    "GET",
+    "/api/resources",
     lambda s, b: s == 200,
 )
 test(
     "TC-22 GET /api/resources returns summary and resources keys",
-    "GET", "/api/resources",
+    "GET",
+    "/api/resources",
     lambda s, b: "summary" in b and "resources" in b and isinstance(b["resources"], list),
 )
 test(
     "TC-23 GET /api/prioritization returns 200",
-    "GET", "/api/prioritization",
+    "GET",
+    "/api/prioritization",
     lambda s, b: s == 200,
 )
 test(
     "TC-24 GET /api/prioritization returns matrix and rankings keys",
-    "GET", "/api/prioritization",
+    "GET",
+    "/api/prioritization",
     lambda s, b: "matrix" in b and "rankings" in b and isinstance(b["matrix"], list),
 )
 test(
     "TC-25 GET /api/drift returns 200",
-    "GET", "/api/drift",
+    "GET",
+    "/api/drift",
     lambda s, b: s == 200,
 )
 test(
     "TC-26 GET /api/drift returns summary and events keys",
-    "GET", "/api/drift",
+    "GET",
+    "/api/drift",
     lambda s, b: "summary" in b and "events" in b and isinstance(b["events"], list),
 )
 
@@ -320,12 +348,14 @@ _finding_id = (
 if _finding_id is not None:
     test(
         f"TC-27 GET /api/findings/{_finding_id}/playbook returns 200",
-        "GET", f"/api/findings/{_finding_id}/playbook",
+        "GET",
+        f"/api/findings/{_finding_id}/playbook",
         lambda s, b: s == 200,
     )
     test(
         f"TC-28 GET /api/findings/{_finding_id}/playbook returns playbook keys",
-        "GET", f"/api/findings/{_finding_id}/playbook",
+        "GET",
+        f"/api/findings/{_finding_id}/playbook",
         lambda s, b: all(k in b for k in ("portal_steps", "cli_commands", "validation_steps")),
     )
 else:
@@ -346,13 +376,15 @@ if _scan_status == 200 and isinstance(_scan_body, list):
 if _scan_id is not None:
     test(
         f"TC-33 POST /api/scans/{_scan_id}/enrich returns 200",
-        "POST", f"/api/scans/{_scan_id}/enrich",
+        "POST",
+        f"/api/scans/{_scan_id}/enrich",
         lambda s, b: s == 200,
         body={},
     )
     test(
         f"TC-34 POST /api/scans/{_scan_id}/enrich returns status COMPLETED or already enriched",
-        "POST", f"/api/scans/{_scan_id}/enrich",
+        "POST",
+        f"/api/scans/{_scan_id}/enrich",
         lambda s, b: b.get("status") == "COMPLETED" or "already enriched" in b.get("message", ""),
         body={},
     )
@@ -362,22 +394,26 @@ else:
 
 test(
     "TC-35 GET /api/score/cve-summary returns status field",
-    "GET", "/api/score/cve-summary",
+    "GET",
+    "/api/score/cve-summary",
     lambda s, b: "status" in b,
 )
 test(
     "TC-24 GET /api/prioritization returns matrix and rankings keys",
-    "GET", "/api/prioritization",
+    "GET",
+    "/api/prioritization",
     lambda s, b: "matrix" in b and "rankings" in b and isinstance(b["matrix"], list),
 )
 test(
     "TC-25 GET /api/drift returns 200",
-    "GET", "/api/drift",
+    "GET",
+    "/api/drift",
     lambda s, b: s == 200,
 )
 test(
     "TC-26 GET /api/drift returns summary and events keys",
-    "GET", "/api/drift",
+    "GET",
+    "/api/drift",
     lambda s, b: "summary" in b and "events" in b and isinstance(b["events"], list),
 )
 
@@ -392,12 +428,14 @@ _finding_id = (
 if _finding_id is not None:
     test(
         f"TC-27 GET /api/findings/{_finding_id}/playbook returns 200",
-        "GET", f"/api/findings/{_finding_id}/playbook",
+        "GET",
+        f"/api/findings/{_finding_id}/playbook",
         lambda s, b: s == 200,
     )
     test(
         f"TC-28 GET /api/findings/{_finding_id}/playbook returns playbook keys",
-        "GET", f"/api/findings/{_finding_id}/playbook",
+        "GET",
+        f"/api/findings/{_finding_id}/playbook",
         lambda s, b: all(k in b for k in ("portal_steps", "cli_commands", "validation_steps")),
     )
 else:
@@ -408,13 +446,15 @@ else:
 print("\n=== Edge Cases ===")
 test(
     "TC-36 GET /nonexistent returns 404",
-    "GET", "/nonexistent-endpoint-xyz",
+    "GET",
+    "/nonexistent-endpoint-xyz",
     lambda s, b: s == 404,
     auth=True,
 )
 test(
     "TC-37 POST /api/scans/trigger with empty body returns 400 or starts scan",
-    "POST", "/api/scans/trigger",
+    "POST",
+    "/api/scans/trigger",
     # 400 = missing subscription_id (expected when no AZURE_SUBSCRIPTION_ID env var)
     # 200/201/202 = scan started (AZURE_SUBSCRIPTION_ID configured on server)
     # 500 = scan failed (bad credentials)
@@ -424,38 +464,42 @@ test(
 )
 test(
     "TC-38 GET /api/findings?limit=0 does not crash",
-    "GET", "/api/findings?limit=0",
+    "GET",
+    "/api/findings?limit=0",
     lambda s, b: s in (200, 400),
 )
 test(
     "TC-39 Response Content-Type is JSON",
-    "GET", "/api/findings",
+    "GET",
+    "/api/findings",
     lambda s, b: isinstance(b, dict),
 )
 
 # ── Summary ────────────────────────────────────────────────────────────────
 print("\n=== Summary ===")
-passed      = sum(1 for _, p in results if p is True)
-skipped     = sum(1 for _, p in results if p is None)
+passed = sum(1 for _, p in results if p is True)
+skipped = sum(1 for _, p in results if p is None)
 failed_tests = [name for name, p in results if p is False]
-total       = len(results)
+total = len(results)
 
 skip_note = f", {skipped} skipped" if skipped else ""
 print(f"  {passed}/{total - skipped} tests passed{skip_note}")
 
 if skipped:
-    print(f"\n  Skipped tests (not failures):")
+    print("\n  Skipped tests (not failures):")
     for name, p in results:
         if p is None:
             print(f"    - {name}")
-    print(f"\n  To enable real scan tests: RUN_REAL_SCAN=true with AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID")
+    print(
+        "\n  To enable real scan tests: RUN_REAL_SCAN=true with AZURE_SUBSCRIPTION_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID"  # noqa: E501
+    )
 
 if failed_tests:
-    print(f"\n  Failed tests:")
+    print("\n  Failed tests:")
     for name in failed_tests:
         print(f"    - {name}")
-    print(f"\nSmoke test FAILED. Do not open a PR until all tests pass.")
+    print("\nSmoke test FAILED. Do not open a PR until all tests pass.")
     sys.exit(1)
 else:
-    print(f"\n  All smoke tests passed.")
+    print("\n  All smoke tests passed.")
     sys.exit(0)

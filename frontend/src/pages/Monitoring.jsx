@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import ScoreGauge from '../components/monitoring/ScoreGauge';
 import TrendChart from '../components/monitoring/TrendChart';

@@ -12,12 +12,14 @@ from unittest.mock import patch
 from scanner.worker import run_worker, POLL_INTERVAL_SECONDS
 import uuid
 
+
 class StopWorker(BaseException):
     """Custom exception to break the infinite worker loop during tests."""
+
     pass
 
-class TestWorker(unittest.TestCase):
 
+class TestWorker(unittest.TestCase):
     def setUp(self):
         self.mock_db_url = "postgresql://user:pass@localhost/db"
         self.scan_id = str(uuid.uuid4())
@@ -35,10 +37,10 @@ class TestWorker(unittest.TestCase):
         3. Saves findings and updates status to 'completed'.
         """
         mock_env.return_value = self.mock_db_url
-        
+
         # Mock DB instance
         mock_db = mock_db_class.return_value
-        
+
         # Mock Engine instance
         mock_engine = mock_engine_class.return_value
         mock_engine.run_scan.return_value = {
@@ -46,14 +48,14 @@ class TestWorker(unittest.TestCase):
             "subscription_id": self.subscription_id,
             "findings": [{"rule_id": "AZ-STOR-001"}],
             "total_findings": 1,
-            "started_at": "2026-06-05T12:00:00Z"
+            "started_at": "2026-06-05T12:00:00Z",
         }
 
         # We need to stop the infinite loop. We'll raise StopWorker on the second call to recover_stale_scans.
         mock_db.recover_stale_scans.side_effect = [None, StopWorker()]
         mock_db.claim_next_pending_scan.side_effect = [
             {"scan_id": self.scan_id, "subscription_id": self.subscription_id},
-            None
+            None,
         ]
 
         with self.assertRaises(StopWorker):
@@ -64,7 +66,7 @@ class TestWorker(unittest.TestCase):
         mock_db.claim_next_pending_scan.assert_called()
         mock_engine.run_scan.assert_called_once_with(self.scan_id)
         mock_db.save_scan.assert_called_once()
-        
+
         # Check that result was marked completed before saving
         saved_result = mock_db.save_scan.call_args[0][0]
         self.assertEqual(saved_result["status"], "completed")
@@ -83,13 +85,13 @@ class TestWorker(unittest.TestCase):
         """
         mock_env.return_value = self.mock_db_url
         mock_db = mock_db_class.return_value
-        
+
         mock_db.recover_stale_scans.side_effect = [None, StopWorker()]
         mock_db.claim_next_pending_scan.side_effect = [
             {"scan_id": self.scan_id, "subscription_id": self.subscription_id},
-            None
+            None,
         ]
-        
+
         # Mock Engine to fail
         mock_engine = mock_engine_class.return_value
         mock_engine.run_scan.side_effect = RuntimeError("Azure Authentication Failed")
@@ -111,7 +113,7 @@ class TestWorker(unittest.TestCase):
         """Verify that the worker waits when the queue is empty."""
         mock_env.return_value = self.mock_db_url
         mock_db = mock_db_class.return_value
-        
+
         mock_db.recover_stale_scans.side_effect = [None, StopWorker()]
         mock_db.claim_next_pending_scan.return_value = None
 
@@ -119,6 +121,7 @@ class TestWorker(unittest.TestCase):
             run_worker()
 
         mock_sleep.assert_called_with(POLL_INTERVAL_SECONDS)
+
 
 if __name__ == "__main__":
     unittest.main()

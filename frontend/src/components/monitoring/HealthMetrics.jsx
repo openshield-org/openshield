@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiTrendingUp, FiTrendingDown, FiMinus } from 'react-icons/fi';
 import Card from '../shared/Card';
 

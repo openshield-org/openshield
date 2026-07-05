@@ -39,22 +39,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             is_disabled = state.lower() != "enabled"
 
         if is_disabled:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": server.id,
-                "resource_name": server.name,
-                "resource_type": "Microsoft.Sql/servers",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": resource_group,
-                    "auditing_state": getattr(policy, "state", "Unknown") if policy else "Unknown",
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": server.id,
+                    "resource_name": server.name,
+                    "resource_type": "Microsoft.Sql/servers",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": resource_group,
+                        "auditing_state": getattr(policy, "state", "Unknown") if policy else "Unknown",
+                    },
+                }
+            )
 
     return findings

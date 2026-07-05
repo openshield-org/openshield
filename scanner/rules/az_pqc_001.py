@@ -57,22 +57,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         min_tls = getattr(site_config, "min_tls_version", None) if site_config else None
 
         if _tls_version_below_13(min_tls):
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": app_id,
-                "resource_name": getattr(app, "name", ""),
-                "resource_type": "Microsoft.Web/sites",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": parsed.get("resource_group", ""),
-                    "min_tls_version": str(min_tls),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": app_id,
+                    "resource_name": getattr(app, "name", ""),
+                    "resource_type": "Microsoft.Web/sites",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": parsed.get("resource_group", ""),
+                        "min_tls_version": str(min_tls),
+                    },
+                }
+            )
 
     return findings

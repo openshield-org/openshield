@@ -60,21 +60,23 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 patching_ok = True
 
         if not patching_ok:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": vm.id,
-                "resource_name": vm_name,
-                "resource_type": "Microsoft.Compute/virtualMachines",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": rg,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vm.id,
+                    "resource_name": vm_name,
+                    "resource_type": "Microsoft.Compute/virtualMachines",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": rg,
+                    },
+                }
+            )
 
     return findings

@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiInbox } from 'react-icons/fi';
 
 export default function EmptyState({ icon: Icon = FiInbox, title = 'No data found', description = 'There is nothing to display here.' }) {

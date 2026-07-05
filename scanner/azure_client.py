@@ -29,9 +29,7 @@ class AzureClient:
     crash the scan engine.
     """
 
-    def __init__(
-        self, subscription_id: str, credential: Optional[Any] = None
-    ) -> None:
+    def __init__(self, subscription_id: str, credential: Optional[Any] = None) -> None:
         self.subscription_id = subscription_id
         self.credential = credential or DefaultAzureCredential()
 
@@ -62,9 +60,7 @@ class AzureClient:
             logger.error("get_storage_accounts failed: %s", exc)
             return []
 
-    def get_storage_lifecycle_policy(
-        self, resource_group: str, account_name: str
-    ) -> Optional[bool]:
+    def get_storage_lifecycle_policy(self, resource_group: str, account_name: str) -> Optional[bool]:
         """Check whether a storage account has a lifecycle management policy.
 
         Three-state return - the calling rule uses strict identity checks
@@ -85,9 +81,7 @@ class AzureClient:
         """
         try:
             client = StorageManagementClient(self.credential, self.subscription_id)
-            policy = client.management_policies.get(
-                resource_group, account_name, "default"
-            )
+            policy = client.management_policies.get(resource_group, account_name, "default")
             rules = getattr(getattr(policy, "policy", None), "rules", None)
             return bool(rules)
 
@@ -100,8 +94,7 @@ class AzureClient:
 
         except HttpResponseError as exc:
             logger.error(
-                "get_storage_lifecycle_policy(%s) HTTP %s - "
-                "check service principal permissions: %s",
+                "get_storage_lifecycle_policy(%s) HTTP %s - check service principal permissions: %s",
                 account_name,
                 exc.status_code,
                 exc,
@@ -116,9 +109,7 @@ class AzureClient:
             )
             return None
 
-    def get_storage_service_logging(
-        self, resource_group: str, account_name: str, service: str
-    ) -> Optional[bool]:
+    def get_storage_service_logging(self, resource_group: str, account_name: str, service: str) -> Optional[bool]:
         """Check Azure Monitor diagnostic settings for a storage service sub-resource.
 
         Three-state return - the calling rule uses strict identity checks
@@ -141,15 +132,14 @@ class AzureClient:
         """
         _REQUIRED = {"StorageRead", "StorageWrite", "StorageDelete"}
         _SERVICE_MAP = {
-            "blob":  "blobServices",
+            "blob": "blobServices",
             "queue": "queueServices",
             "table": "tableServices",
         }
         svc_path = _SERVICE_MAP.get(service)
         if not svc_path:
             logger.error(
-                "get_storage_service_logging: unknown service %r - must be "
-                "blob, queue, or table",
+                "get_storage_service_logging: unknown service %r - must be blob, queue, or table",
                 service,
             )
             return None
@@ -165,9 +155,7 @@ class AzureClient:
             settings = list(client.diagnostic_settings.list(resource_uri))
             for setting in settings:
                 enabled_categories = {
-                    log.category
-                    for log in (getattr(setting, "logs", None) or [])
-                    if getattr(log, "enabled", False)
+                    log.category for log in (getattr(setting, "logs", None) or []) if getattr(log, "enabled", False)
                 }
                 if _REQUIRED.issubset(enabled_categories):
                     return True
@@ -175,8 +163,7 @@ class AzureClient:
 
         except HttpResponseError as exc:
             logger.error(
-                "get_storage_service_logging(%s/%s) HTTP %s - "
-                "check service principal permissions: %s",
+                "get_storage_service_logging(%s/%s) HTTP %s - check service principal permissions: %s",
                 account_name,
                 service,
                 exc.status_code,
@@ -206,9 +193,7 @@ class AzureClient:
             logger.error("get_network_security_groups failed: %s", exc)
             return []
 
-    def get_network_interface(
-        self, resource_group: str, nic_name: str
-    ) -> Optional[Any]:
+    def get_network_interface(self, resource_group: str, nic_name: str) -> Optional[Any]:
         """Fetch a single NIC by resource group and name."""
         try:
             client = NetworkManagementClient(self.credential, self.subscription_id)
@@ -270,6 +255,7 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_vnet_peerings(%s) failed: %s", vnet_name, exc)
             return []
+
     def get_load_balancers(self) -> List[Any]:
         """List all load balancers in the subscription."""
         try:
@@ -283,6 +269,7 @@ class AzureClient:
         """List all DNS zones in the subscription."""
         try:
             from azure.mgmt.dns import DnsManagementClient
+
             client = DnsManagementClient(self.credential, self.subscription_id)
             return list(client.zones.list())
         except Exception as exc:
@@ -293,6 +280,7 @@ class AzureClient:
         """List all record sets in a DNS zone."""
         try:
             from azure.mgmt.dns import DnsManagementClient
+
             client = DnsManagementClient(self.credential, self.subscription_id)
             return list(client.record_sets.list_by_dns_zone(resource_group, zone_name))
         except Exception as exc:
@@ -316,25 +304,22 @@ class AzureClient:
         """List all App Services in the subscription."""
         try:
             from azure.mgmt.web import WebSiteManagementClient
+
             client = WebSiteManagementClient(self.credential, self.subscription_id)
             return list(client.web_apps.list())
         except Exception as exc:
             logger.error("get_web_apps failed: %s", exc)
             return []
 
-    def get_vm_extensions(
-        self, resource_group: str, vm_name: str
-    ) -> Optional[List[Any]]:
+    def get_vm_extensions(self, resource_group: str, vm_name: str) -> Optional[List[Any]]:
         """List all extensions installed on a virtual machine."""
         try:
-            result = ComputeManagementClient(
-                self.credential, self.subscription_id
-            ).virtual_machine_extensions.list(resource_group, vm_name)
+            result = ComputeManagementClient(self.credential, self.subscription_id).virtual_machine_extensions.list(
+                resource_group, vm_name
+            )
             return list(getattr(result, "value", []) or [])
         except Exception as exc:
-            logger.error(
-                "get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc
-            )
+            logger.error("get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc)
             return None
 
     # ------------------------------------------------------------------ #
@@ -359,30 +344,22 @@ class AzureClient:
             logger.error("get_sql_servers failed: %s", exc)
             return []
 
-    def get_sql_server_auditing_policy(
-        self, resource_group: str, server_name: str
-    ) -> Optional[Any]:
+    def get_sql_server_auditing_policy(self, resource_group: str, server_name: str) -> Optional[Any]:
         """Fetch the blob auditing policy for an Azure SQL server."""
         try:
             client = SqlManagementClient(self.credential, self.subscription_id)
             return client.server_blob_auditing_policies.get(resource_group, server_name)
         except Exception as exc:
-            logger.error(
-                "get_sql_server_auditing_policy(%s) failed: %s", server_name, exc
-            )
+            logger.error("get_sql_server_auditing_policy(%s) failed: %s", server_name, exc)
             return None
 
-    def get_sql_server_firewall_rules(
-        self, resource_group: str, server_name: str
-    ) -> List[Any]:
+    def get_sql_server_firewall_rules(self, resource_group: str, server_name: str) -> List[Any]:
         """List all firewall rules for an Azure SQL server."""
         try:
             client = SqlManagementClient(self.credential, self.subscription_id)
             return list(client.firewall_rules.list_by_server(resource_group, server_name))
         except Exception as exc:
-            logger.error(
-                "get_sql_server_firewall_rules(%s) failed: %s", server_name, exc
-            )
+            logger.error("get_sql_server_firewall_rules(%s) failed: %s", server_name, exc)
             return []
 
     # ------------------------------------------------------------------ #
@@ -402,19 +379,19 @@ class AzureClient:
         """List all certificates in a Key Vault using the Key Vault data plane API."""
         try:
             from azure.keyvault.certificates import CertificateClient
+
             vault_url = f"https://{vault_name}.vault.azure.net"
             client = CertificateClient(vault_url=vault_url, credential=self.credential)
             return list(client.list_properties_of_certificates())
         except Exception as exc:
-            logger.error(
-                "get_key_vault_certificates(%s) failed: %s", vault_name, exc
-            )
+            logger.error("get_key_vault_certificates(%s) failed: %s", vault_name, exc)
             return []
 
     def get_key_vault_keys(self, vault_name: str) -> List[Any]:
         """List all keys in a Key Vault using the Key Vault data plane API."""
         try:
             from azure.keyvault.keys import KeyClient
+
             vault_url = f"https://{vault_name}.vault.azure.net"
             client = KeyClient(vault_url=vault_url, credential=self.credential)
             return list(client.list_properties_of_keys())
@@ -479,16 +456,10 @@ class AzureClient:
     def get_service_principals(self) -> List[Any]:
         """Return role assignments whose principal type is ServicePrincipal."""
         try:
-            client = AuthorizationManagementClient(
-                self.credential, self.subscription_id
-            )
+            client = AuthorizationManagementClient(self.credential, self.subscription_id)
             scope = f"/subscriptions/{self.subscription_id}"
             assignments = list(client.role_assignments.list_for_scope(scope))
-            return [
-                a
-                for a in assignments
-                if getattr(a, "principal_type", "") == "ServicePrincipal"
-            ]
+            return [a for a in assignments if getattr(a, "principal_type", "") == "ServicePrincipal"]
         except Exception as exc:
             logger.error("get_service_principals failed: %s", exc)
             return []
@@ -497,18 +468,18 @@ class AzureClient:
         """List all PostgreSQL Flexible Server instances in the subscription."""
         try:
             from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
+
             client = FlexClient(self.credential, self.subscription_id)
             return list(client.servers.list())
         except Exception as exc:
             logger.error("get_postgresql_flexible_servers failed: %s", exc)
             return []
 
-    def get_postgresql_flexible_server_parameters(
-        self, resource_group: str, server_name: str
-    ) -> List[Any]:
+    def get_postgresql_flexible_server_parameters(self, resource_group: str, server_name: str) -> List[Any]:
         """List all configuration parameters for a PostgreSQL Flexible Server."""
         try:
             from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexClient
+
             client = FlexClient(self.credential, self.subscription_id)
             return list(client.configurations.list_by_server(resource_group, server_name))
         except Exception as exc:
@@ -545,12 +516,9 @@ class AzureClient:
         """List all regions that have at least one resource deployed."""
         try:
             from azure.mgmt.resource import ResourceManagementClient
+
             client = ResourceManagementClient(self.credential, self.subscription_id)
-            regions = {
-                r.location.lower().replace(" ", "")
-                for r in client.resources.list()
-                if r.location
-            }
+            regions = {r.location.lower().replace(" ", "") for r in client.resources.list() if r.location}
             return list(regions)
         except Exception as exc:
             logger.error("get_regions_with_resources failed: %s", exc)
@@ -560,11 +528,7 @@ class AzureClient:
         """List all regions that already have Network Watcher enabled."""
         try:
             client = NetworkManagementClient(self.credential, self.subscription_id)
-            regions = {
-                w.location.lower().replace(" ", "")
-                for w in client.network_watchers.list_all()
-                if w.location
-            }
+            regions = {w.location.lower().replace(" ", "") for w in client.network_watchers.list_all() if w.location}
             return list(regions)
         except Exception as exc:
             logger.error("get_network_watcher_regions failed: %s", exc)

@@ -41,14 +41,10 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     try:
         from azure.mgmt.monitor import MonitorManagementClient
 
-        monitor_client = MonitorManagementClient(
-            azure_client.credential, subscription_id
-        )
+        monitor_client = MonitorManagementClient(azure_client.credential, subscription_id)
         alerts = list(monitor_client.activity_log_alerts.list_by_subscription_id())
     except Exception as exc:
-        logger.error(
-            "AZ-IDN-009: Failed to list activity log alerts: %s", exc
-        )
+        logger.error("AZ-IDN-009: Failed to list activity log alerts: %s", exc)
         return findings
 
     for alert in alerts:
@@ -63,29 +59,30 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         operations = [
             leaf.equals
             for leaf in all_of
-            if getattr(leaf, "field", "") == "operationName"
-            and getattr(leaf, "equals", "")
+            if getattr(leaf, "field", "") == "operationName" and getattr(leaf, "equals", "")
         ]
 
         if any(op.lower() == TARGET_OPERATION.lower() for op in operations):
             return findings
 
-    findings.append({
-        "rule_id": RULE_ID,
-        "rule_name": RULE_NAME,
-        "severity": SEVERITY,
-        "category": CATEGORY,
-        "resource_id": f"/subscriptions/{subscription_id}",
-        "resource_name": f"subscription/{subscription_id}",
-        "resource_type": "Microsoft.Insights/activityLogAlerts",
-        "description": DESCRIPTION,
-        "remediation": REMEDIATION,
-        "playbook": PLAYBOOK,
-        "frameworks": FRAMEWORKS,
-        "metadata": {
-            "subscription_id": subscription_id,
-            "missing_operation": TARGET_OPERATION,
-        },
-    })
+    findings.append(
+        {
+            "rule_id": RULE_ID,
+            "rule_name": RULE_NAME,
+            "severity": SEVERITY,
+            "category": CATEGORY,
+            "resource_id": f"/subscriptions/{subscription_id}",
+            "resource_name": f"subscription/{subscription_id}",
+            "resource_type": "Microsoft.Insights/activityLogAlerts",
+            "description": DESCRIPTION,
+            "remediation": REMEDIATION,
+            "playbook": PLAYBOOK,
+            "frameworks": FRAMEWORKS,
+            "metadata": {
+                "subscription_id": subscription_id,
+                "missing_operation": TARGET_OPERATION,
+            },
+        }
+    )
 
     return findings

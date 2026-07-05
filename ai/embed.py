@@ -41,10 +41,8 @@ def build_vectorstore():
     # 2. Initialize client
     VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
     from chromadb.config import Settings
-    client = chromadb.PersistentClient(
-        path=str(VECTORSTORE_DIR),
-        settings=Settings(anonymized_telemetry=False)
-    )
+
+    client = chromadb.PersistentClient(path=str(VECTORSTORE_DIR), settings=Settings(anonymized_telemetry=False))
 
     # 3. Create a temporary collection for safe building
     temp_name = f"{COLLECTION_NAME}_temp"
@@ -55,25 +53,25 @@ def build_vectorstore():
     collection = client.create_collection(temp_name)
 
     # 4. Add to vector store in batches to prevent memory spikes
-    batch_size = 50 # Small batch size for 8GB RAM machines
+    batch_size = 50  # Small batch size for 8GB RAM machines
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i : i + batch_size]
-        
+
         collection.add(
             ids=[c["id"] for c in batch],
             documents=[c["content"] for c in batch],
             metadatas=[c["metadata"] for c in batch],
         )
         print(f"  Progress: {min(i + batch_size, len(chunks))}/{len(chunks)} chunks embedded...")
-    
+
     # 5. Atomic Swap: Delete main and rename temp to main
     try:
         client.delete_collection(COLLECTION_NAME)
     except Exception:
         pass
-    
+
     collection.modify(name=COLLECTION_NAME)
-    
+
     logger.info("Successfully rebuilt vector store '%s' with %d chunks.", COLLECTION_NAME, len(chunks))
     return len(chunks)
 

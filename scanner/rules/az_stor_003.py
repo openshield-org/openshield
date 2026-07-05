@@ -16,8 +16,8 @@ RULE_NAME = "Storage Account Has No Lifecycle Management Policy"
 SEVERITY = "MEDIUM"
 CATEGORY = "Storage"
 FRAMEWORKS = {
-    "CIS":      "3.7",
-    "NIST":     "PR.DS-3",
+    "CIS": "3.7",
+    "NIST": "PR.DS-3",
     "ISO27001": "A.8.3.1",
 }
 DESCRIPTION = (
@@ -38,6 +38,7 @@ PLAYBOOK = "playbooks/cli/fix_az_stor_003.sh"
 
 
 # ── Required scan function ───────────────────────────────────────────────────
+
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect storage accounts with no lifecycle management policy.
@@ -79,9 +80,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             continue
 
         # True = compliant, False = no policy, None = could not determine
-        policy_status: Optional[bool] = azure_client.get_storage_lifecycle_policy(
-            resource_group, account_name
-        )
+        policy_status: Optional[bool] = azure_client.get_storage_lifecycle_policy(resource_group, account_name)
 
         if policy_status is None:
             # Permissions error or unexpected SDK failure.
@@ -96,22 +95,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             continue
 
         if policy_status is False:
-            findings.append({
-                "rule_id":       RULE_ID,
-                "rule_name":     RULE_NAME,
-                "severity":      SEVERITY,
-                "category":      CATEGORY,
-                "resource_id":   resource_id,
-                "resource_name": account_name,
-                "resource_type": "Microsoft.Storage/storageAccounts",
-                "description":   DESCRIPTION,
-                "remediation":   REMEDIATION,
-                "playbook":      PLAYBOOK,
-                "frameworks":    FRAMEWORKS,
-                "metadata": {
-                    "resource_group": resource_group,
-                    "location":       location,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": resource_id,
+                    "resource_name": account_name,
+                    "resource_type": "Microsoft.Storage/storageAccounts",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": resource_group,
+                        "location": location,
+                    },
+                }
+            )
 
     return findings

@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiDatabase, FiServer, FiWifi, FiUser, FiHardDrive, FiKey, FiEye } from 'react-icons/fi';
 import RiskBadge from '../shared/RiskBadge';
 import EmptyState from '../shared/EmptyState';

@@ -1,12 +1,4 @@
-import React from 'react';
-import { FiZap } from 'react-icons/fi';
 import SeverityBadge from '../shared/SeverityBadge';
-
-const SEVERITY_BG = {
-  HIGH:   'bg-red-50 dark:bg-red-900/20 text-severity-high',
-  MEDIUM: 'bg-orange-50 dark:bg-orange-900/20 text-severity-medium',
-  LOW:    'bg-green-50 dark:bg-green-900/20 text-severity-low',
-};
 
 const RANK_BG = {
   1: 'bg-red-500 text-white',

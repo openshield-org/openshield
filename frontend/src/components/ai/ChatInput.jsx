@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiSend } from 'react-icons/fi';
 
 export default function ChatInput({ onSend, disabled }) {

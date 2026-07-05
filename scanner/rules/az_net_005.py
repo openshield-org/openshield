@@ -31,22 +31,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         ddos = getattr(vnet, "ddos_protection_plan", None)
         enable_ddos = getattr(vnet, "enable_ddos_protection", False)
         if not ddos and not enable_ddos:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": getattr(vnet, "id", ""),
-                "resource_name": getattr(vnet, "name", ""),
-                "resource_type": "Microsoft.Network/virtualNetworks",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "location": getattr(vnet, "location", ""),
-                    "ddos_protection": enable_ddos,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": getattr(vnet, "id", ""),
+                    "resource_name": getattr(vnet, "name", ""),
+                    "resource_type": "Microsoft.Network/virtualNetworks",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "location": getattr(vnet, "location", ""),
+                        "ddos_protection": enable_ddos,
+                    },
+                }
+            )
 
     return findings

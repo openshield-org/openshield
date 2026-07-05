@@ -1,6 +1,6 @@
-flask==3.0.0
-flask-cors==4.0.0
-azure-identity==1.15.0
+flask==3.1.3
+flask-cors==6.0.5
+azure-identity==1.25.3
 azure-mgmt-storage==21.0.0
 azure-mgmt-network==25.0.0
 azure-mgmt-compute==30.0.0
@@ -14,12 +14,12 @@ azure-monitor-ingestion==1.0.3
 azure-mgmt-monitor==6.0.0
 azure-mgmt-dns==8.0.0
 psycopg2-binary==2.9.9
-python-dotenv==1.0.0
-pyjwt==2.8.0
-requests==2.31.0
+python-dotenv==1.2.2
+pyjwt==2.13.0
+requests==2.34.2
 pyyaml==6.0.1
-gunicorn==21.2.0
-cryptography==42.0.5
+gunicorn==26.0.0
+cryptography==49.0.0
 msrest==0.7.1
 azure-mgmt-postgresqlflexibleservers==1.0.0b1
 azure-keyvault-certificates==4.8.0

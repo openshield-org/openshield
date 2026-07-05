@@ -14,14 +14,10 @@ DEFAULT_MODELS = {
 }
 
 
-def get_completion(
-    provider: str, api_key: str, prompt: str, model: str = None
-) -> str:
+def get_completion(provider: str, api_key: str, prompt: str, model: str = None) -> str:
     provider = provider.lower().strip()
     if provider not in PROVIDERS:
-        raise ValueError(
-            f"Unsupported provider '{provider}'. Choose from: {', '.join(PROVIDERS)}"
-        )
+        raise ValueError(f"Unsupported provider '{provider}'. Choose from: {', '.join(PROVIDERS)}")
     if not api_key or not api_key.strip():
         raise ValueError("api_key is required and cannot be empty")
 
