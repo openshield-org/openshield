@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 # Paths that are always public regardless of environment or demo mode
 _ALWAYS_PUBLIC = {"/", "/health"}
 
+# Maximum accepted request body size (bytes). Guards AI endpoints and the rest
+# of the API against oversized payloads tying up worker threads.
+_MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
+
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
 _GENERATE_CMD = "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
@@ -96,6 +100,7 @@ def create_app() -> Flask:
     # Configuration & Security                                             #
     # ------------------------------------------------------------------ #
     app.config["JWT_SECRET"] = _resolve_jwt_secret()
+    app.config["MAX_CONTENT_LENGTH"] = _MAX_CONTENT_LENGTH
 
     # ------------------------------------------------------------------ #
     # CORS                                                                  #
@@ -241,6 +246,10 @@ def create_app() -> Flask:
     @app.errorhandler(404)
     def not_found(exc):
         return jsonify({"error": "Not found"}), 404
+
+    @app.errorhandler(413)
+    def payload_too_large(exc):
+        return jsonify({"error": "Request body too large"}), 413
 
     @app.errorhandler(500)
     def internal_error(exc):
