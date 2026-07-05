@@ -1,11 +1,10 @@
 """Tests for JWT authentication middleware — production and demo modes."""
 
-import os
 import secrets
 import time
+
 import jwt
 import pytest
-from unittest.mock import MagicMock
 
 _SECRET = secrets.token_urlsafe(32)
 
@@ -23,8 +22,7 @@ def _make_token() -> str:
 @pytest.fixture
 def prod_client(monkeypatch):
     """Flask test client with default (JWT-required) auth mode."""
-    monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
-    os.environ.pop("OPENSHIELD_PUBLIC_DEMO", None)
+    monkeypatch.delenv("OPENSHIELD_PUBLIC_DEMO", raising=False)
     from api.app import create_app
 
     app = create_app()
@@ -36,17 +34,13 @@ def prod_client(monkeypatch):
 @pytest.fixture
 def demo_client(monkeypatch):
     """Flask test client with OPENSHIELD_PUBLIC_DEMO=true."""
-    monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
-    os.environ["OPENSHIELD_PUBLIC_DEMO"] = "true"
-    try:
-        from api.app import create_app
+    monkeypatch.setenv("OPENSHIELD_PUBLIC_DEMO", "true")
+    from api.app import create_app
 
-        app = create_app()
-        app.config["TESTING"] = True
-        app.config["JWT_SECRET"] = _SECRET
-        yield app.test_client()
-    finally:
-        os.environ.pop("OPENSHIELD_PUBLIC_DEMO", None)
+    app = create_app()
+    app.config["TESTING"] = True
+    app.config["JWT_SECRET"] = _SECRET
+    return app.test_client()
 
 
 # ── /health is always public ─────────────────────────────────────────────────

@@ -8,7 +8,7 @@ This test plan covers the verification of the OpenShield API deployment
 to Render (Starter instance or higher). The goal is to confirm:
 
 - The Render Web Service builds and deploys the Flask app successfully.
-- The database is automatically initialized on startup via `init_db`.
+- Alembic upgrades the database once in `startup.sh` before application processes start.
 - The pre-commit hook and GitHub Actions CI pipeline gate the code properly.
 - The CI pipeline is **community-friendly**, allowing forks to pass even without custom secrets.
 - Real Azure scan tests are gated behind `RUN_REAL_SCAN=true` so contributor CI never depends on live Azure credentials.
@@ -22,7 +22,7 @@ To ensure the highest reliability of the deployment while remaining community-fr
 
 ### 2.1 Infrastructure and Pipeline Strategy
 * **Targeting Render over Azure F1:** Azure App Service's F1 tier imposes a strict 60 CPU-minute daily cap. Render provides unmetered CPU and always-on availability on paid instances, making it significantly more reliable for production environments.
-* **Database Initialization:** The `api/models/finding.py` was updated with an `init_db` method. This method ensures that all required tables (`scans`, `findings`) are created automatically during the first deployment, preventing HTTP 500 errors.
+* **Database Migrations:** `startup.sh` runs `alembic upgrade head` before starting the worker and Gunicorn. Existing production databases must complete the documented one-time `alembic stamp head` step before this release is deployed.
 * **Pre-commit Hook:** Fails fast. By running syntax checks and local API smoke tests *before* the commit is allowed, we prevent broken code from polluting the remote branch.
 * **Community-Friendly CI Gate:** The GitHub Action is designed to be zero-friction for contributors.
     * **Optional Smoke Tests:** If `JWT_SECRET` is not set (typical for forks), the smoke test step is gracefully skipped rather than failing the build.
@@ -81,8 +81,8 @@ API_URL=https://openshield-api.onrender.com JWT_SECRET=<secret> \
 
 | File | Purpose |
 |---|---|
-| `startup.sh` | Container startup script, DB initialization, and Gunicorn execution |
-| `api/models/finding.py` | Added `init_db` to ensure schema existence on startup |
+| `startup.sh` | Runs Alembic once, then starts the worker and Gunicorn |
+| `alembic/` | Versioned PostgreSQL schema migrations |
 | `.github/workflows/deploy.yml` | Flexible GitHub Actions workflow (optional smoke tests) |
 | `tests/smoke_test.py` | 23-case functional test suite with default secret support |
 | `.git/hooks/pre-commit` | Local Git hook enforcing syntax checks and local smoke tests |
@@ -139,7 +139,7 @@ To enable the automated smoke tests in the CI/CD pipeline, you **must** add the 
 
 **DP-02 — Render executes startup script successfully**
 * **Steps:** Push code to GitHub and monitor Render deployment logs.
-* **Expected:** Logs show DB initialization (`Database initialized.`) and Gunicorn starting.
+* **Expected:** Logs show Alembic upgrading to `head` before the worker and Gunicorn start.
 
 **DP-03 — GitHub Actions CI pipeline passes**
 * **Steps:** Push a commit and monitor the GitHub Actions tab.

@@ -128,20 +128,6 @@ def create_app() -> Flask:
             "Do not use this setting with real Azure scan data in production."
         )
 
-    # ------------------------------------------------------------------ #
-    # Database Management                                                   #
-    # ------------------------------------------------------------------ #
-    # Skip migrations when DATABASE_URL is not set (e.g. during unit tests).
-    # Deployment startup always sets DATABASE_URL so migrations still run in
-    # production and staging. Tests that need a real database should set
-    # DATABASE_URL explicitly in their environment.
-    if os.environ.get("DATABASE_URL"):
-        with app.app_context():
-            db = DatabaseManager()
-            db.run_migrations()
-    else:
-        logger.info("DATABASE_URL not set — skipping database migrations. Set DATABASE_URL to connect to PostgreSQL.")
-
     @app.teardown_appcontext
     def close_db(error=None):
         """Ensure the database connection is closed after the request."""

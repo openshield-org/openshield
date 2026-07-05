@@ -162,6 +162,10 @@ export AZURE_CLIENT_ID=your-client-id
 export AZURE_CLIENT_SECRET=your-client-secret
 export AZURE_TENANT_ID=your-tenant-id
 export JWT_SECRET=your-strong-secret   # used to protect write endpoints (scan trigger, AI)
+export DATABASE_URL=postgresql://openshield:openshield@localhost:5432/openshield
+
+# Create or update the database schema
+alembic upgrade head
 
 # Run a scan
 python -c "
@@ -174,6 +178,9 @@ print(json.dumps(result, indent=2))
 # Start the API
 FLASK_APP=api/app.py flask run
 ```
+
+See [Database Migrations](docs/database-migrations.md) for schema changes and the
+one-time onboarding step required for existing production databases.
 
 **Frontend (React dashboard)**
 
