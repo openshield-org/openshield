@@ -16,6 +16,7 @@ Design decisions:
   on failure - and never see an exception from this module.
 """
 
+import threading
 import time
 import logging
 import urllib.request
@@ -35,15 +36,22 @@ _RESULTS_PER_PAGE = 5          # Top 5 CVEs per finding is enough for display
 # Resets each process - intentional, NVD data changes slowly.
 _cache: dict[str, list[dict]] = {}
 _last_request_time: float = 0.0
+_rate_limit_lock = threading.Lock()
 
 
 def _wait_for_rate_limit() -> None:
-    """Sleep until the minimum gap between NVD requests has elapsed."""
+    """Sleep until the minimum gap between NVD requests has elapsed.
+
+    Guarded by a lock so concurrent callers (e.g. background enrichment
+    threads) can't both read a stale _last_request_time and fire requests
+    closer together than _REQUEST_DELAY_SECONDS apart.
+    """
     global _last_request_time
-    elapsed = time.time() - _last_request_time
-    if elapsed < _REQUEST_DELAY_SECONDS:
-        time.sleep(_REQUEST_DELAY_SECONDS - elapsed)
-    _last_request_time = time.time()
+    with _rate_limit_lock:
+        elapsed = time.time() - _last_request_time
+        if elapsed < _REQUEST_DELAY_SECONDS:
+            time.sleep(_REQUEST_DELAY_SECONDS - elapsed)
+        _last_request_time = time.time()
 
 
 def _parse_cve_item(item: dict) -> Optional[dict]:
