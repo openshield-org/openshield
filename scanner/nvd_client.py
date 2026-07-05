@@ -35,23 +35,32 @@ _RESULTS_PER_PAGE = 5          # Top 5 CVEs per finding is enough for display
 # In-memory cache. Keyed by "keyword:results_per_page".
 # Resets each process - intentional, NVD data changes slowly.
 _cache: dict[str, list[dict]] = {}
-_last_request_time: float = 0.0
-_rate_limit_lock = threading.Lock()
+
+
+class _RateLimiter:
+    """Tracks the last NVD request time, guarded by a lock so concurrent
+    callers (e.g. background enrichment threads) can't both read a stale
+    timestamp and fire requests closer together than _REQUEST_DELAY_SECONDS
+    apart."""
+
+    def __init__(self) -> None:
+        self._last_request_time = 0.0
+        self._lock = threading.Lock()
+
+    def wait(self, delay_seconds: float) -> None:
+        with self._lock:
+            elapsed = time.time() - self._last_request_time
+            if elapsed < delay_seconds:
+                time.sleep(delay_seconds - elapsed)
+            self._last_request_time = time.time()
+
+
+_rate_limiter = _RateLimiter()
 
 
 def _wait_for_rate_limit() -> None:
-    """Sleep until the minimum gap between NVD requests has elapsed.
-
-    Guarded by a lock so concurrent callers (e.g. background enrichment
-    threads) can't both read a stale _last_request_time and fire requests
-    closer together than _REQUEST_DELAY_SECONDS apart.
-    """
-    global _last_request_time
-    with _rate_limit_lock:
-        elapsed = time.time() - _last_request_time
-        if elapsed < _REQUEST_DELAY_SECONDS:
-            time.sleep(_REQUEST_DELAY_SECONDS - elapsed)
-        _last_request_time = time.time()
+    """Sleep until the minimum gap between NVD requests has elapsed."""
+    _rate_limiter.wait(_REQUEST_DELAY_SECONDS)
 
 
 def _parse_cve_item(item: dict) -> Optional[dict]:

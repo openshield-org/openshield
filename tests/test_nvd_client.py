@@ -266,7 +266,7 @@ class TestQueryNvd(unittest.TestCase):
 
 class TestRateLimitThreadSafety(unittest.TestCase):
     def setUp(self):
-        patcher = patch("scanner.nvd_client._last_request_time", 0.0)
+        patcher = patch("scanner.nvd_client._rate_limiter._last_request_time", 0.0)
         patcher.start()
         self.addCleanup(patcher.stop)
 
