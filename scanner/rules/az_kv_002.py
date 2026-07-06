@@ -7,7 +7,7 @@ RULE_NAME = "Key Vault Allows Public Network Access Without Private Endpoint"
 SEVERITY = "HIGH"
 CATEGORY = "KeyVault"
 FRAMEWORKS = {
-    "CIS": "8.3",
+    "CIS": "8.7",
     "NIST": "AC-17",
     "ISO27001": "A.13.1.1"
 }

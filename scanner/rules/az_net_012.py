@@ -20,7 +20,7 @@ REMEDIATION = (
 )
 PLAYBOOK = "playbooks/cli/fix_az_net_012.sh"
 FRAMEWORKS = {
-    "CIS": "6.5",
+    "CIS": "6.7",
     "NIST": "DE.CM-1",
     "ISO27001": "A.12.4.1",
     "SOC2": "CC7.2",

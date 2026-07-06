@@ -49,7 +49,7 @@
       "description": "Application Gateway should have Web Application Firewall enabled in Prevention mode. WAF protects web applications from common exploits including OWASP Top 10 vulnerabilities such as SQL injection and cross-site scripting."
     },
     "AZ-NET-008": {
-      "control_id": "9.1",
+      "control_id": "9.7",
       "control_name": "Ensure that Load Balancers have backend pools configured",
       "description": "Load balancers with no backend pool configured are either misconfigured or leftover resources. They represent unnecessary cost and poor resource hygiene and should be removed or configured correctly."
     },
@@ -59,12 +59,12 @@
       "description": "VPN gateway connections should use IKEv2 rather than the outdated IKEv1 protocol. IKEv2 provides improved authentication, better performance and built-in NAT traversal support compared to IKEv1."
     },
     "AZ-NET-010": {
-      "control_id": "9.2",
+      "control_id": "9.10",
       "control_name": "Ensure that all subnets have a Network Security Group attached",
       "description": "All subnets except gateway subnets should have a Network Security Group attached. Without an NSG at subnet level, resources in the subnet have no network layer access control and are potentially reachable from other subnets or the internet."
     },
     "AZ-IDN-001": {
-      "control_id": "1.23",
+      "control_id": "1.24",
       "control_name": "Ensure That No Custom Subscription Owner Roles Are Created",
       "description": "Service principals or custom roles should not be assigned the Owner role at subscription scope. The Owner role grants full control including the ability to modify access controls. Assignment should follow the principle of least privilege."
     },
@@ -114,8 +114,8 @@
       "description": "SQL Server audit logs must be enabled and retained for a minimum of 90 days. Enabling auditing provides a record of database events that can be used to detect threats, investigate incidents, and demonstrate compliance."
     },
     "AZ-CMP-001": {
-      "control_id": "7.2",
-      "control_name": "Ensure that 'OS disk' are encrypted",
+      "control_id": "7.1",
+      "control_name": "Ensure that Network Security Groups are attached to network interfaces with public IP addresses",
       "description": "Virtual machines that are reachable from the internet should have Network Security Groups attached to their network interfaces to control and restrict inbound and outbound traffic, reducing the attack surface."
     },
     "AZ-CMP-002": {
@@ -134,7 +134,7 @@
       "description": "The virtual machine does not have automatic OS patching enabled. CIS 8.3 requires that OS patches are applied in a timely manner. Unpatched VMs are vulnerable to known exploits targeting unpatched OS vulnerabilities."
     },
     "AZ-KV-001": {
-      "control_id": "8.5",
+      "control_id": "8.8",
       "control_name": "Ensure the Key Vault is Recoverable",
       "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
     },
@@ -149,12 +149,12 @@
       "description": "Enabling diagnostic logging for Azure Storage blob, queue, and table services records read, write, and delete operations. Without logging, unauthorized access, data exfiltration, or destructive operations on storage services cannot be detected or investigated."
     },
     "AZ-STOR-005": {
-      "control_id": "3.1",
+      "control_id": "3.8",
       "control_name": "Ensure that storage accounts use geo-redundant replication",
       "description": "Storage accounts configured with locally redundant (LRS) or zone-redundant (ZRS) replication do not replicate data outside the primary region. A regional disaster or prolonged outage could result in data unavailability or data loss. Geo-redundant storage (GRS or GZRS) replicates data asynchronously to a secondary Azure region, protecting against region-wide failures."
     },
     "AZ-KV-002": {
-      "control_id": "8.3",
+      "control_id": "8.7",
       "control_name": "Ensure that public network access to Key Vault is disabled",
       "description": "Azure Key Vault should not allow public network access unless absolutely necessary. Enabling public access increases the attack surface and exposes sensitive secrets, keys, and certificates to potential unauthorized access. Private endpoints should be used to restrict access to trusted networks."
     },
@@ -169,7 +169,7 @@
       "description": "Network Watcher should be enabled in all regions where Azure resources are deployed. Network Watcher provides network monitoring, diagnostics, and logging capabilities essential for investigating network-level incidents."
     },
     "AZ-NET-012": {
-      "control_id": "6.5",
+      "control_id": "6.7",
       "control_name": "Ensure that Network Watcher flow logs are enabled for Network Security Groups",
       "description": "Network Security Group flow logs should be enabled through Network Watcher so network traffic can be audited and investigated. Without flow logs, lateral movement and suspicious network activity cannot be reconstructed."
     },
@@ -189,7 +189,7 @@
       "description": "Enabling 'Allow access to Azure services' on a SQL Server firewall creates a rule that permits any Azure-hosted resource — including services from other tenants — to connect to the server. This significantly increases the attack surface. Access should be restricted to specific trusted IP ranges or private endpoints."
     },
     "AZ-IDN-004": {
-      "control_id": "1.14",
+      "control_id": "1.16",
       "control_name": "Ensure that 'Privileged Identity Management' is used to manage privileged access",
       "description": "Privileged Identity Management provides time-based and approval-based role activation to mitigate the risk of excessive, unnecessary, or misused access permissions on resources. Without PIM, admin roles are permanently assigned with no just-in-time controls or approval workflows."
     },
@@ -204,19 +204,19 @@
       "description": "Virtual networks should be protected by an Azure Firewall rather than relying on Network Security Groups alone. Azure Firewall provides centralized, stateful traffic inspection, FQDN and threat-intelligence filtering, and network-wide logging that NSGs cannot offer. VNets without an associated Azure Firewall lack a perimeter inspection and logging layer."
     },
     "AZ-NET-014": {
-      "control_id": "6.4",
-      "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",
+      "control_id": "6.6",
+      "control_name": "Ensure that VNet peering connections restrict gateway transit",
       "description": "VNet peering connections with allowGatewayTransit or useRemoteGateways enabled allow traffic to route between network segments through shared gateways. This can break network segmentation and enable lateral movement between zones that should remain isolated. Peering connections should be reviewed and gateway transit disabled unless explicitly required and documented."
     },
     "AZ-NET-015": {
-      "control_id": "9.1",
+      "control_id": "9.8",
       "control_name": "Ensure public DNS zones do not expose private infrastructure details",
-      "description": "Public DNS zones that contain A records referencing RFC1918 private IP addresses or record names matching internal service keywords (such as admin, vpn, db, or internal) expose the organisation's internal network topology to external parties. CIS 9.1 requires that unnecessary public exposure is minimised. Such records should be removed from public DNS zones and migrated to Azure Private DNS zones linked to the appropriate virtual networks."
+      "description": "Public DNS zones that contain A records referencing RFC1918 private IP addresses or record names matching internal service keywords (such as admin, vpn, db, or internal) expose the organisation's internal network topology to external parties. CIS 9.8 requires that unnecessary public exposure is minimised. Such records should be removed from public DNS zones and migrated to Azure Private DNS zones linked to the appropriate virtual networks."
     },
     "AZ-PQC-001": {
-      "control_id": "9.1",
+      "control_id": "9.9",
       "control_name": "Ensure TLS is enforced with quantum-safe configuration",
-      "description": "App Services configured with TLS versions below 1.3 use classical key exchange algorithms vulnerable to Harvest Now Decrypt Later attacks. CIS 9.1 requires that data in transit is protected using current encryption standards. Enforcing TLS 1.3 minimum reduces exposure to quantum-enabled decryption of captured traffic."
+      "description": "App Services configured with TLS versions below 1.3 use classical key exchange algorithms vulnerable to Harvest Now Decrypt Later attacks. CIS 9.9 requires that data in transit is protected using current encryption standards. Enforcing TLS 1.3 minimum reduces exposure to quantum-enabled decryption of captured traffic."
     },
     "AZ-PQC-002": {
       "control_id": "8.1",
@@ -224,9 +224,9 @@
       "description": "Key Vault keys using RSA or ECC algorithms are vulnerable to Shor's algorithm on quantum computers. CIS 8.1 requires that cryptographic key management follows current standards. Keys should be inventoried in a Cryptographic Bill of Materials and migration to post-quantum safe algorithms planned."
     },
     "AZ-PQC-003": {
-      "control_id": "8.5",
+      "control_id": "8.9",
       "control_name": "Ensure certificates use quantum-safe signature algorithms",
-      "description": "Key Vault certificates signed with RSA or ECDSA are vulnerable to quantum attacks. CIS 8.5 requires that certificate management includes monitoring of algorithm strength. Certificates should be migrated to post-quantum safe signature algorithms such as ML-DSA when CA support is available."
+      "description": "Key Vault certificates signed with RSA or ECDSA are vulnerable to quantum attacks. CIS 8.9 requires that certificate management includes monitoring of algorithm strength. Certificates should be migrated to post-quantum safe signature algorithms such as ML-DSA when CA support is available."
     }
   }
 }

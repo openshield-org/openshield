@@ -6,7 +6,7 @@ RULE_NAME = "VNet Peering Configured Without Gateway Transit Restrictions"
 SEVERITY = "MEDIUM"
 CATEGORY = "Network"
 FRAMEWORKS = {
-    "CIS": "6.4",
+    "CIS": "6.6",
     "NIST": "PR.AC-5",
     "ISO27001": "A.13.1.1",
     "SOC2": "CC6.6"
