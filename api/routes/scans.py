@@ -152,11 +152,13 @@ def enrich_scan(scan_id):
             daemon=True,
         ).start()
 
-        return jsonify({
-            "scan_id": scan_id,
-            "status": "ENRICHING",
-            "message": "CVE enrichment started; poll GET /api/scans/<scan_id> for completion.",
-        }), 202
+        return jsonify(
+            {
+                "scan_id": scan_id,
+                "status": "ENRICHING",
+                "message": "CVE enrichment started; poll GET /api/scans/<scan_id> for completion.",
+            }
+        ), 202
 
     except Exception as exc:
         logger.error("Failed to start enrichment for scan %s: %s", scan_id, exc)

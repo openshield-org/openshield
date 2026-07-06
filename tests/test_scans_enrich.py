@@ -34,8 +34,10 @@ def test_enrich_returns_202_and_schedules_background_thread(client, auth_headers
     findings = [{"id": 1, "rule_id": "AZ-STOR-001"}]
     db = _mock_db(current_scan=scan, findings=findings)
 
-    with patch.object(scans_route, "_get_db", return_value=db), \
-         patch.object(scans_route.threading, "Thread", _FakeThread):
+    with (
+        patch.object(scans_route, "_get_db", return_value=db),
+        patch.object(scans_route.threading, "Thread", _FakeThread),
+    ):
         resp = client.post("/api/scans/scan-1/enrich", headers=auth_headers)
 
     assert resp.status_code == 202
@@ -87,8 +89,10 @@ def test_enrich_no_findings_returns_404(client, auth_headers):
 
 def test_background_enrichment_marks_completed_on_success():
     fake_db = MagicMock()
-    with patch.object(scans_route, "DatabaseManager", return_value=fake_db), \
-         patch.object(scans_route, "enrich_findings", return_value=[{"id": 1}]):
+    with (
+        patch.object(scans_route, "DatabaseManager", return_value=fake_db),
+        patch.object(scans_route, "enrich_findings", return_value=[{"id": 1}]),
+    ):
         scans_route._run_enrichment_in_background("scan-1", [{"id": 1}], "postgresql://mock/mock")
 
     fake_db.update_cve_fields.assert_called_once_with([{"id": 1}])
@@ -98,8 +102,10 @@ def test_background_enrichment_marks_completed_on_success():
 
 def test_background_enrichment_marks_failed_on_error():
     fake_db = MagicMock()
-    with patch.object(scans_route, "DatabaseManager", return_value=fake_db), \
-         patch.object(scans_route, "enrich_findings", side_effect=RuntimeError("boom")):
+    with (
+        patch.object(scans_route, "DatabaseManager", return_value=fake_db),
+        patch.object(scans_route, "enrich_findings", side_effect=RuntimeError("boom")),
+    ):
         scans_route._run_enrichment_in_background("scan-1", [{"id": 1}], "postgresql://mock/mock")
 
     fake_db.update_scan_enrichment_status.assert_called_once_with("scan-1", "FAILED")
@@ -114,8 +120,10 @@ def test_background_enrichment_rolls_back_before_marking_failed():
     stuck at ENRICHING forever."""
     fake_db = MagicMock()
     fake_db.conn = MagicMock()  # an open connection, left mid-transaction
-    with patch.object(scans_route, "DatabaseManager", return_value=fake_db), \
-         patch.object(scans_route, "enrich_findings", side_effect=RuntimeError("boom")):
+    with (
+        patch.object(scans_route, "DatabaseManager", return_value=fake_db),
+        patch.object(scans_route, "enrich_findings", side_effect=RuntimeError("boom")),
+    ):
         scans_route._run_enrichment_in_background("scan-1", [{"id": 1}], "postgresql://mock/mock")
 
     fake_db.conn.rollback.assert_called_once()
@@ -127,8 +135,10 @@ def test_background_enrichment_skips_rollback_when_never_connected():
     — rollback() must not be called on it."""
     fake_db = MagicMock()
     fake_db.conn = None
-    with patch.object(scans_route, "DatabaseManager", return_value=fake_db), \
-         patch.object(scans_route, "enrich_findings", side_effect=RuntimeError("boom")):
+    with (
+        patch.object(scans_route, "DatabaseManager", return_value=fake_db),
+        patch.object(scans_route, "enrich_findings", side_effect=RuntimeError("boom")),
+    ):
         scans_route._run_enrichment_in_background("scan-1", [{"id": 1}], "postgresql://mock/mock")
 
     fake_db.update_scan_enrichment_status.assert_called_once_with("scan-1", "FAILED")

@@ -37,6 +37,7 @@ def _get_pool(dsn: str) -> "psycopg2.pool.ThreadedConnectionPool":
             _POOLS[dsn] = pool
         return pool
 
+
 SEVERITY_WEIGHTS = {"HIGH": 10, "MEDIUM": 5, "LOW": 2, "INFO": 0}
 
 FRAMEWORK_FILE_MAP = {

@@ -376,16 +376,20 @@ if _scan_status == 200 and isinstance(_scan_body, list):
 if _scan_id is not None:
     test(
         f"TC-33 POST /api/scans/{_scan_id}/enrich returns 200 or 202",
-        "POST", f"/api/scans/{_scan_id}/enrich",
+        "POST",
+        f"/api/scans/{_scan_id}/enrich",
         lambda s, b: s in (200, 202),
         body={},
     )
     test(
         f"TC-34 POST /api/scans/{_scan_id}/enrich returns status ENRICHING, already enriched, or in progress",
-        "POST", f"/api/scans/{_scan_id}/enrich",
-        lambda s, b: b.get("status") == "ENRICHING"
+        "POST",
+        f"/api/scans/{_scan_id}/enrich",
+        lambda s, b: (
+            b.get("status") == "ENRICHING"
             or "already enriched" in b.get("message", "")
-            or "in progress" in b.get("message", ""),
+            or "in progress" in b.get("message", "")
+        ),
         body={},
     )
 
@@ -402,7 +406,8 @@ if _scan_id is not None:
 
     test(
         f"TC-34b Background enrichment for {_scan_id} reaches COMPLETED",
-        "GET", f"/api/scans/{_scan_id}",
+        "GET",
+        f"/api/scans/{_scan_id}",
         lambda s, b: _enrich_final_status == "COMPLETED",
     )
 else:
