@@ -512,6 +512,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Apply database migrations
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
+        run: alembic upgrade head
+
       - name: Run test suite with coverage
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
