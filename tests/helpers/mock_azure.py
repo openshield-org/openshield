@@ -92,9 +92,7 @@ class MockAzureClient:
     def get_service_principals(self) -> List[Any]:
         return self._service_principals
 
-    def get_sql_server_firewall_rules(
-        self, resource_group: str, server_name: str
-    ) -> List[Any]:
+    def get_sql_server_firewall_rules(self, resource_group: str, server_name: str) -> List[Any]:
         return self._sql_firewall_rules.get((resource_group, server_name), [])
 
     def get_diagnostic_settings(self, resource_id: str) -> Optional[bool]:

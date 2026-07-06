@@ -46,23 +46,23 @@ def run_worker():
 
             scan_id = str(scan["scan_id"])
             subscription_id = scan["subscription_id"]
-            
+
             logger.info("Starting scan %s for %s", scan_id, subscription_id)
 
             try:
                 engine = ScanEngine(subscription_id)
                 result = engine.run_scan(scan_id)
-                
+
                 # Update result with completion metadata
                 result["completed_at"] = datetime.now(timezone.utc).isoformat()
                 result["status"] = "completed"
-                
+
                 db.save_scan(result)
                 logger.info("Successfully completed scan %s", scan_id)
             except Exception as exc:
                 error_msg = f"{str(exc)}\n{traceback.format_exc()}"
                 logger.error("Scan %s failed: %s", scan_id, error_msg)
-                
+
                 # Sanitize public error message
                 public_error = "An internal error occurred during the scan. Please check the logs."
                 db.update_scan_status(scan_id, "failed", error_message=public_error)

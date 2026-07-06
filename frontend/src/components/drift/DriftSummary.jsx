@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiPlusCircle, FiMinusCircle, FiEdit } from 'react-icons/fi';
 import Card from '../shared/Card';
 

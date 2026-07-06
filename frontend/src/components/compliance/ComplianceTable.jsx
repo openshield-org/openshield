@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiCheckCircle, FiXCircle, FiMinusCircle, FiArrowRight } from 'react-icons/fi';
 import SeverityBadge from '../shared/SeverityBadge';

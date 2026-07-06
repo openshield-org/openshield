@@ -5,9 +5,7 @@ from types import SimpleNamespace
 from scanner.rules import az_pqc_001, az_pqc_002, az_pqc_003
 
 
-_VAULT_ID = (
-    "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/vault1"
-)
+_VAULT_ID = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/vault1"
 
 
 class FakeAzureClient:
@@ -102,9 +100,7 @@ def test_pqc_003_flags_classical_certificate_policy_key_type():
     cert = SimpleNamespace(
         id=f"{_VAULT_ID}/certificates/cert1",
         name="cert1",
-        policy=SimpleNamespace(
-            key_properties=SimpleNamespace(key_type=_enum_value("EC"))
-        ),
+        policy=SimpleNamespace(key_properties=SimpleNamespace(key_type=_enum_value("EC"))),
     )
     client = FakeAzureClient(vaults=[vault], certificates=[cert])
 
@@ -120,9 +116,7 @@ def test_pqc_003_ignores_certificate_without_classical_policy_key_type():
     cert = SimpleNamespace(
         id=f"{_VAULT_ID}/certificates/cert1",
         name="cert1",
-        policy=SimpleNamespace(
-            key_properties=SimpleNamespace(key_type=_enum_value("ML-DSA"))
-        ),
+        policy=SimpleNamespace(key_properties=SimpleNamespace(key_type=_enum_value("ML-DSA"))),
     )
     client = FakeAzureClient(vaults=[vault], certificates=[cert])
 

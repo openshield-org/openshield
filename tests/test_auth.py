@@ -1,4 +1,5 @@
 """Tests for JWT authentication middleware — production and demo modes."""
+
 import os
 import secrets
 import time
@@ -25,6 +26,7 @@ def prod_client(monkeypatch):
     monkeypatch.setattr("api.app.DatabaseManager", MagicMock())
     os.environ.pop("OPENSHIELD_PUBLIC_DEMO", None)
     from api.app import create_app
+
     app = create_app()
     app.config["TESTING"] = True
     app.config["JWT_SECRET"] = _SECRET
@@ -38,6 +40,7 @@ def demo_client(monkeypatch):
     os.environ["OPENSHIELD_PUBLIC_DEMO"] = "true"
     try:
         from api.app import create_app
+
         app = create_app()
         app.config["TESTING"] = True
         app.config["JWT_SECRET"] = _SECRET

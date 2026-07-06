@@ -68,17 +68,19 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         else "Existing Conditional Access policies do not enforce MFA for admin roles."
     )
 
-    return [{
-        "rule_id": RULE_ID,
-        "rule_name": RULE_NAME,
-        "severity": SEVERITY,
-        "category": CATEGORY,
-        "resource_id": f"/tenants/{subscription_id}/conditionalAccess",
-        "resource_name": "Conditional Access Policies",
-        "resource_type": "Microsoft.AzureActiveDirectory/conditionalAccessPolicies",
-        "description": DESCRIPTION,
-        "remediation": REMEDIATION,
-        "playbook": PLAYBOOK,
-        "frameworks": FRAMEWORKS,
-        "metadata": {"reason": reason, "policies_found": len(policies)},
-    }]
+    return [
+        {
+            "rule_id": RULE_ID,
+            "rule_name": RULE_NAME,
+            "severity": SEVERITY,
+            "category": CATEGORY,
+            "resource_id": f"/tenants/{subscription_id}/conditionalAccess",
+            "resource_name": "Conditional Access Policies",
+            "resource_type": "Microsoft.AzureActiveDirectory/conditionalAccessPolicies",
+            "description": DESCRIPTION,
+            "remediation": REMEDIATION,
+            "playbook": PLAYBOOK,
+            "frameworks": FRAMEWORKS,
+            "metadata": {"reason": reason, "policies_found": len(policies)},
+        }
+    ]

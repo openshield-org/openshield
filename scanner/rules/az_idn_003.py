@@ -34,9 +34,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     try:
         import requests
 
-        token = azure_client.credential.get_token(
-            "https://graph.microsoft.com/.default"
-        )
+        token = azure_client.credential.get_token("https://graph.microsoft.com/.default")
         headers = {"Authorization": f"Bearer {token.token}"}
 
         response = requests.get(
@@ -48,36 +46,33 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         policy = response.json()
 
     except Exception as exc:
-        logger.error(
-            "AZ-IDN-003: Failed to fetch authorization policy from Graph API: %s", exc
-        )
-        logger.warning(
-            "AZ-IDN-003: Ensure the service principal has "
-            "Directory.Read.All permission on Microsoft Graph."
-        )
+        logger.error("AZ-IDN-003: Failed to fetch authorization policy from Graph API: %s", exc)
+        logger.warning("AZ-IDN-003: Ensure the service principal has Directory.Read.All permission on Microsoft Graph.")
         return findings
 
     allow_invites_from = policy.get("allowInvitesFrom", "everyone")
 
     restricted_values = {"admins", "adminsAndGuestInviters"}
     if allow_invites_from not in restricted_values:
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": f"/tenants/{policy.get('id', 'unknown')}/policies/authorizationPolicy",
-            "resource_name": "authorizationPolicy",
-            "resource_type": "Microsoft.Graph/authorizationPolicy",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "allow_invites_from": allow_invites_from,
-                "policy_id": policy.get("id", ""),
-                "display_name": policy.get("displayName", ""),
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": f"/tenants/{policy.get('id', 'unknown')}/policies/authorizationPolicy",
+                "resource_name": "authorizationPolicy",
+                "resource_type": "Microsoft.Graph/authorizationPolicy",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "allow_invites_from": allow_invites_from,
+                    "policy_id": policy.get("id", ""),
+                    "display_name": policy.get("displayName", ""),
+                },
+            }
+        )
 
     return findings

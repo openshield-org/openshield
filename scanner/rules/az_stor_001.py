@@ -25,18 +25,20 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for account in azure_client.get_storage_accounts():
         if getattr(account, "allow_blob_public_access", False):
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": account.id,
-                "resource_name": account.name,
-                "resource_type": "Microsoft.Storage/storageAccounts",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": account.id,
+                    "resource_name": account.name,
+                    "resource_type": "Microsoft.Storage/storageAccounts",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                }
+            )
 
     return findings

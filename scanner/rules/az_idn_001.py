@@ -36,22 +36,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         principal_id = getattr(assignment, "principal_id", "unknown")
         resource_id = getattr(assignment, "id", "")
 
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": resource_id,
-            "resource_name": principal_id,
-            "resource_type": "Microsoft.Authorization/roleAssignments",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "principal_id": principal_id,
-                "scope": getattr(assignment, "scope", ""),
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": resource_id,
+                "resource_name": principal_id,
+                "resource_type": "Microsoft.Authorization/roleAssignments",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "principal_id": principal_id,
+                    "scope": getattr(assignment, "scope", ""),
+                },
+            }
+        )
 
     return findings

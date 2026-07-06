@@ -31,9 +31,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     try:
         from azure.mgmt.network import NetworkManagementClient
-        client = NetworkManagementClient(
-            azure_client.credential, azure_client.subscription_id
-        )
+
+        client = NetworkManagementClient(azure_client.credential, azure_client.subscription_id)
         vnets = list(client.virtual_networks.list_all())
     except Exception as exc:
         logger.error("Failed to list virtual networks: %s", exc)
@@ -46,23 +45,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 continue
             nsg = getattr(subnet, "network_security_group", None)
             if not nsg:
-                findings.append({
-                    "rule_id": RULE_ID,
-                    "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
-                    "category": CATEGORY,
-                    "resource_id": getattr(subnet, "id", ""),
-                    "resource_name": name,
-                    "resource_type": "Microsoft.Network/virtualNetworks/subnets",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
-                    "playbook": PLAYBOOK,
-                    "frameworks": FRAMEWORKS,
-                    "metadata": {
-                        "vnet_name": getattr(vnet, "name", ""),
-                        "vnet_id": getattr(vnet, "id", ""),
-                        "address_prefix": getattr(subnet, "address_prefix", ""),
-                    },
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": getattr(subnet, "id", ""),
+                        "resource_name": name,
+                        "resource_type": "Microsoft.Network/virtualNetworks/subnets",
+                        "description": DESCRIPTION,
+                        "remediation": REMEDIATION,
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {
+                            "vnet_name": getattr(vnet, "name", ""),
+                            "vnet_id": getattr(vnet, "id", ""),
+                            "address_prefix": getattr(subnet, "address_prefix", ""),
+                        },
+                    }
+                )
 
     return findings

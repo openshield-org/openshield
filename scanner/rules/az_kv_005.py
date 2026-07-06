@@ -46,21 +46,16 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         certificates = azure_client.get_key_vault_certificates(vault_name)
         for cert in certificates:
             try:
-                cert_name = getattr(cert, "name", "") or getattr(
-                    cert, "id", ""
-                ).split("/")[-1]
+                cert_name = getattr(cert, "name", "") or getattr(cert, "id", "").split("/")[-1]
 
                 expires = getattr(cert, "expires_on", None)
                 if not expires:
                     continue
 
                 auto_renew = getattr(cert, "policy", None)
-                lifetime_actions = (
-                    getattr(auto_renew, "lifetime_actions", []) if auto_renew else []
-                )
+                lifetime_actions = getattr(auto_renew, "lifetime_actions", []) if auto_renew else []
                 has_auto_renew = any(
-                    getattr(getattr(a, "action", None), "action_type", "").lower()
-                    == "autorenew"
+                    getattr(getattr(a, "action", None), "action_type", "").lower() == "autorenew"
                     for a in (lifetime_actions or [])
                 )
 
@@ -74,26 +69,28 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 days_until_expiry = (expires - now).days
 
                 if 0 <= days_until_expiry <= EXPIRY_THRESHOLD_DAYS:
-                    findings.append({
-                        "rule_id": RULE_ID,
-                        "rule_name": RULE_NAME,
-                        "severity": SEVERITY,
-                        "category": CATEGORY,
-                        "resource_id": f"{vault.id}/certificates/{cert_name}",
-                        "resource_name": cert_name,
-                        "resource_type": "Microsoft.KeyVault/vaults/certificates",
-                        "description": DESCRIPTION,
-                        "remediation": REMEDIATION,
-                        "playbook": PLAYBOOK,
-                        "frameworks": FRAMEWORKS,
-                        "metadata": {
-                            "resource_group": rg,
-                            "location": getattr(vault, "location", ""),
-                            "vault_name": vault_name,
-                            "days_until_expiry": days_until_expiry,
-                            "expires": expires.isoformat(),
-                        },
-                    })
+                    findings.append(
+                        {
+                            "rule_id": RULE_ID,
+                            "rule_name": RULE_NAME,
+                            "severity": SEVERITY,
+                            "category": CATEGORY,
+                            "resource_id": f"{vault.id}/certificates/{cert_name}",
+                            "resource_name": cert_name,
+                            "resource_type": "Microsoft.KeyVault/vaults/certificates",
+                            "description": DESCRIPTION,
+                            "remediation": REMEDIATION,
+                            "playbook": PLAYBOOK,
+                            "frameworks": FRAMEWORKS,
+                            "metadata": {
+                                "resource_group": rg,
+                                "location": getattr(vault, "location", ""),
+                                "vault_name": vault_name,
+                                "days_until_expiry": days_until_expiry,
+                                "expires": expires.isoformat(),
+                            },
+                        }
+                    )
 
             except Exception as exc:
                 logger.error(

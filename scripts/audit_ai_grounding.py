@@ -1,6 +1,4 @@
 import json
-import os
-import sys
 import re
 from pathlib import Path
 
@@ -9,33 +7,35 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RULES_DIR = PROJECT_ROOT / "scanner" / "rules"
 MAPPING_FILE = PROJECT_ROOT / "ai" / "knowledge" / "rule_mapping.json"
 
+
 def get_rule_categories():
     """Extracts all unique CATEGORY values from the Python rules."""
     categories = set()
     category_re = re.compile(r'^CATEGORY\s*=\s*["\'](.*?)["\']', re.MULTILINE)
-    
+
     for rule_file in RULES_DIR.glob("az_*.py"):
         content = rule_file.read_text(encoding="utf-8")
         match = category_re.search(content)
         if match:
             categories.add(match.group(1))
-            
+
     return categories
+
 
 def audit_grounding():
     """Checks for inconsistencies between mapping registry and actual rules."""
     print("--- AI Grounding Audit ---")
-    
+
     if not MAPPING_FILE.exists():
         print(f"Error: Mapping file {MAPPING_FILE} not found.")
         return
 
     with open(MAPPING_FILE, "r") as f:
         mapping = json.load(f)
-    
+
     rule_categories = get_rule_categories()
     mapping_categories = set(mapping.keys())
-    
+
     # Check 1: Categories in mapping but not in rules
     stale_categories = mapping_categories - rule_categories
     if stale_categories:
@@ -63,6 +63,7 @@ def audit_grounding():
             print(f"  - {cat}")
 
     print("\nAudit Complete.")
+
 
 if __name__ == "__main__":
     audit_grounding()

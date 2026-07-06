@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiShield, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 
 export default function FrameworkCards({ frameworks, selected, onSelect }) {

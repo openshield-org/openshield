@@ -33,23 +33,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if len(backend_pools) == 0:
             parsed = azure_client.parse_resource_id(getattr(lb, "id", ""))
             resource_group = parsed.get("resource_group", "")
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": getattr(lb, "id", ""),
-                "resource_name": getattr(lb, "name", ""),
-                "resource_type": "Microsoft.Network/loadBalancers",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "location": getattr(lb, "location", ""),
-                    "backend_pool_count": len(backend_pools),
-                    "resource_group": resource_group,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": getattr(lb, "id", ""),
+                    "resource_name": getattr(lb, "name", ""),
+                    "resource_type": "Microsoft.Network/loadBalancers",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "location": getattr(lb, "location", ""),
+                        "backend_pool_count": len(backend_pools),
+                        "resource_group": resource_group,
+                    },
+                }
+            )
 
     return findings

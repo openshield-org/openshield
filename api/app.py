@@ -2,6 +2,7 @@
 
 import logging
 import os
+import sys
 
 import jwt
 from dotenv import load_dotenv
@@ -23,13 +24,12 @@ _ALWAYS_PUBLIC = {"/", "/health"}
 
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
-_GENERATE_CMD = "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+_GENERATE_CMD = 'python -c "import secrets; print(secrets.token_urlsafe(32))"'
 
 
 def _is_production() -> bool:
     return (
-        os.environ.get("OPENSHIELD_ENV", "").lower() == "production"
-        or os.environ.get("RENDER", "").lower() == "true"
+        os.environ.get("OPENSHIELD_ENV", "").lower() == "production" or os.environ.get("RENDER", "").lower() == "true"
     )
 
 
@@ -132,10 +132,7 @@ def create_app() -> Flask:
             db = DatabaseManager()
             db.run_migrations()
     else:
-        logger.info(
-            "DATABASE_URL not set — skipping database migrations. "
-            "Set DATABASE_URL to connect to PostgreSQL."
-        )
+        logger.info("DATABASE_URL not set — skipping database migrations. Set DATABASE_URL to connect to PostgreSQL.")
 
     @app.teardown_appcontext
     def close_db(error=None):
@@ -211,12 +208,9 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return jsonify({
-            "message": "Welcome to the OpenShield REST API",
-            "version": "1.0.0",
-            "docs": "/docs",
-            "status": "online"
-        })
+        return jsonify(
+            {"message": "Welcome to the OpenShield REST API", "version": "1.0.0", "docs": "/docs", "status": "online"}
+        )
 
     @app.get("/health")
     def health():
@@ -251,13 +245,13 @@ def create_app() -> Flask:
     return app
 
 
-import sys
-
 # Global application object for WSGI servers (e.g. Gunicorn, Render)
 # We wrap this in a check to avoid running migrations/connecting during test collection
-if os.environ.get("OPENSHIELD_ENV") != "testing" and \
-   os.environ.get("PYTEST_CURRENT_TEST") is None and \
-   "pytest" not in sys.modules:
+if (
+    os.environ.get("OPENSHIELD_ENV") != "testing"
+    and os.environ.get("PYTEST_CURRENT_TEST") is None
+    and "pytest" not in sys.modules
+):
     application = create_app()
 else:
     # During testing, we provide a placeholder or let conftest handle it
@@ -267,7 +261,7 @@ if __name__ == "__main__":
     if not application:
         application = create_app()
     application.run(
-        host="0.0.0.0",
+        host="0.0.0.0",  # nosec B104 - must bind all interfaces to be reachable inside a container/PaaS
         port=int(os.environ.get("PORT", 5000)),
         debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
     )
