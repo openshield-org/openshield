@@ -236,12 +236,14 @@ class DatabaseManager:
                         ADD COLUMN IF NOT EXISTS error_message         TEXT,
                         ADD COLUMN IF NOT EXISTS claimed_at            TIMESTAMPTZ
                 """)
-                # Fix: If status already existed but was backfilled as 'pending' (e.g. from 
-                # a previous buggy deploy), force it to 'completed' for all historical 
+                # Fix: If status already existed but was backfilled as 'pending' (e.g. from
+                # a previous buggy deploy), force it to 'completed' for all historical
                 # scans that have already finished.
-                cur.execute("UPDATE scans SET status = 'completed' WHERE status = 'pending' AND completed_at IS NOT NULL")
-                
-                # Backfill claimed_at for any currently running scans so they don't get 
+                cur.execute(
+                    "UPDATE scans SET status = 'completed' WHERE status = 'pending' AND completed_at IS NOT NULL"
+                )
+
+                # Backfill claimed_at for any currently running scans so they don't get
                 # immediately marked as stale by the new recovery logic.
                 cur.execute("UPDATE scans SET claimed_at = started_at WHERE status = 'running' AND claimed_at IS NULL")
             conn.commit()
@@ -258,11 +260,15 @@ class DatabaseManager:
         """Persist a full scan result (scan header + all findings)."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         completed_at = scan_result.get("completed_at") or datetime.now(timezone.utc).isoformat()
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score, cve_enrichment_status, status, error_message)
+                INSERT INTO scans (
+                    scan_id, subscription_id, started_at, completed_at,
+                    total_findings, score, cve_enrichment_status, status, error_message
+                )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO UPDATE SET
                     completed_at = EXCLUDED.completed_at,
@@ -348,9 +354,10 @@ class DatabaseManager:
             clauses.append(
                 "scan_id = (SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1)"
             )
-            
+
         where = "WHERE " + " AND ".join(clauses) if clauses else ""
-        sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"
+        # Bandit false positive: clauses are fixed, parameterized fragments; values go through `params`
+        sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"  # nosec B608
 
         conn = self._get_conn()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -411,6 +418,7 @@ class DatabaseManager:
         """Create a scan record in the 'pending' state."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         started_at = datetime.now(timezone.utc).isoformat()
         with conn.cursor() as cur:
             cur.execute(
@@ -427,6 +435,7 @@ class DatabaseManager:
         """Update the status of a scan (running, completed, failed)."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         with conn.cursor() as cur:
             if status == "completed":
                 completed_at = datetime.now(timezone.utc).isoformat()
@@ -446,23 +455,24 @@ class DatabaseManager:
         """Atomically claim the next pending scan using SKIP LOCKED."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         claimed_at = datetime.now(timezone.utc).isoformat()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """
-                UPDATE scans 
+                UPDATE scans
                 SET status = 'running', claimed_at = %s
                 WHERE scan_id = (
-                    SELECT scan_id 
-                    FROM scans 
-                    WHERE status = 'pending' 
-                    ORDER BY started_at ASC 
-                    FOR UPDATE SKIP LOCKED 
+                    SELECT scan_id
+                    FROM scans
+                    WHERE status = 'pending'
+                    ORDER BY started_at ASC
+                    FOR UPDATE SKIP LOCKED
                     LIMIT 1
-                ) 
+                )
                 RETURNING *
                 """,
-                (claimed_at,)
+                (claimed_at,),
             )
             row = cur.fetchone()
             if row:
@@ -476,13 +486,13 @@ class DatabaseManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                UPDATE scans 
-                SET status = 'failed', 
+                UPDATE scans
+                SET status = 'failed',
                     error_message = 'Scan timed out after remaining in running state for too long.'
                 WHERE status = 'running'
                   AND claimed_at < (CURRENT_TIMESTAMP - make_interval(mins => %s))
                 """,
-                (timeout_minutes,)
+                (timeout_minutes,),
             )
             count = cur.rowcount
         conn.commit()
@@ -537,9 +547,7 @@ class DatabaseManager:
             )
             rows = cur.fetchall()
 
-        deduction = sum(
-            SEVERITY_WEIGHTS.get(sev.upper(), 0) * count for sev, count in rows
-        )
+        deduction = sum(SEVERITY_WEIGHTS.get(sev.upper(), 0) * count for sev, count in rows)
         return max(0, 100 - deduction)
 
     def get_cve_summary(self) -> Dict[str, Any]:
@@ -547,7 +555,7 @@ class DatabaseManager:
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT 
+                SELECT
                     s.cve_enrichment_status,
                     COUNT(f.*) as total_findings,
                     COUNT(CASE WHEN f.exploit_available = TRUE THEN 1 END) as exploit_count,
@@ -605,7 +613,7 @@ class DatabaseManager:
 
         controls = framework_data.get("controls", {})
 
-            # Get rule IDs that fired in the latest completed scan only
+        # Get rule IDs that fired in the latest completed scan only
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
@@ -621,12 +629,14 @@ class DatabaseManager:
         results = []
         for rule_id, control in controls.items():
             status = "FAIL" if rule_id in failed_rule_ids else "PASS"
-            results.append({
-                "rule_id": rule_id,
-                "control_id": control["control_id"],
-                "control_name": control["control_name"],
-                "status": status,
-            })
+            results.append(
+                {
+                    "rule_id": rule_id,
+                    "control_id": control["control_id"],
+                    "control_name": control["control_name"],
+                    "status": status,
+                }
+            )
 
         total = len(results)
         passed = sum(1 for r in results if r["status"] == "PASS")

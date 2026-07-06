@@ -30,9 +30,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     try:
         from azure.mgmt.network import NetworkManagementClient
-        client = NetworkManagementClient(
-            azure_client.credential, azure_client.subscription_id
-        )
+
+        client = NetworkManagementClient(azure_client.credential, azure_client.subscription_id)
         connections = list(client.virtual_network_gateway_connections.list_all())
     except Exception as exc:
         logger.error("Failed to list VPN gateway connections: %s", exc)
@@ -41,23 +40,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     for conn in connections:
         ike_version = getattr(conn, "connection_protocol", "") or ""
         if ike_version.upper() == "IKEV1":
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": getattr(conn, "id", ""),
-                "resource_name": getattr(conn, "name", ""),
-                "resource_type": "Microsoft.Network/connections",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "ike_version": ike_version,
-                    "location": getattr(conn, "location", ""),
-                    "connection_type": getattr(conn, "connection_type", ""),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": getattr(conn, "id", ""),
+                    "resource_name": getattr(conn, "name", ""),
+                    "resource_type": "Microsoft.Network/connections",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "ike_version": ike_version,
+                        "location": getattr(conn, "location", ""),
+                        "connection_type": getattr(conn, "connection_type", ""),
+                    },
+                }
+            )
 
     return findings

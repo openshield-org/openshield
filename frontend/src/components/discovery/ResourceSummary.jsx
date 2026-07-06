@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiDatabase, FiServer, FiWifi, FiUser, FiHardDrive, FiKey, FiEye, FiZap } from 'react-icons/fi';
 import Card from '../shared/Card';
 

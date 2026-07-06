@@ -40,10 +40,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     # it we cannot tell which VNets are protected, so skip to avoid flagging
     # every VNet as a false positive.
     if firewalls is None:
-        logger.warning(
-            "AZ-NET-013 skipped: unable to list Azure Firewalls - "
-            "cannot determine VNet protection status."
-        )
+        logger.warning("AZ-NET-013 skipped: unable to list Azure Firewalls - cannot determine VNet protection status.")
         return findings
 
     protected_vnet_ids = set()
@@ -60,22 +57,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if vnet_id.lower() in protected_vnet_ids:
             continue
         parsed = azure_client.parse_resource_id(vnet_id)
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": vnet_id,
-            "resource_name": getattr(vnet, "name", ""),
-            "resource_type": "Microsoft.Network/virtualNetworks",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "location": getattr(vnet, "location", ""),
-                "resource_group": parsed.get("resource_group", ""),
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": vnet_id,
+                "resource_name": getattr(vnet, "name", ""),
+                "resource_type": "Microsoft.Network/virtualNetworks",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "location": getattr(vnet, "location", ""),
+                    "resource_group": parsed.get("resource_group", ""),
+                },
+            }
+        )
 
     return findings

@@ -1,4 +1,3 @@
-import React from 'react';
 
 const TYPES = ['All', 'ADDED', 'REMOVED', 'MODIFIED'];
 const SEVERITIES = ['All', 'HIGH', 'MEDIUM', 'LOW'];

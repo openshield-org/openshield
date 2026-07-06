@@ -18,7 +18,8 @@ These keywords will be used to link this rule to offensive security methodologie
 
 RULES FOR KEYWORDS:
 1. They must be lowercase.
-2. They should focus on the underlying technology or vulnerability type (e.g., 'entra-id', 'sqli', 'ssrf', 'encryption').
+2. They should focus on the underlying technology or vulnerability type
+   (e.g., 'entra-id', 'sqli', 'ssrf', 'encryption').
 3. Do not use generic words like 'security' or 'azure'.
 4. Format the output as a comma-separated list.
 
@@ -28,19 +29,20 @@ RULE CODE:
 OUTPUT (Comma-separated keywords only):
 """
 
+
 def generate_keywords(rule_path, provider, api_key):
     """Uses AI to extract keywords from a rule file."""
     content = rule_path.read_text(encoding="utf-8")
-    
+
     # Extract only the metadata section for context efficiency
     meta_section = ""
     lines = content.splitlines()
     for line in lines:
         if any(key in line for key in ["RULE_ID", "RULE_NAME", "DESCRIPTION", "CATEGORY"]):
             meta_section += line + "\n"
-            
+
     prompt = PROMPT_TEMPLATE.format(rule_code=meta_section)
-    
+
     try:
         response = get_completion(provider, api_key, prompt)
         keywords = [k.strip().lower() for k in response.split(",")]
@@ -48,6 +50,7 @@ def generate_keywords(rule_path, provider, api_key):
     except Exception as exc:
         print(f"Error generating keywords for {rule_path.name}: {exc}")
         return []
+
 
 def main():
     if len(sys.argv) < 2:
@@ -82,10 +85,10 @@ def main():
         if not category_match:
             print(f"Skipping {rule_file.name} - no CATEGORY found.")
             continue
-            
+
         category = category_match.group(1)
         print(f"Processing {rule_file.name} (Category: {category})...")
-        
+
         new_keywords = generate_keywords(rule_file, provider, api_key)
         if new_keywords:
             # Update mapping
@@ -97,8 +100,9 @@ def main():
     # Save updated mapping
     with open(MAPPING_FILE, "w") as f:
         json.dump(mapping, f, indent=2)
-    
+
     print("\nMapping registry updated successfully.")
+
 
 if __name__ == "__main__":
     main()

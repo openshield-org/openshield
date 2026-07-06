@@ -33,11 +33,7 @@ def list_findings():
         scan_id   - UUID of a specific scan
     """
     try:
-        filters = {
-            k: v
-            for k, v in request.args.items()
-            if k in ("severity", "category", "rule_id", "scan_id")
-        }
+        filters = {k: v for k, v in request.args.items() if k in ("severity", "category", "rule_id", "scan_id")}
         db = _get_db()
         findings = db.get_findings(filters)
         return jsonify({"count": len(findings), "findings": findings})
@@ -87,16 +83,16 @@ def get_playbook(finding_id: int):
             # Strip comment-only lines and blank lines; join multi-line commands
             lines = raw.splitlines()
             cmd_lines = [
-                l for l in lines
-                if l.strip() and not l.strip().startswith("#")
-                and l.strip() not in ("set -e",)
+                line
+                for line in lines
+                if line.strip() and not line.strip().startswith("#") and line.strip() not in ("set -e",)
             ]
             cli_commands = ["\n".join(cmd_lines)] if cmd_lines else []
 
         portal_steps = [remediation] if remediation else []
 
         validation_steps = [
-            f"Open the Azure Portal and navigate to the resource.",
+            "Open the Azure Portal and navigate to the resource.",
             f"Verify the security configuration matches the remediation guidance for {rule_id}.",
             "Re-run an OpenShield scan and confirm this finding no longer appears.",
         ]
@@ -109,12 +105,14 @@ def get_playbook(finding_id: int):
         if not references:
             references.append("https://learn.microsoft.com/en-us/azure/security/")
 
-        return jsonify({
-            "portal_steps":     portal_steps,
-            "cli_commands":     cli_commands,
-            "validation_steps": validation_steps,
-            "references":       references,
-        })
+        return jsonify(
+            {
+                "portal_steps": portal_steps,
+                "cli_commands": cli_commands,
+                "validation_steps": validation_steps,
+                "references": references,
+            }
+        )
 
     except Exception as exc:
         logger.error("Failed to get playbook for finding %d: %s", finding_id, exc)

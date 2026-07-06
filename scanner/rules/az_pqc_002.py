@@ -50,9 +50,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for vault in vaults:
         vault_id = getattr(vault, "id", "") or ""
-        vault_name = getattr(vault, "name", "") or azure_client.parse_resource_id(
-            vault_id
-        ).get("name", "")
+        vault_name = getattr(vault, "name", "") or azure_client.parse_resource_id(vault_id).get("name", "")
         parsed = azure_client.parse_resource_id(vault_id)
         resource_group = parsed.get("resource_group", "")
 
@@ -66,23 +64,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             if key_type.upper() in _CLASSICAL_KEY_TYPES:
                 key_id = getattr(key, "id", "") or f"{vault_id}/keys/{getattr(key, 'name', '')}"
                 key_name = getattr(key, "name", "") or key_id.rstrip("/").split("/")[-1]
-                findings.append({
-                    "rule_id": RULE_ID,
-                    "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
-                    "category": CATEGORY,
-                    "resource_id": key_id,
-                    "resource_name": key_name,
-                    "resource_type": "Microsoft.KeyVault/vaults/keys",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
-                    "playbook": PLAYBOOK,
-                    "frameworks": FRAMEWORKS,
-                    "metadata": {
-                        "resource_group": resource_group,
-                        "vault_name": vault_name,
-                        "key_type": key_type,
-                    },
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": key_id,
+                        "resource_name": key_name,
+                        "resource_type": "Microsoft.KeyVault/vaults/keys",
+                        "description": DESCRIPTION,
+                        "remediation": REMEDIATION,
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {
+                            "resource_group": resource_group,
+                            "vault_name": vault_name,
+                            "key_type": key_type,
+                        },
+                    }
+                )
 
     return findings

@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 # Estimated remediation effort (1 = fastest, 4 = slowest) per category
 _EFFORT = {
-    "Storage":    1,
-    "Network":    2,
-    "Database":   2,
-    "Compute":    2,
-    "Identity":   3,
-    "KeyVault":   2,
+    "Storage": 1,
+    "Network": 2,
+    "Database": 2,
+    "Compute": 2,
+    "Identity": 3,
+    "KeyVault": 2,
     "Monitoring": 1,
 }
 _DEFAULT_EFFORT = 2
@@ -26,6 +26,7 @@ _EFFORT_LABEL = {1: "LOW", 2: "MEDIUM", 3: "HIGH", 4: "HIGH"}
 
 # 1-10 risk score per severity for the matrix
 _RISK_SCORE = {"HIGH": 8, "MEDIUM": 5, "LOW": 2, "INFO": 1}
+
 
 # Composite score threshold → impact label
 def _impact(score: int) -> str:
@@ -59,9 +60,7 @@ def get_prioritization():
         conn = db._get_conn()
 
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1"
-            )
+            cur.execute("SELECT scan_id FROM scans WHERE total_findings > 0 ORDER BY started_at DESC LIMIT 1")
             row = cur.fetchone()
             if not row:
                 empty = {"matrix": [], "rankings": [], "action_items": [], "summary": {}}
@@ -106,41 +105,47 @@ def get_prioritization():
 
             severity_counts[sev] = severity_counts.get(sev, 0) + affected
 
-            matrix.append({
-                "id":                idx + 1,
-                "rule_id":           rule["rule_id"],
-                "name":              rule["rule_name"],
-                "risk":              risk,
-                "effort":            effort,
-                "category":          cat,
-                "severity":          sev,
-                "affected_resources": affected,
-                "resource":          rule["resource_name"],
-            })
+            matrix.append(
+                {
+                    "id": idx + 1,
+                    "rule_id": rule["rule_id"],
+                    "name": rule["rule_name"],
+                    "risk": risk,
+                    "effort": effort,
+                    "category": cat,
+                    "severity": sev,
+                    "affected_resources": affected,
+                    "resource": rule["resource_name"],
+                }
+            )
 
-            rankings.append({
-                "rank":     idx + 1,   # re-sorted below
-                "rule_id":  rule["rule_id"],
-                "name":     rule["rule_name"],
-                "score":    score,
-                "severity": sev,
-                "category": cat,
-                "effort":   effort,
-                "impact":   _impact(score),
-                "resource": rule["resource_name"],
-            })
+            rankings.append(
+                {
+                    "rank": idx + 1,  # re-sorted below
+                    "rule_id": rule["rule_id"],
+                    "name": rule["rule_name"],
+                    "score": score,
+                    "severity": sev,
+                    "category": cat,
+                    "effort": effort,
+                    "impact": _impact(score),
+                    "resource": rule["resource_name"],
+                }
+            )
 
             # Top 10 rules → action items
             if len(action_items) < 10:
-                action_items.append({
-                    "id":      idx + 1,
-                    "action":  rule["remediation"] or f"Remediate {rule['rule_name']}",
-                    "impact":  _impact(score),
-                    "effort":  _EFFORT_LABEL.get(effort, "MEDIUM"),
-                    "eta":     _EFFORT_ETA.get(effort, "1 hour"),
-                    "rule_id": rule["rule_id"],
-                    "resource": rule["resource_name"],
-                })
+                action_items.append(
+                    {
+                        "id": idx + 1,
+                        "action": rule["remediation"] or f"Remediate {rule['rule_name']}",
+                        "impact": _impact(score),
+                        "effort": _EFFORT_LABEL.get(effort, "MEDIUM"),
+                        "eta": _EFFORT_ETA.get(effort, "1 hour"),
+                        "rule_id": rule["rule_id"],
+                        "resource": rule["resource_name"],
+                    }
+                )
 
         # Sort rankings by score desc and re-assign ranks
         rankings.sort(key=lambda r: r["score"], reverse=True)
@@ -149,29 +154,29 @@ def get_prioritization():
 
         critical = severity_counts.get("HIGH", 0)
         total_hours = sum(
-            _EFFORT.get(r["category"], _DEFAULT_EFFORT)
-            for r in matrix
-            if r["severity"] in ("HIGH", "MEDIUM")
+            _EFFORT.get(r["category"], _DEFAULT_EFFORT) for r in matrix if r["severity"] in ("HIGH", "MEDIUM")
         )
         estimated_time = f"{total_hours} hours" if total_hours < 24 else f"{total_hours // 8} days"
 
         summary = {
-            "totalFindings":           total_findings,
-            "criticalFindings":        critical,
-            "highRiskFindings":        severity_counts.get("HIGH", 0),
-            "mediumRiskFindings":      severity_counts.get("MEDIUM", 0),
-            "lowRiskFindings":         severity_counts.get("LOW", 0),
+            "totalFindings": total_findings,
+            "criticalFindings": critical,
+            "highRiskFindings": severity_counts.get("HIGH", 0),
+            "mediumRiskFindings": severity_counts.get("MEDIUM", 0),
+            "lowRiskFindings": severity_counts.get("LOW", 0),
             "recommendedActionsCount": len(action_items),
-            "estimatedFixTime":        estimated_time,
-            "topPriority":             rankings[0]["name"] if rankings else "No findings",
+            "estimatedFixTime": estimated_time,
+            "topPriority": rankings[0]["name"] if rankings else "No findings",
         }
 
-        return jsonify({
-            "matrix":       matrix,
-            "rankings":     rankings[:25],
-            "action_items": action_items,
-            "summary":      summary,
-        })
+        return jsonify(
+            {
+                "matrix": matrix,
+                "rankings": rankings[:25],
+                "action_items": action_items,
+                "summary": summary,
+            }
+        )
 
     except Exception as exc:
         logger.error("Failed to build prioritization: %s", exc)

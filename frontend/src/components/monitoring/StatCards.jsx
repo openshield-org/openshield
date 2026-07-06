@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiAlertCircle, FiAlertTriangle, FiInfo, FiLayers } from 'react-icons/fi';
 import Card from '../shared/Card';
 

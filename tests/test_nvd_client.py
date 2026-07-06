@@ -32,9 +32,7 @@ _SAMPLE_NVD_RESPONSE = {
         {
             "cve": {
                 "id": "CVE-2023-12345",
-                "descriptions": [
-                    {"lang": "en", "value": "A critical vulnerability in Azure Storage."}
-                ],
+                "descriptions": [{"lang": "en", "value": "A critical vulnerability in Azure Storage."}],
                 "metrics": {
                     "cvssMetricV31": [
                         {
@@ -51,9 +49,7 @@ _SAMPLE_NVD_RESPONSE = {
         {
             "cve": {
                 "id": "CVE-2022-99999",
-                "descriptions": [
-                    {"lang": "en", "value": "Medium severity configuration issue."}
-                ],
+                "descriptions": [{"lang": "en", "value": "Medium severity configuration issue."}],
                 "metrics": {
                     "cvssMetricV31": [
                         {
@@ -94,6 +90,7 @@ def _make_mock_urlopen_response(data: dict) -> MagicMock:
 # TestParseConveItem
 # Tests for _parse_cve_item() - pure function, no mocking needed.
 # ---------------------------------------------------------------------------
+
 
 class TestParseConveItem(unittest.TestCase):
     """
@@ -181,6 +178,7 @@ class TestParseConveItem(unittest.TestCase):
 # Tests for query_nvd() - mocks urllib.request.urlopen to prevent live calls.
 # Also mocks _wait_for_rate_limit to keep tests fast.
 # ---------------------------------------------------------------------------
+
 
 class TestQueryNvd(unittest.TestCase):
     """

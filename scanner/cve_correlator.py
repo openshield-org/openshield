@@ -27,29 +27,23 @@ logger = logging.getLogger(__name__)
 
 _RULE_CVE_KEYWORD_MAP: dict[str, str] = {
     # Storage
-    "AZ-STOR":     "Azure Storage Account",
+    "AZ-STOR": "Azure Storage Account",
     "AZ-STOR-003": "Azure Storage lifecycle management",
-
     # Key Vault
-    "AZ-KV":       "Azure Key Vault",
-    "AZ-KV-002":   "Azure Key Vault purge protection",
-
+    "AZ-KV": "Azure Key Vault",
+    "AZ-KV-002": "Azure Key Vault purge protection",
     # Compute
-    "AZ-CMP":      "Azure Virtual Machine",
-
+    "AZ-CMP": "Azure Virtual Machine",
     # Network
-    "AZ-NET":      "Azure Network Security Group",
-    "AZ-NET-001":  "Azure NSG open port",
-
+    "AZ-NET": "Azure Network Security Group",
+    "AZ-NET-001": "Azure NSG open port",
     # Database
-    "AZ-DB":       "Azure SQL Database",
-
+    "AZ-DB": "Azure SQL Database",
     # Identity
-    "AZ-IDN":      "Azure Active Directory",
-    "AZ-IDN-001":  "Azure RBAC privilege escalation",
-
+    "AZ-IDN": "Azure Active Directory",
+    "AZ-IDN-001": "Azure RBAC privilege escalation",
     # App Service
-    "AZ-APP":      "Azure App Service",
+    "AZ-APP": "Azure App Service",
 }
 
 

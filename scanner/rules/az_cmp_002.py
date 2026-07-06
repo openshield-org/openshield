@@ -78,38 +78,36 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if os_disk:
             managed_disk = getattr(os_disk, "managed_disk", None)
             if _disk_needs_flagging(managed_disk):
-                unencrypted_disks.append(
-                    getattr(os_disk, "name", "os-disk")
-                )
+                unencrypted_disks.append(getattr(os_disk, "name", "os-disk"))
 
         # Check data disks
         data_disks = getattr(storage_profile, "data_disks", []) or []
         for disk in data_disks:
             managed_disk = getattr(disk, "managed_disk", None)
             if _disk_needs_flagging(managed_disk):
-                unencrypted_disks.append(
-                    getattr(disk, "name", f"data-disk-{getattr(disk, 'lun', '?')}")
-                )
+                unencrypted_disks.append(getattr(disk, "name", f"data-disk-{getattr(disk, 'lun', '?')}"))
 
         if unencrypted_disks:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": vm_id,
-                "resource_name": vm_name,
-                "resource_type": "Microsoft.Compute/virtualMachines",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": resource_group,
-                    "location": location,
-                    "unencrypted_disks": unencrypted_disks,
-                    "unencrypted_disk_count": len(unencrypted_disks),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vm_id,
+                    "resource_name": vm_name,
+                    "resource_type": "Microsoft.Compute/virtualMachines",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": resource_group,
+                        "location": location,
+                        "unencrypted_disks": unencrypted_disks,
+                        "unencrypted_disk_count": len(unencrypted_disks),
+                    },
+                }
+            )
 
     return findings

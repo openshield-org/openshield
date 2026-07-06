@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import DriftSummary from '../components/drift/DriftSummary';
 import DriftTimeline from '../components/drift/DriftTimeline';

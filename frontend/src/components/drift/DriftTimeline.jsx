@@ -1,4 +1,3 @@
-import React from 'react';
 import DriftEventCard from './DriftEventCard';
 import EmptyState from '../shared/EmptyState';
 import { FiGitBranch } from 'react-icons/fi';

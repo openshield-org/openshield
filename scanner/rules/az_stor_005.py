@@ -10,10 +10,10 @@ RULE_NAME = "Storage Account Not Using Geo-Redundant Replication"
 SEVERITY = "MEDIUM"
 CATEGORY = "Storage"
 FRAMEWORKS = {
-    "CIS":      "3.1",
-    "NIST":     "PR.IP-4",
+    "CIS": "3.1",
+    "NIST": "PR.IP-4",
     "ISO27001": "A.17.2.1",
-    "SOC2":     "A1.2",
+    "SOC2": "A1.2",
 }
 DESCRIPTION = (
     "This storage account is configured with a non-geo-redundant replication "
@@ -70,24 +70,26 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         parsed = azure_client.parse_resource_id(resource_id)
         resource_group = parsed.get("resource_group", "")
 
-        findings.append({
-            "rule_id":       RULE_ID,
-            "rule_name":     RULE_NAME,
-            "severity":      SEVERITY,
-            "category":      CATEGORY,
-            "resource_id":   resource_id,
-            "resource_name": account_name,
-            "resource_type": "Microsoft.Storage/storageAccounts",
-            "description":   DESCRIPTION.format(sku_name=sku_name),
-            "remediation":   REMEDIATION,
-            "playbook":      PLAYBOOK,
-            "frameworks":    FRAMEWORKS,
-            "metadata": {
-                "resource_group":  resource_group,
-                "location":        location,
-                "current_sku":     sku_name,
-                "recommended_sku": "Standard_GRS",
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": resource_id,
+                "resource_name": account_name,
+                "resource_type": "Microsoft.Storage/storageAccounts",
+                "description": DESCRIPTION.format(sku_name=sku_name),
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "resource_group": resource_group,
+                    "location": location,
+                    "current_sku": sku_name,
+                    "recommended_sku": "Standard_GRS",
+                },
+            }
+        )
 
     return findings

@@ -39,23 +39,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 and getattr(rule, "source_address_prefix", "") in ("*", "0.0.0.0/0", "Internet", "Any")
                 and getattr(rule, "destination_port_range", "") in ("443", "*")
             ):
-                findings.append({
-                    "rule_id": RULE_ID,
-                    "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
-                    "category": CATEGORY,
-                    "resource_id": getattr(nsg, "id", ""),
-                    "resource_name": getattr(nsg, "name", ""),
-                    "resource_type": "Microsoft.Network/networkSecurityGroups",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
-                    "playbook": PLAYBOOK,
-                    "frameworks": FRAMEWORKS,
-                    "metadata": {
-                        "rule_name": getattr(rule, "name", ""),
-                        "source_prefix": getattr(rule, "source_address_prefix", ""),
-                    },
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": getattr(nsg, "id", ""),
+                        "resource_name": getattr(nsg, "name", ""),
+                        "resource_type": "Microsoft.Network/networkSecurityGroups",
+                        "description": DESCRIPTION,
+                        "remediation": REMEDIATION,
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {
+                            "rule_name": getattr(rule, "name", ""),
+                            "source_prefix": getattr(rule, "source_address_prefix", ""),
+                        },
+                    }
+                )
                 break
 
     return findings

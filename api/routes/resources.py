@@ -45,7 +45,12 @@ def get_resources():
             )
             latest_scan = cur.fetchone()
             if not latest_scan:
-                return jsonify({"summary": {"total": 0, "by_category": {}, "by_risk_level": {}, "last_scan_at": None}, "resources": []})
+                return jsonify(
+                    {
+                        "summary": {"total": 0, "by_category": {}, "by_risk_level": {}, "last_scan_at": None},
+                        "resources": [],
+                    }
+                )
 
             cur.execute(
                 """
@@ -80,18 +85,20 @@ def get_resources():
             detected = row["discovered_at"]
             discovered_at = detected.isoformat() if hasattr(detected, "isoformat") else str(detected)
 
-            resources.append({
-                "id":              row["resource_id"],
-                "name":            row["resource_name"],
-                "type":            row["resource_type"],
-                "category":        row["category"],
-                "resource_group":  rg,
-                "subscription_id": sub_id,
-                "location":        "",
-                "risk":            risk,
-                "discovered_at":   discovered_at,
-                "config":          {},
-            })
+            resources.append(
+                {
+                    "id": row["resource_id"],
+                    "name": row["resource_name"],
+                    "type": row["resource_type"],
+                    "category": row["category"],
+                    "resource_group": rg,
+                    "subscription_id": sub_id,
+                    "location": "",
+                    "risk": risk,
+                    "discovered_at": discovered_at,
+                    "config": {},
+                }
+            )
 
             by_category[row["category"]] = by_category.get(row["category"], 0) + 1
             by_risk_level[risk] = by_risk_level.get(risk, 0) + 1
@@ -100,15 +107,17 @@ def get_resources():
         if hasattr(last_scan_at, "isoformat"):
             last_scan_at = last_scan_at.isoformat()
 
-        return jsonify({
-            "summary": {
-                "total":         len(resources),
-                "by_category":   by_category,
-                "by_risk_level": by_risk_level,
-                "last_scan_at":  last_scan_at,
-            },
-            "resources": resources,
-        })
+        return jsonify(
+            {
+                "summary": {
+                    "total": len(resources),
+                    "by_category": by_category,
+                    "by_risk_level": by_risk_level,
+                    "last_scan_at": last_scan_at,
+                },
+                "resources": resources,
+            }
+        )
 
     except Exception as exc:
         logger.error("Failed to build resources: %s", exc)

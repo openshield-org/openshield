@@ -32,23 +32,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         ip_config = getattr(pip, "ip_configuration", None)
         nat_gateway = getattr(pip, "nat_gateway", None)
         if not ip_config and not nat_gateway:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": getattr(pip, "id", ""),
-                "resource_name": getattr(pip, "name", ""),
-                "resource_type": "Microsoft.Network/publicIPAddresses",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "ip_address": getattr(pip, "ip_address", ""),
-                    "location": getattr(pip, "location", ""),
-                    "sku": getattr(getattr(pip, "sku", None), "name", ""),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": getattr(pip, "id", ""),
+                    "resource_name": getattr(pip, "name", ""),
+                    "resource_type": "Microsoft.Network/publicIPAddresses",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "ip_address": getattr(pip, "ip_address", ""),
+                        "location": getattr(pip, "location", ""),
+                        "sku": getattr(getattr(pip, "sku", None), "name", ""),
+                    },
+                }
+            )
 
     return findings

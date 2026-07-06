@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PortalSteps from './PortalSteps';
 import CLICommands from './CLICommands';
 import ValidationSteps from './ValidationSteps';

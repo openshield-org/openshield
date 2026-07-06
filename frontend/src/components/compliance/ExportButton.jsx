@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiDownload, FiChevronDown } from 'react-icons/fi';
 import { downloadJSON, downloadCSV } from '../../utils/helpers';
 

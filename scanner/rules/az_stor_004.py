@@ -12,10 +12,10 @@ RULE_NAME = "Storage Account Diagnostic Logging Disabled"
 SEVERITY = "MEDIUM"
 CATEGORY = "Storage"
 FRAMEWORKS = {
-    "CIS":      "3.3",
-    "NIST":     "DE.CM-7",
+    "CIS": "3.3",
+    "NIST": "DE.CM-7",
     "ISO27001": "A.12.4.1",
-    "SOC2":     "CC7.2",
+    "SOC2": "CC7.2",
 }
 DESCRIPTION = (
     "Azure Monitor diagnostic logging is not fully enabled for the {service} "
@@ -37,13 +37,14 @@ PLAYBOOK = "playbooks/cli/fix_az_stor_004.sh"
 
 # Maps service key → (sub-resource path segment, resource_type)
 _SERVICES: Dict[str, Tuple[str, str]] = {
-    "blob":  ("blobServices",  "Microsoft.Storage/storageAccounts/blobServices"),
+    "blob": ("blobServices", "Microsoft.Storage/storageAccounts/blobServices"),
     "queue": ("queueServices", "Microsoft.Storage/storageAccounts/queueServices"),
     "table": ("tableServices", "Microsoft.Storage/storageAccounts/tableServices"),
 }
 
 
 # ── Required scan function ───────────────────────────────────────────────────
+
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect storage account services with incomplete diagnostic logging.
@@ -100,23 +101,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 continue
 
             if logging_status is False:
-                findings.append({
-                    "rule_id":       RULE_ID,
-                    "rule_name":     RULE_NAME,
-                    "severity":      SEVERITY,
-                    "category":      CATEGORY,
-                    "resource_id":   f"{resource_id}/{svc_path}/default",
-                    "resource_name": f"{account_name}/{svc_path}",
-                    "resource_type": resource_type,
-                    "description":   DESCRIPTION.format(service=service),
-                    "remediation":   REMEDIATION.format(service=service),
-                    "playbook":      PLAYBOOK,
-                    "frameworks":    FRAMEWORKS,
-                    "metadata": {
-                        "resource_group": resource_group,
-                        "location":       location,
-                        "service":        service,
-                    },
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": f"{resource_id}/{svc_path}/default",
+                        "resource_name": f"{account_name}/{svc_path}",
+                        "resource_type": resource_type,
+                        "description": DESCRIPTION.format(service=service),
+                        "remediation": REMEDIATION.format(service=service),
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {
+                            "resource_group": resource_group,
+                            "location": location,
+                            "service": service,
+                        },
+                    }
+                )
 
     return findings

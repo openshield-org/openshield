@@ -5,9 +5,9 @@ import secrets
 from unittest.mock import patch
 
 
-
 def _fake_api_key() -> str:
     return secrets.token_urlsafe(24)
+
 
 ENDPOINT = "/api/ai/insights"
 

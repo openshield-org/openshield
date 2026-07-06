@@ -6,23 +6,53 @@ on:
       - dev
       - main
 
+# Cancel superseded runs on the same PR to save runner minutes
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: jobs only read repo contents
+permissions:
+  contents: read
+
 jobs:
-  ci-checks:
-    name: Run All CI Checks
+  # ── Lint & format gate (ruff) ───────────────────────────────────────────
+  lint:
+    name: Lint (ruff)
     runs-on: ubuntu-latest
-
     steps:
-      # ── 1. Checkout the code ─────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      # ── 2. Set up Python ─────────────────────────────────────────────
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
+          cache: pip
 
-      # ── 3. Install dependencies ───────────────────────────────────────
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: ruff check
+        run: ruff check .
+
+      - name: ruff format --check
+        run: ruff format --check .
+
+  # ── Rule/compliance/API static validation (no DB required) ──────────────
+  rule-validation:
+    name: Rule & Compliance Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -122,6 +152,10 @@ jobs:
         id: cred_scan
         run: |
           echo "=== Scanning for hardcoded credentials ==="
+          # Each credential-name pattern requires a quoted string literal on the
+          # right-hand side. This flags real hardcoded values (api_key = "sk-...")
+          # while ignoring safe assignments to function calls or expressions
+          # (api_key = str(data.get(...)) , _SECRET = secrets.token_urlsafe(32)).
           PATTERNS=(
             "password\s*=\s*['\"]"
             "secret\s*=\s*['\"]"
@@ -249,21 +283,21 @@ jobs:
         run: |
           echo "=== Checking Python syntax on API files ==="
           FAIL=0
-          if [ -d "api" ]; then
-            while IFS= read -r -d '' f; do
-              if ! python -m py_compile "$f" 2>&1; then
-                echo "SYNTAX ERROR: $f"
-                FAIL=1
-              else
-                echo "OK: $f"
-              fi
-            done < <(find api/ -name "*.py" -print0)
-          else
-            echo "No api/ directory found — skipping"
-          fi
+          for dir in api ai scanner sentinel; do
+            if [ -d "$dir" ]; then
+              while IFS= read -r -d '' f; do
+                if ! python -m py_compile "$f" 2>&1; then
+                  echo "SYNTAX ERROR: $f"
+                  FAIL=1
+                else
+                  echo "OK: $f"
+                fi
+              done < <(find "$dir/" -name "*.py" -print0)
+            fi
+          done
 
           if [ "$FAIL" -eq 1 ]; then
-            echo "One or more API files have syntax errors."
+            echo "One or more files have syntax errors."
             exit 1
           fi
 
@@ -324,61 +358,247 @@ jobs:
               print(f"All compliance controls map to existing rule files. ({len(existing_ids)} rules checked)")
           PYEOF
 
-      # ── CHECK 8: All regression tests (Mocked dependencies) ──────────
-      - name: All regression tests
-        id: all_tests
-        env:
-          DATABASE_URL: "postgresql://ci:ci@localhost/ci_db"
-          OPENSHIELD_ENV: "testing"
-        run: |
-          echo "=== Running all regression tests ==="
-          pytest tests/test_*.py -v --tb=short
+  # ── Secret scanning (Gitleaks CLI, no gitleaks-action license needed) ─────
+  secret-scan:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      # ── CHECK 8: Rule regression tests (MockAzureClient, no Azure creds) ──
-      - name: Rule regression tests
-        id: rule_tests
+      - name: Install gitleaks
         run: |
-          echo "=== Running rule regression tests ==="
-          pytest tests/test_rules_*.py tests/test_clean_scan.py -v --tb=short
+          GITLEAKS_VERSION="8.30.1"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
 
-      # ── CHECK 8: Full Python test suite ──────────────────────────────
-      - name: Run Python test suite
-        id: pytest_check
-        run: |
-          echo "=== Running full Python test suite ==="
-          python -m pytest tests/             --ignore=tests/smoke_test.py             -v --tb=short -q
-        env:
-          OPENSHIELD_ENV: "development"
+      - name: Run gitleaks
+        run: gitleaks detect --source . --no-git -v --exit-code 1
 
-      # ── Final summary — always runs, shows per-check pass/fail ────────
-      - name: CI Summary
-        if: always()
-        env:
-          SYNTAX:     ${{ steps.syntax_check.outcome }}
-          STRUCTURE:  ${{ steps.structure_check.outcome }}
-          CREDS:      ${{ steps.cred_scan.outcome }}
-          PLAYBOOK:   ${{ steps.playbook_check.outcome }}
-          JSON:       ${{ steps.json_check.outcome }}
-          API:        ${{ steps.api_check.outcome }}
-          XREF:       ${{ steps.xref_check.outcome }}
-          ALL_TESTS:  ${{ steps.all_tests.outcome }}
-          PYTEST:     ${{ steps.pytest_check.outcome }}
-          RULE_TESTS: ${{ steps.rule_tests.outcome }}
+  # ── SAST (Bandit) ──────────────────────────────────────────────────────────
+  sast-bandit:
+    name: SAST (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install bandit
+        run: pip install bandit
+
+      - name: Run bandit
+        run: bandit -r api/ scanner/ ai/ -ll
+
+  # ── SCA / dependency scanning (pip-audit) ─────────────────────────────────
+  sca-pip-audit:
+    name: SCA (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      # transformers (transitive via sentence-transformers) has no non-breaking fix yet; tracked separately
+      - name: Run pip-audit
         run: |
-          python - <<'PYEOF'
+          pip-audit -r requirements.txt \
+            --ignore-vuln PYSEC-2025-217 \
+            --ignore-vuln CVE-2026-1839 \
+            --ignore-vuln CVE-2026-4372
+
+  # ── Software Bill of Materials (Syft, CycloneDX) ──────────────────────────
+  sbom:
+    name: SBOM (Syft)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install syft
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.46.0
+
+      - name: Generate SBOM
+        run: syft dir:. --source-name openshield --source-version "${{ github.sha }}" -o cyclonedx-json=sbom.cyclonedx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cyclonedx.json
+          retention-days: 90
+
+  # ── Container image scan (Trivy) — scaffolded ahead of INFRA 1 (#154) ─────
+  container-scan:
+    name: Container Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Check for Dockerfile
+        id: dockerfile_check
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "path=Dockerfile" >> "$GITHUB_OUTPUT"
+          elif [ -f "api/Dockerfile" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "path=api/Dockerfile" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No Dockerfile yet (INFRA 1 / #154 not merged) — nothing to scan, skipping."
+          fi
+
+      - name: Build image
+        if: steps.dockerfile_check.outputs.found == 'true'
+        run: docker build -t openshield-ci-scan:${{ github.sha }} -f "${{ steps.dockerfile_check.outputs.path }}" .
+
+      - name: Run Trivy
+        if: steps.dockerfile_check.outputs.found == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: openshield-ci-scan:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+  # ── Backend test suite with coverage ─────────────────────────────────────
+  backend-tests:
+    name: Backend Tests (pytest + coverage)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run test suite with coverage
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
+        run: |
+          pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-report=xml --cov-fail-under=25
+
+  # ── Frontend lint + build ────────────────────────────────────────────────
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  # ── Enforce branch flow: main may only receive PRs from dev ───────────────
+  # No-op on dev PRs (step skipped -> job succeeds). To allow hotfixes straight
+  # to main, widen the condition below to also accept a 'hotfix/*' head branch.
+  enforce-source-branch:
+    name: Enforce dev to main source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main PRs to originate from dev
+        if: github.base_ref == 'main'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "dev" ]; then
+            echo "PRs into 'main' must come from 'dev' (got '$HEAD_REF')."
+            echo "Merge your work into 'dev' first, then open a dev -> main PR."
+            exit 1
+          fi
+          echo "OK: main PR originates from dev."
+
+  # ── Final summary — always runs, aggregates all jobs ──────────────────────
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs:
+      [lint, rule-validation, secret-scan, sast-bandit, sca-pip-audit, sbom, container-scan, backend-tests, frontend, enforce-source-branch]
+    if: always()
+    steps:
+      - name: Build summary
+        env:
+          LINT: ${{ needs.lint.result }}
+          RULE_VALIDATION: ${{ needs.rule-validation.result }}
+          SECRET_SCAN: ${{ needs.secret-scan.result }}
+          SAST_BANDIT: ${{ needs.sast-bandit.result }}
+          SCA_PIP_AUDIT: ${{ needs.sca-pip-audit.result }}
+          SBOM: ${{ needs.sbom.result }}
+          CONTAINER_SCAN: ${{ needs.container-scan.result }}
+          BACKEND_TESTS: ${{ needs.backend-tests.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+          ENFORCE_SOURCE: ${{ needs.enforce-source-branch.result }}
+        run: |
+          python3 - <<'PYEOF'
           import os
 
           checks = [
-              ("Python syntax (rule files)",          os.environ["SYNTAX"]),
-              ("Rule structure + RULE_ID uniqueness",  os.environ["STRUCTURE"]),
-              ("Hardcoded credential scan",            os.environ["CREDS"]),
-              ("Playbook existence + bash syntax",     os.environ["PLAYBOOK"]),
-              ("Compliance JSON validation",           os.environ["JSON"]),
-              ("API syntax check",                     os.environ["API"]),
-              ("Compliance vs rule cross-reference",   os.environ["XREF"]),
-              ("All regression tests",                 os.environ["ALL_TESTS"]),
-              ("Python test suite",                    os.environ["PYTEST"]),
-              ("Rule regression tests",                os.environ["RULE_TESTS"]),
+              ("Lint (ruff)",                       os.environ["LINT"]),
+              ("Rule & Compliance Validation",       os.environ["RULE_VALIDATION"]),
+              ("Secret Scan (Gitleaks)",             os.environ["SECRET_SCAN"]),
+              ("SAST (Bandit)",                      os.environ["SAST_BANDIT"]),
+              ("SCA (pip-audit)",                    os.environ["SCA_PIP_AUDIT"]),
+              ("SBOM (Syft)",                        os.environ["SBOM"]),
+              ("Container Scan (Trivy, INFRA 1 pending)", os.environ["CONTAINER_SCAN"]),
+              ("Backend Tests (pytest + coverage)",  os.environ["BACKEND_TESTS"]),
+              ("Frontend (lint + build)",            os.environ["FRONTEND"]),
+              ("Enforce dev to main source",        os.environ["ENFORCE_SOURCE"]),
           ]
 
           labels = {
@@ -391,7 +611,7 @@ jobs:
           lines = [
               "## OpenShield CI Results",
               "",
-              "| Check | Result |",
+              "| Job | Result |",
               "|---|---|",
           ]
 
@@ -406,7 +626,7 @@ jobs:
           if all_passed:
               lines.append("**Result: All checks passed.**")
           else:
-              lines.append("**Result: One or more checks failed. See the step logs above for details.**")
+              lines.append("**Result: One or more checks failed. See the job logs above for details.**")
 
           summary = "\n".join(lines)
           print(summary)
@@ -416,3 +636,17 @@ jobs:
               with open(summary_path, "a") as f:
                   f.write(summary + "\n")
           PYEOF
+
+      # container-scan excluded until INFRA 1 (#154) gives it a real image to gate on
+      - name: Fail if any required job failed
+        if: |
+          needs.lint.result != 'success' ||
+          needs.rule-validation.result != 'success' ||
+          needs.secret-scan.result != 'success' ||
+          needs.sast-bandit.result != 'success' ||
+          needs.sca-pip-audit.result != 'success' ||
+          needs.sbom.result != 'success' ||
+          needs.backend-tests.result != 'success' ||
+          needs.frontend.result != 'success' ||
+          needs.enforce-source-branch.result != 'success'
+        run: exit 1

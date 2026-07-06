@@ -60,9 +60,7 @@ def trigger_scan():
     """
     try:
         body = request.get_json(silent=True) or {}
-        subscription_id = body.get("subscription_id") or os.environ.get(
-            "AZURE_SUBSCRIPTION_ID"
-        )
+        subscription_id = body.get("subscription_id") or os.environ.get("AZURE_SUBSCRIPTION_ID")
 
         if not subscription_id:
             return jsonify({"error": "subscription_id is required"}), 400
@@ -77,11 +75,9 @@ def trigger_scan():
             logger.error("Failed to create pending scan: %s", exc, exc_info=True)
             return jsonify({"error": "Database error", "detail": str(exc)}), 500
 
-        return jsonify({
-            "scan_id": scan_id,
-            "status": "pending",
-            "message": "Scan has been queued and will start shortly."
-        }), 202
+        return jsonify(
+            {"scan_id": scan_id, "status": "pending", "message": "Scan has been queued and will start shortly."}
+        ), 202
 
     except Exception as exc:
         logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const DarkModeContext = createContext();
 
@@ -27,6 +27,7 @@ export function DarkModeProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDarkMode() {
   return useContext(DarkModeContext);
 }
