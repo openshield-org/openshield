@@ -33,12 +33,8 @@ def test_single_page_returns_all_policies(mock_get):
 
 @patch("requests.get")
 def test_follows_next_link_across_multiple_pages(mock_get):
-    page1 = _mock_response(
-        [{"id": "p1"}], next_link="https://graph.microsoft.com/v1.0/...&$skiptoken=abc"
-    )
-    page2 = _mock_response(
-        [{"id": "p2"}], next_link="https://graph.microsoft.com/v1.0/...&$skiptoken=def"
-    )
+    page1 = _mock_response([{"id": "p1"}], next_link="https://graph.microsoft.com/v1.0/...&$skiptoken=abc")
+    page2 = _mock_response([{"id": "p2"}], next_link="https://graph.microsoft.com/v1.0/...&$skiptoken=def")
     page3 = _mock_response([{"id": "p3"}])
     mock_get.side_effect = [page1, page2, page3]
 

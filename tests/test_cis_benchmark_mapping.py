@@ -4,9 +4,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-_CIS_PATH = (
-    Path(__file__).parent.parent / "compliance" / "frameworks" / "cis_azure_benchmark.json"
-)
+_CIS_PATH = Path(__file__).parent.parent / "compliance" / "frameworks" / "cis_azure_benchmark.json"
 
 
 def _load_controls():
