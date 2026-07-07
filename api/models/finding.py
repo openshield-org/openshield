@@ -110,7 +110,7 @@ class DatabaseManager:
     def init_db(self) -> None:
         """Alias for run_migrations. Called by startup.sh on every boot.
 
-        Calling this is always safe — run_migrations() handles both fresh
+        Calling this is always safe; run_migrations() handles both fresh
         databases and existing ones via IF NOT EXISTS guards throughout.
         """
         self.run_migrations()
@@ -118,7 +118,7 @@ class DatabaseManager:
     def create_tables(self) -> None:
         """Create the findings, scans, and rules tables if they do not exist.
 
-        Includes all columns — including CVE columns — so fresh databases
+        Includes all columns, including CVE columns, so fresh databases
         never need the ALTER TABLE path in run_migrations().
         """
         conn = self._get_conn()
@@ -134,6 +134,7 @@ class DatabaseManager:
                     score           INTEGER DEFAULT NULL,
                     cve_enrichment_status TEXT DEFAULT 'PENDING',
                     status          TEXT DEFAULT 'pending',
+                    attempt_count   INTEGER DEFAULT 0,
                     error_message   TEXT
                 );
             """)
@@ -173,7 +174,7 @@ class DatabaseManager:
     def run_migrations(self) -> None:
         """Ensure the schema is fully current. Safe to call on every startup.
 
-        Calls create_tables() first so the call order never matters — this
+        Calls create_tables() first so the call order never matters; this
         method is safe whether the database is brand new or has existing data.
 
         On a fresh database:
@@ -187,7 +188,7 @@ class DatabaseManager:
         Concurrent startup safety:
             Both CREATE TABLE IF NOT EXISTS and ALTER TABLE ADD COLUMN IF NOT
             EXISTS are atomic at the PostgreSQL catalog level. Two Render
-            instances racing at boot will not error — the second call silently
+            instances racing at boot will not error; the second call silently
             no-ops on whichever statement the first already completed.
         """
         self.create_tables()
@@ -205,6 +206,7 @@ class DatabaseManager:
                     ALTER TABLE scans
                         ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'COMPLETED',
                         ADD COLUMN IF NOT EXISTS status                TEXT DEFAULT 'completed',
+                        ADD COLUMN IF NOT EXISTS attempt_count         INTEGER DEFAULT 0,
                         ADD COLUMN IF NOT EXISTS error_message         TEXT,
                         ADD COLUMN IF NOT EXISTS claimed_at            TIMESTAMPTZ
                 """)
@@ -239,9 +241,10 @@ class DatabaseManager:
                 """
                 INSERT INTO scans (
                     scan_id, subscription_id, started_at, completed_at,
-                    total_findings, score, cve_enrichment_status, status, error_message
+                    total_findings, score, cve_enrichment_status, status,
+                    attempt_count, error_message
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO UPDATE SET
                     completed_at = EXCLUDED.completed_at,
                     total_findings = EXCLUDED.total_findings,
@@ -258,6 +261,7 @@ class DatabaseManager:
                     scan_result.get("score"),
                     scan_result.get("cve_enrichment_status", "PENDING"),
                     scan_result.get("status", "completed"),
+                    scan_result.get("attempt_count", 0),
                     scan_result.get("error_message"),
                 ),
             )
@@ -395,8 +399,8 @@ class DatabaseManager:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, status)
-                VALUES (%s, %s, %s, 'pending')
+                INSERT INTO scans (scan_id, subscription_id, started_at, status, attempt_count)
+                VALUES (%s, %s, %s, 'pending', 0)
                 """,
                 (scan_id, subscription_id, started_at),
             )
@@ -412,7 +416,7 @@ class DatabaseManager:
             if status == "completed":
                 completed_at = datetime.now(timezone.utc).isoformat()
                 cur.execute(
-                    "UPDATE scans SET status = %s, completed_at = %s WHERE scan_id = %s",
+                    "UPDATE scans SET status = %s, completed_at = %s, error_message = NULL WHERE scan_id = %s",
                     (status, completed_at, scan_id),
                 )
             else:
@@ -433,7 +437,10 @@ class DatabaseManager:
             cur.execute(
                 """
                 UPDATE scans
-                SET status = 'running', claimed_at = %s
+                SET status = 'running',
+                    claimed_at = %s,
+                    attempt_count = COALESCE(attempt_count, 0) + 1,
+                    error_message = NULL
                 WHERE scan_id = (
                     SELECT scan_id
                     FROM scans
@@ -452,25 +459,51 @@ class DatabaseManager:
                 return dict(row)
             return None
 
-    def recover_stale_scans(self, timeout_minutes: int = 60) -> int:
-        """Mark scans that have been 'running' for too long as 'failed'."""
+    def recover_stale_scans(self, timeout_minutes: int = 60, max_attempts: int = 3) -> int:
+        """Recover scans left running after a worker crash or restart.
+
+        Stale scans are returned to pending while retry attempts remain. Once a
+        scan has reached max_attempts, it is marked failed so it cannot loop
+        forever on bad credentials or persistent Azure errors.
+        """
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
                 """
                 UPDATE scans
                 SET status = 'failed',
-                    error_message = 'Scan timed out after remaining in running state for too long.'
+                    error_message = 'Scan exceeded maximum retry attempts after worker interruption.'
                 WHERE status = 'running'
-                  AND claimed_at < (CURRENT_TIMESTAMP - INTERVAL '%s minutes')
+                  AND COALESCE(attempt_count, 1) >= %s
+                  AND claimed_at < (CURRENT_TIMESTAMP - (%s * INTERVAL '1 minute'))
                 """,
-                (timeout_minutes,),
+                (max_attempts, timeout_minutes),
             )
-            count = cur.rowcount
+            failed_count = cur.rowcount
+
+            cur.execute(
+                """
+                UPDATE scans
+                SET status = 'pending',
+                    claimed_at = NULL,
+                    error_message = 'Scan worker interrupted before completion. Queued for retry.'
+                WHERE status = 'running'
+                  AND COALESCE(attempt_count, 0) < %s
+                  AND claimed_at < (CURRENT_TIMESTAMP - (%s * INTERVAL '1 minute'))
+                """,
+                (max_attempts, timeout_minutes),
+            )
+            retry_count = cur.rowcount
         conn.commit()
-        if count > 0:
-            logger.info("Recovered %d stale 'running' scans", count)
-        return count
+        total_count = failed_count + retry_count
+        if total_count > 0:
+            logger.info(
+                "Recovered %d stale 'running' scans (%d retried, %d failed)",
+                total_count,
+                retry_count,
+                failed_count,
+            )
+        return total_count
 
     def get_pending_scans(self) -> List[Dict[str, Any]]:
         """Return all scans in the 'pending' state."""
