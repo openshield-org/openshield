@@ -3,6 +3,8 @@
 import logging
 import requests
 
+from api.observability import LLM_PROVIDER_LATENCY_SECONDS
+
 logger = logging.getLogger(__name__)
 
 PROVIDERS = ("anthropic", "groq", "gemini")
@@ -23,11 +25,12 @@ def get_completion(provider: str, api_key: str, prompt: str, model: str = None) 
 
     resolved_model = model or DEFAULT_MODELS[provider]
 
-    if provider == "anthropic":
-        return _anthropic(api_key, prompt, resolved_model)
-    if provider == "groq":
-        return _groq(api_key, prompt, resolved_model)
-    return _gemini(api_key, prompt, resolved_model)
+    with LLM_PROVIDER_LATENCY_SECONDS.labels(provider=provider).time():
+        if provider == "anthropic":
+            return _anthropic(api_key, prompt, resolved_model)
+        if provider == "groq":
+            return _groq(api_key, prompt, resolved_model)
+        return _gemini(api_key, prompt, resolved_model)
 
 
 def _anthropic(api_key: str, prompt: str, model: str) -> str:

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from api.observability import RULE_ERRORS_TOTAL
 from scanner.azure_client import AzureClient
 
 logger = logging.getLogger(__name__)
@@ -121,6 +122,7 @@ class ScanEngine:
                 findings.extend(rule_findings)
                 logger.info("Rule %s produced %d finding(s)", rule_id, len(rule_findings))
             except Exception as exc:
+                RULE_ERRORS_TOTAL.labels(rule_id=rule_id).inc()
                 logger.error("Rule %s raised an exception: %s", rule_id, exc, exc_info=True)
 
         completed_at = datetime.now(timezone.utc).isoformat()

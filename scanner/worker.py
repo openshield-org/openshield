@@ -12,12 +12,16 @@ import traceback
 from datetime import datetime, timezone
 
 from api.models.finding import DatabaseManager
+from api.observability import (
+    PENDING_SCANS,
+    SCAN_DURATION_SECONDS,
+    SCANS_TOTAL,
+    configure_logging,
+    init_sentry,
+)
 from scanner.engine import ScanEngine
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+configure_logging()
 logger = logging.getLogger("scanner.worker")
 
 POLL_INTERVAL_SECONDS = 5
@@ -30,6 +34,9 @@ def run_worker():
         logger.error("DATABASE_URL environment variable is not set")
         return
 
+    # Initialise Sentry only when SENTRY_DSN is configured (no-op otherwise).
+    init_sentry()
+
     db = DatabaseManager(db_url)
     logger.info("OpenShield Background Worker started. Polling every %ds", POLL_INTERVAL_SECONDS)
 
@@ -38,7 +45,10 @@ def run_worker():
             # 1. Cleanup stale scans from previous crashes
             db.recover_stale_scans(timeout_minutes=60)
 
-            # 2. Atomic claim
+            # 2. Publish current queue depth
+            PENDING_SCANS.set(len(db.get_pending_scans()))
+
+            # 3. Atomic claim
             scan = db.claim_next_pending_scan()
             if not scan:
                 time.sleep(POLL_INTERVAL_SECONDS)
@@ -47,8 +57,14 @@ def run_worker():
             scan_id = str(scan["scan_id"])
             subscription_id = scan["subscription_id"]
 
-            logger.info("Starting scan %s for %s", scan_id, subscription_id)
+            logger.info(
+                "Starting scan %s for %s",
+                scan_id,
+                subscription_id,
+                extra={"scan_id": scan_id},
+            )
 
+            scan_start = time.perf_counter()
             try:
                 engine = ScanEngine(subscription_id)
                 result = engine.run_scan(scan_id)
@@ -58,14 +74,27 @@ def run_worker():
                 result["status"] = "completed"
 
                 db.save_scan(result)
-                logger.info("Successfully completed scan %s", scan_id)
+                SCANS_TOTAL.labels(status="completed").inc()
+                logger.info(
+                    "Successfully completed scan %s",
+                    scan_id,
+                    extra={"scan_id": scan_id},
+                )
             except Exception as exc:
                 error_msg = f"{str(exc)}\n{traceback.format_exc()}"
-                logger.error("Scan %s failed: %s", scan_id, error_msg)
+                SCANS_TOTAL.labels(status="failed").inc()
+                logger.error(
+                    "Scan %s failed: %s",
+                    scan_id,
+                    error_msg,
+                    extra={"scan_id": scan_id},
+                )
 
                 # Sanitize public error message
                 public_error = "An internal error occurred during the scan. Please check the logs."
                 db.update_scan_status(scan_id, "failed", error_message=public_error)
+            finally:
+                SCAN_DURATION_SECONDS.observe(time.perf_counter() - scan_start)
 
         except Exception as exc:
             logger.error("Worker loop encountered an error: %s", exc)

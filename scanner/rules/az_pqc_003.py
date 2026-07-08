@@ -8,7 +8,7 @@ RULE_NAME = "Key Vault Certificate Using Non-Quantum-Safe Signature Algorithm"
 SEVERITY = "MEDIUM"
 CATEGORY = "PostQuantum"
 FRAMEWORKS = {
-    "CIS": "8.5",
+    "CIS": "8.9",
     "NIST": "PR.DS-2",
     "ISO27001": "A.10.1.1",
     "SOC2": "CC6.7",

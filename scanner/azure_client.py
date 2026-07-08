@@ -494,20 +494,28 @@ class AzureClient:
         """Fetch Conditional Access policies from the Microsoft Graph API.
 
         Requires the credential to have 'Policy.Read.All' Graph permission.
-        Returns empty list if the permission is not granted or the call fails.
+        Follows '@odata.nextLink' until exhausted so tenants with enough
+        policies to span multiple pages don't silently lose results from
+        page 2 onward. Returns empty list if the permission is not granted
+        or the call fails.
         """
         import requests  # imported here to keep azure-only paths dependency-free
+
+        policies: List[Any] = []
+        url = "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies"
 
         try:
             token = self.credential.get_token("https://graph.microsoft.com/.default")
             headers = {"Authorization": f"Bearer {token.token}"}
-            response = requests.get(
-                "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies",
-                headers=headers,
-                timeout=30,
-            )
-            response.raise_for_status()
-            return response.json().get("value", [])
+
+            while url:
+                response = requests.get(url, headers=headers, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+                policies.extend(data.get("value", []))
+                url = data.get("@odata.nextLink")
+
+            return policies
         except Exception as exc:
             logger.error("get_conditional_access_policies failed: %s", exc)
             return []

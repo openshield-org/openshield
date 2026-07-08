@@ -10,7 +10,7 @@ RULE_NAME = "Storage Account Not Using Geo-Redundant Replication"
 SEVERITY = "MEDIUM"
 CATEGORY = "Storage"
 FRAMEWORKS = {
-    "CIS": "3.1",
+    "CIS": "3.8",
     "NIST": "PR.IP-4",
     "ISO27001": "A.17.2.1",
     "SOC2": "A1.2",

@@ -7,7 +7,7 @@ RULE_NAME = "Public DNS Zone Exposes Internal Infrastructure Details"
 SEVERITY = "MEDIUM"
 CATEGORY = "Network"
 FRAMEWORKS = {
-    "CIS": "9.1",
+    "CIS": "9.8",
     "NIST": "PR.AC-5",
     "ISO27001": "A.13.1.1",
     "SOC2": "CC6.6",
