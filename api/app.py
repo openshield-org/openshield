@@ -11,17 +11,17 @@ from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from api.models.finding import DatabaseManager
+from api.observability import configure_logging, get_request_id, init_app, init_sentry
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+configure_logging()
+init_sentry()
 logger = logging.getLogger(__name__)
 
-# Paths that are always public regardless of environment or demo mode
-_ALWAYS_PUBLIC = {"/", "/health"}
+# Paths that are always public regardless of environment or demo mode.
+# /ready and /metrics are probe/scrape endpoints and must never require auth.
+_ALWAYS_PUBLIC = {"/", "/health", "/ready", "/metrics"}
 
 # Maximum accepted request body size (bytes). Guards AI endpoints and the rest
 # of the API against oversized payloads tying up worker threads.
@@ -104,6 +104,14 @@ def create_app() -> Flask:
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # ------------------------------------------------------------------ #
+    # Observability                                                        #
+    # ------------------------------------------------------------------ #
+    # Registered first so request IDs and request timing are available to
+    # every later before_request handler (including JWT auth) and to the
+    # error handlers. Also mounts the public /metrics endpoint.
+    init_app(app)
+
+    # ------------------------------------------------------------------ #
     # Configuration & Security                                             #
     # ------------------------------------------------------------------ #
     app.config["JWT_SECRET"] = _resolve_jwt_secret()
@@ -176,7 +184,12 @@ def create_app() -> Flask:
 
         auth = request.headers.get("Authorization", "")
         if not auth.startswith("Bearer "):
-            return jsonify({"error": "Missing or malformed Authorization header"}), 401
+            return jsonify(
+                {
+                    "error": "Missing or malformed Authorization header",
+                    "request_id": get_request_id(),
+                }
+            ), 401
 
         token = auth.split(" ", 1)[1]
         try:
@@ -187,9 +200,10 @@ def create_app() -> Flask:
             )
             g.user = payload
         except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired"}), 401
+            return jsonify({"error": "Token has expired", "request_id": get_request_id()}), 401
         except jwt.InvalidTokenError as exc:
-            return jsonify({"error": f"Invalid token: {exc}"}), 401
+            logger.warning("Invalid JWT token: %s", exc)
+            return jsonify({"error": "Invalid token", "request_id": get_request_id()}), 401
 
         return None
 
@@ -226,7 +240,19 @@ def create_app() -> Flask:
 
     @app.get("/health")
     def health():
+        """Liveness probe: process is up. Deliberately does not touch the DB."""
         return jsonify({"status": "ok"})
+
+    @app.get("/ready")
+    def ready():
+        """Readiness probe: 200 when the database is reachable, else 503."""
+        try:
+            db = DatabaseManager()
+            db.ping()
+            return jsonify({"status": "ready"}), 200
+        except Exception as exc:
+            logger.warning("Readiness check failed: %s", exc)
+            return jsonify({"status": "not_ready", "error": "database_unreachable"}), 503
 
     # ------------------------------------------------------------------ #
     # Error handlers                                                        #
@@ -234,19 +260,19 @@ def create_app() -> Flask:
 
     @app.errorhandler(400)
     def bad_request(exc):
-        return jsonify({"error": "Bad request", "detail": str(exc)}), 400
+        return jsonify({"error": "Bad request", "detail": str(exc), "request_id": get_request_id()}), 400
 
     @app.errorhandler(401)
     def unauthorized(exc):
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized", "request_id": get_request_id()}), 401
 
     @app.errorhandler(403)
     def forbidden(exc):
-        return jsonify({"error": "Forbidden"}), 403
+        return jsonify({"error": "Forbidden", "request_id": get_request_id()}), 403
 
     @app.errorhandler(404)
     def not_found(exc):
-        return jsonify({"error": "Not found"}), 404
+        return jsonify({"error": "Not found", "request_id": get_request_id()}), 404
 
     @app.errorhandler(413)
     def payload_too_large(exc):
@@ -255,7 +281,7 @@ def create_app() -> Flask:
     @app.errorhandler(500)
     def internal_error(exc):
         logger.error("Unhandled exception: %s", exc)
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": "Internal server error", "request_id": get_request_id()}), 500
 
     logger.info("OpenShield API created - %d blueprints registered", len(app.blueprints))
     return app

@@ -1,15 +1,20 @@
 ---
-name: Bug report
+name: Bug Report
 about: Something is broken
+title: 'bug: '
 labels: bug
+assignees: ''
 ---
 
 ## What happened?
 
 ## What did you expect?
 
-## Steps to reproduce?
+## Steps to reproduce
 
 ## Environment
+- OpenShield version:
 - Python version:
-- Azure SDK version:
+- OS:
+
+## Logs or screenshots

@@ -24,6 +24,8 @@ import urllib.parse
 import json
 from typing import Optional
 
+from api.observability import NVD_REQUEST_LATENCY_SECONDS
+
 logger = logging.getLogger(__name__)
 
 _NVD_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
@@ -143,8 +145,9 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
                 headers={"User-Agent": "OpenShield/0.1 (github.com/openshield-org/openshield)"},
             )
             # URL host is the hardcoded NVD API base, not user-controlled
-            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
-                data = json.loads(resp.read())
+            with NVD_REQUEST_LATENCY_SECONDS.time():
+                with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+                    data = json.loads(resp.read())
 
             vulnerabilities = data.get("vulnerabilities", [])
             results = [parsed for item in vulnerabilities if (parsed := _parse_cve_item(item)) is not None]
