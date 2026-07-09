@@ -9,9 +9,7 @@ from api.services import ai_provider
 def test_gemini_api_key_sent_via_header_not_query_param(mock_post):
     mock_resp = MagicMock()
     mock_resp.status_code = 200
-    mock_resp.json.return_value = {
-        "candidates": [{"content": {"parts": [{"text": "ok"}]}}]
-    }
+    mock_resp.json.return_value = {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
     mock_post.return_value = mock_resp
 
     result = ai_provider.get_completion("gemini", "top-secret-key", "prompt")

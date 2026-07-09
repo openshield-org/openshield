@@ -167,6 +167,17 @@ class DatabaseManager:
                 CREATE INDEX IF NOT EXISTS idx_findings_rule_id
                     ON findings(rule_id);
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS rate_limit_hits (
+                    id         SERIAL PRIMARY KEY,
+                    limit_key  TEXT NOT NULL,
+                    hit_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+                );
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_key_time
+                    ON rate_limit_hits(limit_key, hit_at);
+            """)
         conn.commit()
         logger.info("Database tables created / verified")
 

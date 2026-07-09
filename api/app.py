@@ -8,6 +8,7 @@ import jwt
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from api.models.finding import DatabaseManager
 
@@ -95,6 +96,12 @@ def create_app() -> Flask:
     - Global database connection teardown
     """
     app = Flask(__name__)
+
+    # Trust exactly one reverse-proxy hop (Render's edge) for the client IP
+    # and scheme, so request.remote_addr reflects the real caller instead of
+    # collapsing every client onto Render's proxy address. Rate limiting and
+    # any other per-IP logic depend on this being accurate.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # ------------------------------------------------------------------ #
     # Configuration & Security                                             #
