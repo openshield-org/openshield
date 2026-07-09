@@ -51,17 +51,13 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for vault in vaults:
         vault_id = getattr(vault, "id", "") or ""
-        vault_name = getattr(vault, "name", "") or azure_client.parse_resource_id(
-            vault_id
-        ).get("name", "")
+        vault_name = getattr(vault, "name", "") or azure_client.parse_resource_id(vault_id).get("name", "")
         parsed = azure_client.parse_resource_id(vault_id)
         resource_group = parsed.get("resource_group", "")
 
         certs = azure_client.get_key_vault_certificates(vault_name)
         if certs is None:
-            logger.warning(
-                "AZ-PQC-003: unable to list certificates for vault %s", vault_name
-            )
+            logger.warning("AZ-PQC-003: unable to list certificates for vault %s", vault_name)
             continue
 
         for cert in certs:
@@ -69,23 +65,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             if key_type.upper() in _CLASSICAL_KEY_TYPES:
                 cert_id = getattr(cert, "id", "") or f"{vault_id}/certificates/{getattr(cert, 'name', '')}"
                 cert_name = getattr(cert, "name", "") or cert_id.rstrip("/").split("/")[-1]
-                findings.append({
-                    "rule_id": RULE_ID,
-                    "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
-                    "category": CATEGORY,
-                    "resource_id": cert_id,
-                    "resource_name": cert_name,
-                    "resource_type": "Microsoft.KeyVault/vaults/certificates",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
-                    "playbook": PLAYBOOK,
-                    "frameworks": FRAMEWORKS,
-                    "metadata": {
-                        "resource_group": resource_group,
-                        "vault_name": vault_name,
-                        "key_type": key_type,
-                    },
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": cert_id,
+                        "resource_name": cert_name,
+                        "resource_type": "Microsoft.KeyVault/vaults/certificates",
+                        "description": DESCRIPTION,
+                        "remediation": REMEDIATION,
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {
+                            "resource_group": resource_group,
+                            "vault_name": vault_name,
+                            "key_type": key_type,
+                        },
+                    }
+                )
 
     return findings

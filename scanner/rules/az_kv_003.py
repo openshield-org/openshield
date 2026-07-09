@@ -10,12 +10,7 @@ RULE_NAME = "Key Vault Without Diagnostic Logging Enabled"
 SEVERITY = "MEDIUM"
 CATEGORY = "KeyVault"
 
-FRAMEWORKS = {
-    "CIS": "8.4",
-    "NIST": "DE.CM-7",
-    "ISO27001": "A.12.4.1",
-    "SOC2": "CC7.2"
-}
+FRAMEWORKS = {"CIS": "8.4", "NIST": "DE.CM-7", "ISO27001": "A.12.4.1", "SOC2": "CC7.2"}
 
 DESCRIPTION = (
     "Azure Key Vault diagnostic logging is not enabled. Without diagnostic "
@@ -50,22 +45,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if status is False:
             parsed = azure_client.parse_resource_id(vault.id)
 
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": vault.id,
-                "resource_name": vault.name,
-                "resource_type": "Microsoft.KeyVault/vaults",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": parsed.get("resource_group", ""),
-                    "location": getattr(vault, "location", ""),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vault.id,
+                    "resource_name": vault.name,
+                    "resource_type": "Microsoft.KeyVault/vaults",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": parsed.get("resource_group", ""),
+                        "location": getattr(vault, "location", ""),
+                    },
+                }
+            )
 
     return findings

@@ -18,10 +18,7 @@ DESCRIPTION = (
     "Without it malware and ransomware can run undetected. "
     "CIS 8.2 requires an approved AV/EDR solution on all VMs."
 )
-REMEDIATION = (
-    "Install IaaSAntimalware or onboard to MDE (MDE.Windows / MDE.Linux) "
-    "depending on the OS."
-)
+REMEDIATION = "Install IaaSAntimalware or onboard to MDE (MDE.Windows / MDE.Linux) depending on the OS."
 PLAYBOOK = "playbooks/cli/fix_az_cmp_003.sh"
 
 KNOWN_EP_EXTENSIONS = {
@@ -59,22 +56,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 installed.add(t.lower())
 
         if not installed.intersection(KNOWN_EP_EXTENSIONS):
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": vm.id,
-                "resource_name": vm_name,
-                "resource_type": "Microsoft.Compute/virtualMachines",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": rg,
-                    "installed_extensions": sorted(installed),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vm.id,
+                    "resource_name": vm_name,
+                    "resource_type": "Microsoft.Compute/virtualMachines",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": rg,
+                        "installed_extensions": sorted(installed),
+                    },
+                }
+            )
 
     return findings

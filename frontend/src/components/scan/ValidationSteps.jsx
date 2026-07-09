@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiCheckCircle } from 'react-icons/fi';
 
 export default function ValidationSteps({ steps }) {

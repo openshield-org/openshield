@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiCalendar, FiBox } from 'react-icons/fi';
 import SeverityBadge from '../shared/SeverityBadge';
 import { formatDate } from '../../utils/helpers';

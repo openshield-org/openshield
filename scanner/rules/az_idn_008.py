@@ -36,9 +36,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     try:
         from azure.mgmt.authorization import AuthorizationManagementClient
 
-        auth_client = AuthorizationManagementClient(
-            azure_client.credential, subscription_id
-        )
+        auth_client = AuthorizationManagementClient(azure_client.credential, subscription_id)
         role_definitions = list(
             auth_client.role_definitions.list(
                 scope=f"/subscriptions/{subscription_id}",
@@ -46,9 +44,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             )
         )
     except Exception as exc:
-        logger.error(
-            "AZ-IDN-008: Failed to list custom role definitions: %s", exc
-        )
+        logger.error("AZ-IDN-008: Failed to list custom role definitions: %s", exc)
         return findings
 
     for role in role_definitions:
@@ -59,33 +55,32 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         flagged_actions = []
         for perm in permissions:
             for action in perm.actions or []:
-                if any(
-                    action == pattern or action.endswith(pattern)
-                    for pattern in WILDCARD_PATTERNS
-                ):
+                if any(action == pattern or action.endswith(pattern) for pattern in WILDCARD_PATTERNS):
                     flagged_actions.append(action)
 
         if not flagged_actions:
             continue
 
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": role_id,
-            "resource_name": role_name,
-            "resource_type": "Microsoft.Authorization/roleDefinitions",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "role_name": role_name,
-                "role_id": role_id,
-                "flagged_actions": flagged_actions,
-                "assignable_scopes": list(role.assignable_scopes or []),
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": role_id,
+                "resource_name": role_name,
+                "resource_type": "Microsoft.Authorization/roleDefinitions",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "role_name": role_name,
+                    "role_id": role_id,
+                    "flagged_actions": flagged_actions,
+                    "assignable_scopes": list(role.assignable_scopes or []),
+                },
+            }
+        )
 
     return findings

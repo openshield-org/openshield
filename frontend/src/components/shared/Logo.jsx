@@ -1,4 +1,3 @@
-import React from 'react';
 
 // Shield-Lock mark: filled rounded shield with a solid keyhole cutout.
 // Usage:

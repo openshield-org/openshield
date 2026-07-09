@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FiLayout, FiTerminal, FiClock, FiArrowRight, FiTool, FiAlertTriangle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,8 +18,9 @@ export default function QuickRemediation({ ranking, finding }) {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
 
-  // Fade-in on mount and on issue change
+  // Fade-in on mount and on issue change. Synchronous reset intentionally retriggers the CSS transition.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisible(false);
     const t = setTimeout(() => setVisible(true), 20);
     return () => clearTimeout(t);

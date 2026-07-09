@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiClock } from 'react-icons/fi';
 
 const EFFORT_LABEL = { 1: 'LOW', 2: 'LOW', 3: 'MEDIUM', 4: 'HIGH', 5: 'HIGH' };
@@ -24,7 +23,7 @@ export default function ActionItems({ rankings, selectedId, onSelect }) {
 
   return (
     <div className="space-y-2">
-      {items.map((item, i) => {
+      {items.map((item) => {
         const effortLabel = EFFORT_LABEL[item.effort] ?? 'MEDIUM';
         const eta = EFFORT_ETA[item.effort] ?? '—';
         const impactStyle = IMPACT_STYLES[item.impact] ?? IMPACT_STYLES.MEDIUM;

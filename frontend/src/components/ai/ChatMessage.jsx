@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiCpu, FiUser } from 'react-icons/fi';
 import { formatDateTime } from '../../utils/helpers';
 

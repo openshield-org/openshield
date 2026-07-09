@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FiCpu, FiX, FiAlertCircle, FiKey, FiCheckCircle, FiSettings } from 'react-icons/fi';
+import { FiCpu, FiX, FiAlertCircle, FiKey, FiCheckCircle } from 'react-icons/fi';
 import { api } from '../utils/api';
 import { aiApi, aiSettings } from '../utils/aiApi';
 import ChatPanel from '../components/ai/ChatPanel';
@@ -89,8 +89,8 @@ export default function AILayer() {
   const location = useLocation();
   const chatRef  = useRef(null);
 
-  const [initialMessages, setInitialMessages] = useState([]);
-  const [suggestions,     setSuggestions]     = useState([]);
+  const [initialMessages] = useState([]);
+  const [suggestions] = useState([]);
   const [findings,        setFindings]        = useState([]);
   const [selectedFinding, setSelectedFinding] = useState(null);
   const [summary,         setSummary]         = useState(null);

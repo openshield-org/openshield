@@ -30,21 +30,23 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     for nsg in azure_client.get_network_security_groups():
         rules = getattr(nsg, "security_rules", []) or []
         if len(rules) == 0:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": getattr(nsg, "id", ""),
-                "resource_name": getattr(nsg, "name", ""),
-                "resource_type": "Microsoft.Network/networkSecurityGroups",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "rule_count": len(rules),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": getattr(nsg, "id", ""),
+                    "resource_name": getattr(nsg, "name", ""),
+                    "resource_type": "Microsoft.Network/networkSecurityGroups",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "rule_count": len(rules),
+                    },
+                }
+            )
 
     return findings

@@ -87,7 +87,7 @@ export const aiApi = {
   settings: aiSettings,
 
   // ── Chat / Q&A  POST /api/ai/ask ──────────────────────────────────────────
-  chat: async ({ question, contextFinding, findings = [] }) => {
+  chat: async ({ question, findings = [] }) => {
     if (!aiSettings.isConfigured()) return null;
     const result = await aiApiFetch('/ai/ask', buildBody({ question, findings }));
     return {

@@ -32,10 +32,12 @@ def get_compliance(framework: str):
     """
     try:
         if framework.lower() not in SUPPORTED_FRAMEWORKS:
-            return jsonify({
-                "error": f"Unknown framework '{framework}'",
-                "supported": list(SUPPORTED_FRAMEWORKS),
-            }), 400
+            return jsonify(
+                {
+                    "error": f"Unknown framework '{framework}'",
+                    "supported": list(SUPPORTED_FRAMEWORKS),
+                }
+            ), 400
 
         db = _get_db()
         result = db.get_compliance_score(framework.lower())

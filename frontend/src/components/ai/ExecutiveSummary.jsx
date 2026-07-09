@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiRefreshCw, FiClock, FiTrendingUp } from 'react-icons/fi';
 import { formatDateTime } from '../../utils/helpers';
 

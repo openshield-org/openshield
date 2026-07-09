@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import { api } from '../utils/api';
 import PriorityMatrix from '../components/prioritization/PriorityMatrix';

@@ -45,15 +45,17 @@ def get_drift():
 
         if len(scans) < 2:
             last_checked = _ts(scans[0]["started_at"]) if scans else None
-            return jsonify({
-                "summary": {"total": 0, "added": 0, "removed": 0, "modified": 0, "last_checked": last_checked},
-                "events": [],
-            })
+            return jsonify(
+                {
+                    "summary": {"total": 0, "added": 0, "removed": 0, "modified": 0, "last_checked": last_checked},
+                    "events": [],
+                }
+            )
 
-        latest_id   = str(scans[0]["scan_id"])
+        latest_id = str(scans[0]["scan_id"])
         previous_id = str(scans[1]["scan_id"])
         last_checked = _ts(scans[0]["started_at"])
-        prev_ts      = _ts(scans[1]["started_at"])
+        prev_ts = _ts(scans[1]["started_at"])
 
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -68,7 +70,7 @@ def get_drift():
             rows = cur.fetchall()
 
         # Build lookup: key = (rule_id, resource_id) → row, per scan
-        latest_map: dict   = {}
+        latest_map: dict = {}
         previous_map: dict = {}
         for row in rows:
             key = (row["rule_id"], row["resource_id"])
@@ -77,7 +79,7 @@ def get_drift():
             else:
                 previous_map[key] = row
 
-        added_keys   = set(latest_map) - set(previous_map)
+        added_keys = set(latest_map) - set(previous_map)
         removed_keys = set(previous_map) - set(latest_map)
 
         def _rg(resource_id: str) -> str:
@@ -89,53 +91,59 @@ def get_drift():
 
         for key in sorted(added_keys, key=lambda k: k[0]):
             row = latest_map[key]
-            events.append({
-                "id":             event_id,
-                "type":           "ADDED",
-                "severity":       row["severity"],
-                "resource_name":  row["resource_name"],
-                "resource_type":  row["resource_type"],
-                "resource_group": _rg(row["resource_id"]),
-                "field":          "security_policy",
-                "old_value":      None,
-                "new_value":      row["severity"],
-                "changed_by":     "azure-policy-scan",
-                "changed_at":     last_checked,
-                "rule_violated":  row["rule_id"],
-            })
+            events.append(
+                {
+                    "id": event_id,
+                    "type": "ADDED",
+                    "severity": row["severity"],
+                    "resource_name": row["resource_name"],
+                    "resource_type": row["resource_type"],
+                    "resource_group": _rg(row["resource_id"]),
+                    "field": "security_policy",
+                    "old_value": None,
+                    "new_value": row["severity"],
+                    "changed_by": "azure-policy-scan",
+                    "changed_at": last_checked,
+                    "rule_violated": row["rule_id"],
+                }
+            )
             event_id += 1
 
         for key in sorted(removed_keys, key=lambda k: k[0]):
             row = previous_map[key]
-            events.append({
-                "id":             event_id,
-                "type":           "REMOVED",
-                "severity":       row["severity"],
-                "resource_name":  row["resource_name"],
-                "resource_type":  row["resource_type"],
-                "resource_group": _rg(row["resource_id"]),
-                "field":          "security_policy",
-                "old_value":      row["severity"],
-                "new_value":      None,
-                "changed_by":     "azure-policy-scan",
-                "changed_at":     prev_ts,
-                "rule_violated":  row["rule_id"],
-            })
+            events.append(
+                {
+                    "id": event_id,
+                    "type": "REMOVED",
+                    "severity": row["severity"],
+                    "resource_name": row["resource_name"],
+                    "resource_type": row["resource_type"],
+                    "resource_group": _rg(row["resource_id"]),
+                    "field": "security_policy",
+                    "old_value": row["severity"],
+                    "new_value": None,
+                    "changed_by": "azure-policy-scan",
+                    "changed_at": prev_ts,
+                    "rule_violated": row["rule_id"],
+                }
+            )
             event_id += 1
 
         # Sort all events by changed_at desc
         events.sort(key=lambda e: e["changed_at"] or "", reverse=True)
 
-        return jsonify({
-            "summary": {
-                "total":        len(events),
-                "added":        len(added_keys),
-                "removed":      len(removed_keys),
-                "modified":     0,
-                "last_checked": last_checked,
-            },
-            "events": events,
-        })
+        return jsonify(
+            {
+                "summary": {
+                    "total": len(events),
+                    "added": len(added_keys),
+                    "removed": len(removed_keys),
+                    "modified": 0,
+                    "last_checked": last_checked,
+                },
+                "events": events,
+            }
+        )
 
     except Exception as exc:
         logger.error("Failed to compute drift: %s", exc)

@@ -42,9 +42,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     try:
         import requests
 
-        token = azure_client.credential.get_token(
-            "https://graph.microsoft.com/.default"
-        )
+        token = azure_client.credential.get_token("https://graph.microsoft.com/.default")
         headers = {"Authorization": f"Bearer {token.token}"}
 
         response = requests.get(
@@ -73,8 +71,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error("AZ-IDN-005: Failed to fetch data from Graph API: %s", exc)
         logger.warning(
-            "AZ-IDN-005: Ensure the service principal has "
-            "RoleManagement.Read.Directory permission on Microsoft Graph."
+            "AZ-IDN-005: Ensure the service principal has RoleManagement.Read.Directory permission on Microsoft Graph."
         )
         return findings
 
@@ -104,29 +101,27 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             continue
 
         role_name = role_definitions[role_def_id]
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": (
-                f"/users/{principal_id}/roleAssignments/{assignment.get('id', '')}"
-            ),
-            "resource_name": user.get(
-                "displayName", user.get("userPrincipalName", principal_id)
-            ),
-            "resource_type": "Microsoft.Graph/users",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "user_id": principal_id,
-                "user_principal_name": user.get("userPrincipalName", ""),
-                "user_type": "Guest",
-                "role_name": role_name,
-                "role_definition_id": role_def_id,
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": (f"/users/{principal_id}/roleAssignments/{assignment.get('id', '')}"),
+                "resource_name": user.get("displayName", user.get("userPrincipalName", principal_id)),
+                "resource_type": "Microsoft.Graph/users",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "user_id": principal_id,
+                    "user_principal_name": user.get("userPrincipalName", ""),
+                    "user_type": "Guest",
+                    "role_name": role_name,
+                    "role_definition_id": role_def_id,
+                },
+            }
+        )
 
     return findings

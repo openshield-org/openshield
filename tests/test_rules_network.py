@@ -5,9 +5,18 @@ import scanner.rules.az_net_002 as az_net_002
 from tests.helpers.mock_azure import make_resource
 
 _REQUIRED_FIELDS = {
-    "rule_id", "rule_name", "severity", "category",
-    "resource_id", "resource_name", "resource_type",
-    "description", "remediation", "playbook", "frameworks", "metadata",
+    "rule_id",
+    "rule_name",
+    "severity",
+    "category",
+    "resource_id",
+    "resource_name",
+    "resource_type",
+    "description",
+    "remediation",
+    "playbook",
+    "frameworks",
+    "metadata",
 }
 
 _SUB = "00000000-0000-0000-0000-000000000001"
@@ -15,10 +24,7 @@ _RG = "rg-test"
 
 
 def _nsg_id(name):
-    return (
-        f"/subscriptions/{_SUB}/resourceGroups/{_RG}"
-        f"/providers/Microsoft.Network/networkSecurityGroups/{name}"
-    )
+    return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Network/networkSecurityGroups/{name}"
 
 
 def _allow_rule(name, port, source="10.0.0.0/24"):

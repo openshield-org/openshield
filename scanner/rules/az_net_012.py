@@ -47,33 +47,32 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         try:
             flow_logs = azure_client.get_nsg_flow_logs(resource_group)
             for flow_log in flow_logs:
-                if (
-                    getattr(flow_log, "target_resource_id", "") == nsg_id
-                    and getattr(flow_log, "enabled", False)
-                ):
+                if getattr(flow_log, "target_resource_id", "") == nsg_id and getattr(flow_log, "enabled", False):
                     flow_log_enabled = True
                     break
         except Exception:
             flow_log_enabled = False
 
         if not flow_log_enabled:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": nsg_id,
-                "resource_name": nsg_name,
-                "resource_type": "Microsoft.Network/networkSecurityGroups",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-                "metadata": {
-                    "resource_group": resource_group,
-                    "flow_logs_enabled": False,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": nsg_id,
+                    "resource_name": nsg_name,
+                    "resource_type": "Microsoft.Network/networkSecurityGroups",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "detected_at": datetime.now(timezone.utc).isoformat(),
+                    "metadata": {
+                        "resource_group": resource_group,
+                        "flow_logs_enabled": False,
+                    },
+                }
+            )
 
     return findings

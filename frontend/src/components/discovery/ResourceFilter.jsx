@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiSearch, FiX, FiLayers, FiList } from 'react-icons/fi';
 
 const RISK_PILLS = [
