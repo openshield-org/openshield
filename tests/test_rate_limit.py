@@ -6,7 +6,6 @@ import pytest
 from flask import Flask, jsonify
 
 import api.rate_limit as rate_limit_module
-from api.rate_limit import rate_limit
 
 
 class _FakeRateLimitStore:
@@ -50,7 +49,7 @@ def _make_app(limit=3, window=60):
     app = Flask(__name__)
 
     @app.get("/ping")
-    @rate_limit(limit, window)
+    @rate_limit_module.rate_limit(limit, window)
     def ping():
         return jsonify({"ok": True})
 
@@ -75,12 +74,12 @@ def test_limit_is_scoped_per_route(_mock_db_backend):
     app = Flask(__name__)
 
     @app.get("/a")
-    @rate_limit(1)
+    @rate_limit_module.rate_limit(1)
     def a():
         return jsonify({"ok": True})
 
     @app.get("/b")
-    @rate_limit(1)
+    @rate_limit_module.rate_limit(1)
     def b():
         return jsonify({"ok": True})
 
