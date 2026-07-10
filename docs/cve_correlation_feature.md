@@ -21,7 +21,7 @@ The CVE Correlation feature integrates the MITRE National Vulnerability Database
 | scanner/engine.py | Decoupled Scan. Removed synchronous enrichment from the scan lifecycle. | Performance: Azure scans now return immediately without waiting for NVD rate limits (7s per resource type). |
 | api/routes/scans.py | New Endpoint. Added `POST /api/scans/<scan_id>/enrich`. | Flexibility: CVE enrichment can now be triggered on-demand or by a background job after the scan completes. |
 | api/models/finding.py | Updated Scan model and added enrichment status tracking. | Persistence: Adds `cve_enrichment_status` to track `PENDING`, `COMPLETED`, or `FAILED` states. |
-| api/app.py | Added db.run_migrations call at startup. | Auto-Deployment: Ensures the database schema is updated automatically on any environment where the app is launched. |
+| alembic/versions/ | Defines CVE columns in the versioned database schema. | Deployment: Alembic owns schema changes independently of Flask application startup. |
 | api/routes/score.py | Added GET /api/score/cve-summary endpoint. | Dashboard UI: Provides the frontend with high-level data like Total Known Exploits and enrichment status. |
 | api/routes/findings.py | Returns findings from the database without JIT enrichment. | Performance: Ensures predictable and fast API responses for findings. |
 

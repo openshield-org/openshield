@@ -2,7 +2,6 @@
 
 import secrets
 import time
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -14,12 +13,7 @@ _TEST_JWT_SECRET = secrets.token_urlsafe(32)
 
 
 @pytest.fixture
-def app(monkeypatch):
-    # Mock DatabaseManager before importing create_app
-
-    mock_db = MagicMock()
-    monkeypatch.setattr("api.app.DatabaseManager", MagicMock(return_value=mock_db))
-
+def app():
     from api.app import create_app
 
     application = create_app()
