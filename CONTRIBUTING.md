@@ -213,13 +213,10 @@ Most list methods return an empty list on failure. Methods that fetch one resour
 ```bash
 # Python 3.10+
 pip install -r requirements.txt
-# Installs Flask, Azure SDK clients, requests, psycopg2, PyJWT, and PyYAML for CI workflow validation.
+# Installs Flask, Alembic, Azure SDK clients, requests, psycopg2, PyJWT, and PyYAML for CI workflow validation.
 
 # Frontend
 # The frontend directory is currently a scaffold. The React dashboard MVP is on the roadmap.
-
-# API
-FLASK_APP=api/app.py flask run --debug
 
 # Database (Docker)
 docker run --name openshield-db \
@@ -227,7 +224,17 @@ docker run --name openshield-db \
   -e POSTGRES_PASSWORD=openshield \
   -e POSTGRES_DB=openshield \
   -p 5432:5432 -d postgres
+
+export DATABASE_URL=postgresql://openshield:openshield@localhost:5432/openshield
+alembic upgrade head
+
+# API
+FLASK_APP=api/app.py flask run --debug
 ```
+
+See [Database Migrations](docs/database-migrations.md) before creating or applying
+a schema change. Migration revisions are written explicitly because OpenShield
+does not use ORM metadata.
 
 ---
 

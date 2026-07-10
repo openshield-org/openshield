@@ -7,22 +7,8 @@ set -euo pipefail
 export OPENSHIELD_ENV="${OPENSHIELD_ENV:-production}"
 
 echo "=== OpenShield startup ==="
-echo "Running database initialisation..."
-
-python -c "
-import os, sys
-try:
-    from api.models.finding import DatabaseManager
-    db = DatabaseManager(os.environ['DATABASE_URL'])
-    if hasattr(db, 'init_db'):
-        db.init_db()
-        print('Database initialised.')
-    else:
-        print('WARNING: DatabaseManager has no init_db() method — skipping.')
-except Exception as e:
-    print(f'ERROR during DB init: {e}', file=sys.stderr)
-    sys.exit(1)
-"
+echo "Applying database migrations..."
+alembic upgrade head
 
 echo "Startup complete. Starting background worker and Gunicorn..."
 # Start the background worker process with a simple restart loop

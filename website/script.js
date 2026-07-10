@@ -90,12 +90,12 @@ async function runTerminalSession() {
     let currentSession = 0;
 
     while (true) {
-        container.innerHTML = '';
+        container.textContent = '';
         const session = sessions[currentSession];
 
         const cmdRow = document.createElement('div');
         cmdRow.className = 'flex items-start';
-        cmdRow.innerHTML = '<span class="text-brand-500 mr-3 shrink-0">❯</span><span class="command-text"></span>';
+        cmdRow.textContent = '<span class="text-brand-500 mr-3 shrink-0">❯</span><span class="command-text"></span>';
         container.appendChild(cmdRow);
         
         const cmdTextSpan = cmdRow.querySelector('.command-text');
@@ -155,7 +155,7 @@ function showBlogPost(postId) {
             ? `<div class="relative w-full aspect-video rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl mb-12"><iframe src="${post.video}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
             : '';
 
-        postContent.innerHTML = `
+        postContent.textContent = `
             ${imageHtml}
             ${videoHtml}
             <header class="mb-12 border-b border-slate-100 dark:border-white/5 pb-12">
@@ -171,7 +171,7 @@ function showBlogPost(postId) {
                 ${(() => {
                     const html = marked.parse(dedent(post.content));
                     const temp = document.createElement('div');
-                    temp.innerHTML = html;
+                    temp.textContent = html;
                     temp.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
                     return temp.innerHTML;
                 })()}
@@ -345,7 +345,7 @@ function updatePreview() {
             ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${embedUrl}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
             : '';
 
-        preview.innerHTML = `
+        preview.textContent = `
             ${imageHtml}
             <header class="mb-8 border-b border-slate-100 dark:border-white/5 pb-8">
                 <div class="flex items-center text-brand-500 text-xs font-bold mb-4 uppercase tracking-widest">
@@ -361,7 +361,7 @@ function updatePreview() {
                 ${(() => {
                     const html = marked.parse(dedent(content));
                     const temp = document.createElement('div');
-                    temp.innerHTML = html;
+                    temp.textContent = html;
                     temp.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
                     return temp.innerHTML;
                 })()}
@@ -370,7 +370,7 @@ function updatePreview() {
     } else if (type === 'event') {
         const location = document.getElementById('edit-location').value || 'Location';
         const status = document.getElementById('edit-status').value || 'Upcoming';
-        preview.innerHTML = `
+        preview.textContent = `
             <div class="flex flex-col items-center justify-center text-center py-20">
                 <div class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest mb-6">
                     Event Preview
@@ -385,7 +385,7 @@ function updatePreview() {
     } else if (type === 'contributor') {
         const handle = document.getElementById('edit-handle').value || 'username';
         const role = document.getElementById('edit-role').value || 'Contributor';
-        preview.innerHTML = `
+        preview.textContent = `
             <div class="flex flex-col items-center justify-center text-center py-20">
                 <div class="inline-flex items-center px-3 py-1 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8">
                     Contributor Preview
@@ -405,7 +405,7 @@ function updatePreview() {
         const version = document.getElementById('edit-release-version').value || 'vX.Y.Z';
         const releaseType = document.getElementById('edit-release-type').value || 'minor';
         const notes = (document.getElementById('edit-release-notes').value || '').split('\n').filter(l => l.trim());
-        preview.innerHTML = `
+        preview.textContent = `
             <div class="py-8">
                 <div class="flex items-center gap-4 mb-4">
                     <span class="font-mono text-2xl font-extrabold text-slate-900 dark:text-white">${escapeHTML(version)}</span>
@@ -631,7 +631,7 @@ function renderEcosystem() {
     const container = document.getElementById('ecosystem-container');
     if (!container) return;
 
-    container.innerHTML = siteContent.ecosystem.map((item, idx) => {
+    container.textContent = siteContent.ecosystem.map((item, idx) => {
         const isLarge = idx === 0 || idx === 3;
         const colSpan = isLarge ? 'md:col-span-8' : 'md:col-span-4';
         
@@ -670,7 +670,7 @@ function renderRules() {
     });
 
     if (filteredRules.length === 0) {
-        container.innerHTML = `
+        container.textContent = `
             <div class="col-span-full text-center py-12 bg-slate-50 dark:bg-white/5 border border-dashed border-slate-300 dark:border-white/10 rounded-3xl">
                 <p class="text-slate-500">No rules match your search criteria.</p>
             </div>
@@ -678,7 +678,7 @@ function renderRules() {
         return;
     }
 
-    container.innerHTML = filteredRules.map(rule => `
+    container.textContent = filteredRules.map(rule => `
         <div class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-8 rounded-3xl hover:border-brand-500/50 transition-all group shadow-sm flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
                 <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">${escapeHTML(rule.id)}</span>
@@ -703,7 +703,7 @@ function renderDocsSidebar() {
     const nav = document.getElementById('docs-nav');
     if (!nav) return;
 
-    nav.innerHTML = siteContent.docs.map(doc => `
+    nav.textContent = siteContent.docs.map(doc => `
         <button onclick="showDocPage('${doc.id}')" id="nav-${doc.id}" class="doc-nav-btn block w-full text-left px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 rounded-2xl transition-all flex items-center group">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-brand-500 mr-3 transition-colors"></span>
             ${escapeHTML(doc.title)}
@@ -719,10 +719,10 @@ function showDocPage(docId) {
     if (container) {
         const rawHtml = marked.parse(dedent(doc.content));
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = rawHtml;
+        tempDiv.textContent = rawHtml;
         tempDiv.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
         
-        container.innerHTML = `
+        container.textContent = `
             ${tempDiv.innerHTML}
             <div class="mt-16 pt-8 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-6 not-prose">
                 <div>
@@ -757,7 +757,7 @@ function showDocPage(docId) {
 function renderBlog() {
     const container = document.getElementById('blog-container');
     if (container) {
-        container.innerHTML = siteContent.blog.map(post => {
+        container.textContent = siteContent.blog.map(post => {
             const imageHtml = post.image 
                 ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-6 border border-slate-200 dark:border-white/10 shadow-sm">`
                 : '';
@@ -781,7 +781,7 @@ function renderEvents() {
     if (!container || !siteContent.events) return;
 
     if (siteContent.events.length === 0) {
-        container.innerHTML = `
+        container.textContent = `
             <div class="text-center py-12 bg-slate-50 dark:bg-white/5 border border-dashed border-slate-300 dark:border-white/10 rounded-3xl">
                 <p class="text-slate-500">No upcoming events. Stay tuned!</p>
             </div>
@@ -789,7 +789,7 @@ function renderEvents() {
         return;
     }
 
-    container.innerHTML = siteContent.events.map(event => `
+    container.textContent = siteContent.events.map(event => `
         <div class="flex flex-col md:flex-row justify-between items-center p-8 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl hover:border-brand-500/50 transition-all gap-6">
             <div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">${escapeHTML(event.title)}</h3>
@@ -828,7 +828,7 @@ function renderRoadmap() {
 
         const config = statusConfig[status];
 
-        container.innerHTML = groups[status].map(item => `
+        container.textContent = groups[status].map(item => `
             <div class="p-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl group transition-all hover:border-${config.color}-500/30">
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">${escapeHTML(item.category)}</span>
@@ -846,7 +846,7 @@ function renderReleases() {
 
     const typeColors = { major: 'blue', minor: 'emerald', patch: 'slate' };
 
-    container.innerHTML = siteContent.releases.map((release, idx) => {
+    container.textContent = siteContent.releases.map((release, idx) => {
         const color = typeColors[release.type] || 'slate';
         const isLatest = idx === 0;
         return `
@@ -884,7 +884,7 @@ function renderFAQ() {
     const container = document.getElementById('faq-container');
     if (!container || !siteContent.faq) return;
 
-    container.innerHTML = siteContent.faq.map((item, idx) => `
+    container.textContent = siteContent.faq.map((item, idx) => `
         <div class="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden transition-all">
             <button
                 onclick="toggleFAQ(${idx})"
@@ -915,7 +915,7 @@ function renderShowcase() {
     const container = document.getElementById('showcase-container');
     if (!container || !siteContent.showcase) return;
 
-    container.innerHTML = siteContent.showcase.map(item => `
+    container.textContent = siteContent.showcase.map(item => `
         <div class="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 p-8 rounded-3xl hover:border-brand-500/50 transition-all text-center">
             <div class="w-16 h-16 mx-auto bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center mb-6">
                 <i data-lucide="${item.icon}" class="w-8 h-8"></i>
@@ -931,7 +931,7 @@ async function renderContributors() {
     if (!container || !siteContent.contributors) return;
 
     // Strictly show only the primary release team
-    container.innerHTML = siteContent.contributors.map(c => `
+    container.textContent = siteContent.contributors.map(c => `
         <a href="https://github.com/${c.handle}" target="_blank" title="${c.name} (${c.role})" class="group relative">
             <img src="https://github.com/${c.handle}.png" alt="${c.name}" class="w-14 h-14 rounded-full border-2 border-slate-900 dark:border-white/10 transition-transform group-hover:scale-110 group-hover:border-slate-400 group-hover:z-10 relative">
             <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
@@ -980,9 +980,9 @@ async function runMockScan() {
 
     // Reset UI
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Running...';
-    terminal.innerHTML = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + document.getElementById('pg-env').value + ' --pkg ' + document.getElementById('pg-framework').value + '</div>';
-    feed.innerHTML = '';
+    btn.textContent = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Running...';
+    terminal.textContent = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + document.getElementById('pg-env').value + ' --pkg ' + document.getElementById('pg-framework').value + '</div>';
+    feed.textContent = '';
     scoreEl.textContent = '100';
     scoreEl.className = 'text-6xl font-black text-emerald-500 transition-colors duration-500';
     Object.values(counters).forEach(c => c.textContent = '0');
@@ -1055,7 +1055,7 @@ async function runMockScan() {
             const card = document.createElement('div');
             card.className = 'bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 p-4 rounded-2xl animate-slide-in-right shadow-sm';
             const color = event.sev === 'CRITICAL' ? 'red' : 'amber';
-            card.innerHTML = `
+            card.textContent = `
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${event.id}</span>
                     <span class="px-1.5 py-0.5 rounded text-[7px] font-bold bg-${color}-500/10 text-${color}-500 border border-${color}-500/20">${event.sev}</span>
@@ -1068,7 +1068,7 @@ async function runMockScan() {
     }
 
     btn.disabled = false;
-    btn.innerHTML = '<i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i> Re-run Scan';
+    btn.textContent = '<i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i> Re-run Scan';
     if (window.lucide) lucide.createIcons();
 }
 
@@ -1077,7 +1077,7 @@ function animateValue(obj, start, end, duration) {
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.innerHTML = Math.floor(progress * (end - start) + start);
+        obj.textContent = Math.floor(progress * (end - start) + start);
         if (progress < 1) {
             window.requestAnimationFrame(step);
         }

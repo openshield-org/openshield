@@ -137,7 +137,14 @@ brew services start postgresql@15
 createdb openshield
 ```
 
-The `DatabaseManager.create_tables()` call in the scan trigger will create the schema automatically on first run.
+Create the database schema with Alembic before running a scan or starting the API:
+
+```bash
+set -a; source .env; set +a
+alembic upgrade head
+```
+
+See [Database Migrations](database-migrations.md) before onboarding an existing production database.
 
 ---
 
@@ -197,7 +204,7 @@ Render is recommended for hosting the OpenShield API. Use the Starter instance o
    - Name: `openshield-api`
    - Branch: `main`
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn api.app:create_app()`
+   - Start Command: `./startup.sh`
    - Instance Type: `Free`
 
 5. Add environment variables under Environment:
