@@ -399,7 +399,8 @@ class DatabaseManager:
                 SET status = 'failed',
                     error_message = 'Scan exceeded maximum retry attempts after worker interruption.'
                 WHERE status = 'running'
-                  AND claimed_at < (CURRENT_TIMESTAMP - make_interval(mins => %s))
+                  AND COALESCE(attempt_count, 1) >= %s
+                  AND claimed_at < (CURRENT_TIMESTAMP - (%s * INTERVAL '1 minute'))
                 """,
                 (max_attempts, timeout_minutes),
             )

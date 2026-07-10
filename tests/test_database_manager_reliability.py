@@ -46,21 +46,10 @@ def test_get_score_deducts_points_for_findings():
     assert score == 75
 
 
-# ── REL-002: recover_stale_scans uses make_interval, not string interpolation ──
-
-
-def test_recover_stale_scans_uses_make_interval_not_string_interval():
-    db = _db()
-    conn = MagicMock()
-    conn.cursor.return_value = _mock_cursor(rowcount=2)
-    with patch.object(db, "_get_conn", return_value=conn):
-        count = db.recover_stale_scans(timeout_minutes=60)
-
-    executed_sql, params = conn.cursor.return_value.execute.call_args[0]
-    assert "make_interval(mins => %s)" in executed_sql
-    assert "INTERVAL '%s minutes'" not in executed_sql
-    assert params == (60,)
-    assert count == 2
+# REL-002 (recover_stale_scans's interval handling) is now covered by
+# tests/test_async_scan_persistence.py's attempt-count-based tests, which
+# supersede this file's original single-query, single-param version of the
+# function.
 
 
 # ── REL-003: connections are borrowed from / returned to a shared pool ─────
