@@ -461,9 +461,7 @@ class MockAzureClient:
     def get_web_apps(self) -> List[Any]:
         return self._web_apps
 
-    def get_sql_server_auditing_policy(
-        self, resource_group: str, server_name: str
-    ) -> Optional[Any]:
+    def get_sql_server_auditing_policy(self, resource_group: str, server_name: str) -> Optional[Any]:
         return self._sql_auditing_policies.get((resource_group, server_name))
 
     @staticmethod

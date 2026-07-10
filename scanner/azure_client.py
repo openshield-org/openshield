@@ -39,6 +39,22 @@ def enum_str(value: Any, default: str = "") -> str:
     return str(getattr(value, "value", value))
 
 
+def enum_str(value: Any, default: str = "") -> str:
+    """Safely coerce an Azure SDK field to its plain string form.
+
+    Azure SDK models often return fields typed as enums (e.g.
+    SecurityRuleDirection, BlobAuditingPolicyState) rather than plain
+    strings. ``str(enum_member)`` yields something like
+    "SecurityRuleDirection.INBOUND", not the underlying value "Inbound",
+    which breaks naive string comparisons. This prefers ``.value`` when
+    present (covers real SDK enums and enum-like objects) and falls back
+    to ``str()`` for plain strings, None, or anything else.
+    """
+    if value is None:
+        return default
+    return str(getattr(value, "value", value))
+
+
 class AzureClient:
     """Wraps Azure SDK management clients for all CSPM scan operations.
 
