@@ -3,6 +3,8 @@
 import logging
 from typing import Any, Dict, List
 
+from scanner.azure_client import enum_str
+
 RULE_ID = "AZ-DB-002"
 RULE_NAME = "Azure SQL Server Has No Auditing Configured"
 SEVERITY = "MEDIUM"
@@ -31,6 +33,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         parsed = azure_client.parse_resource_id(server.id)
         resource_group = parsed.get("resource_group", "")
         if not resource_group:
+            logger.warning(
+                "Skipping AZ-DB-002 check for %s: could not parse resource group from malformed ARM ID %r",
+                getattr(server, "name", "<unknown>"),
+                getattr(server, "id", ""),
+            )
             continue
 
         policy = azure_client.get_sql_server_auditing_policy(resource_group, server.name)
@@ -45,7 +52,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             )
             continue
 
-        state = str(getattr(policy, "state", "Disabled"))
+        state = enum_str(getattr(policy, "state", None), default="Disabled")
         is_disabled = state.lower() != "enabled"
 
         if is_disabled:
@@ -64,7 +71,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "frameworks": FRAMEWORKS,
                     "metadata": {
                         "resource_group": resource_group,
-                        "auditing_state": getattr(policy, "state", "Unknown") if policy else "Unknown",
+                        "auditing_state": state,
                     },
                 }
             )

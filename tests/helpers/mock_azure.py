@@ -113,9 +113,7 @@ class MockAzureClient:
     def get_key_vault_certificates(self, vault_name: str) -> List[Any]:
         return self._key_vault_certificates.get(vault_name, [])
 
-    def get_sql_server_auditing_policy(
-        self, resource_group: str, server_name: str
-    ) -> Optional[Any]:
+    def get_sql_server_auditing_policy(self, resource_group: str, server_name: str) -> Optional[Any]:
         return self._sql_auditing_policies.get((resource_group, server_name))
 
     @staticmethod

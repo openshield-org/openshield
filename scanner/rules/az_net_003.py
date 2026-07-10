@@ -3,6 +3,8 @@
 import logging
 from typing import Any, Dict, List
 
+from scanner.azure_client import enum_str
+
 RULE_ID = "AZ-NET-003"
 RULE_NAME = "NSG allows unrestricted inbound on port 443"
 SEVERITY = "HIGH"
@@ -33,14 +35,16 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for nsg in azure_client.get_network_security_groups():
         for rule in getattr(nsg, "security_rules", []) or []:
-            direction = str(getattr(rule, "direction", "") or "")
-            access = str(getattr(rule, "access", "") or "")
+            direction = enum_str(getattr(rule, "direction", None))
+            access = enum_str(getattr(rule, "access", None))
             allowed_sources = {"*", "0.0.0.0/0", "internet", "any"}
-            single_prefix = str(getattr(rule, "source_address_prefix", "") or "")
+            single_prefix = enum_str(getattr(rule, "source_address_prefix", None))
             plural_prefixes = getattr(rule, "source_address_prefixes", None) or []
-            source_matches = single_prefix.lower() in allowed_sources or any(
-                str(prefix or "").lower() in allowed_sources for prefix in plural_prefixes
+            matched_plural_prefix = next(
+                (prefix for prefix in plural_prefixes if enum_str(prefix).lower() in allowed_sources),
+                None,
             )
+            source_matches = single_prefix.lower() in allowed_sources or matched_plural_prefix is not None
 
             if (
                 direction.lower() == "inbound"
@@ -63,7 +67,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "frameworks": FRAMEWORKS,
                         "metadata": {
                             "rule_name": getattr(rule, "name", ""),
-                            "source_prefix": getattr(rule, "source_address_prefix", ""),
+                            "source_prefix": single_prefix if single_prefix.lower() in allowed_sources else "",
+                            "matched_source_address_prefix": matched_plural_prefix,
                         },
                     }
                 )

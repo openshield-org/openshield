@@ -1,9 +1,18 @@
 """Rule regression tests for AZ-NET-001, AZ-NET-002, and AZ-NET-003."""
 
+import pytest
+
 import scanner.rules.az_net_001 as az_net_001
 import scanner.rules.az_net_002 as az_net_002
 import scanner.rules.az_net_003 as az_net_003
 from tests.helpers.mock_azure import make_resource
+
+try:
+    from azure.mgmt.network.models import SecurityRule, SecurityRuleAccess, SecurityRuleDirection
+
+    _AZURE_SDK_AVAILABLE = True
+except ImportError:  # pragma: no cover - exercised only when SDK isn't installed
+    _AZURE_SDK_AVAILABLE = False
 
 _REQUIRED_FIELDS = {
     "rule_id",
@@ -112,8 +121,7 @@ def test_net_002_noncompliant_returns_one_finding(mock_azure, subscription_id):
     assert finding["resource_name"] == "nsg-rdp-open"
 
 
-def _net_003_rule(name, direction="Inbound", access="Allow",
-                   source="0.0.0.0/0", source_list=None, port="443"):
+def _net_003_rule(name, direction="Inbound", access="Allow", source="0.0.0.0/0", source_list=None, port="443"):
     return make_resource(
         name=name,
         direction=direction,
@@ -177,3 +185,72 @@ def test_net_003_detects_plural_source_prefixes(mock_azure, subscription_id):
     mock_azure.set_network_security_groups([nsg])
     findings = az_net_003.scan(mock_azure, subscription_id)
     assert len(findings) == 1
+
+
+@pytest.mark.skipif(not _AZURE_SDK_AVAILABLE, reason="azure-mgmt-network not installed")
+def test_net_003_detects_finding_with_real_sdk_enum_direction_and_access(mock_azure, subscription_id):
+    """COR-001 (SDK model): real SecurityRuleDirection/Access enums, not plain strings,
+    must still be detected. str(enum) yields e.g. "SecurityRuleDirection.INBOUND" rather
+    than "Inbound", so the rule must normalise via .value instead of naive str()."""
+    rule = SecurityRule(
+        name="AllowHTTPSFromInternetEnum",
+        direction=SecurityRuleDirection.INBOUND,
+        access=SecurityRuleAccess.ALLOW,
+        source_address_prefix="0.0.0.0/0",
+        source_address_prefixes=[],
+        destination_port_range="443",
+    )
+    nsg = make_resource(
+        id=_nsg_id("nsg-443-open-enum"),
+        name="nsg-443-open-enum",
+        security_rules=[rule],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-NET-003"
+
+
+@pytest.mark.skipif(not _AZURE_SDK_AVAILABLE, reason="azure-mgmt-network not installed")
+def test_net_003_compliant_with_real_sdk_enum_returns_no_findings(mock_azure, subscription_id):
+    """COR-001 (SDK model): real SDK enums on a restricted rule must produce no findings."""
+    rule = SecurityRule(
+        name="AllowHTTPSFromTrustedEnum",
+        direction=SecurityRuleDirection.INBOUND,
+        access=SecurityRuleAccess.ALLOW,
+        source_address_prefix="10.0.0.0/24",
+        source_address_prefixes=[],
+        destination_port_range="443",
+    )
+    nsg = make_resource(
+        id=_nsg_id("nsg-443-restricted-enum"),
+        name="nsg-443-restricted-enum",
+        security_rules=[rule],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+@pytest.mark.skipif(not _AZURE_SDK_AVAILABLE, reason="azure-mgmt-network not installed")
+def test_net_003_detects_plural_source_prefixes_with_real_sdk_model(mock_azure, subscription_id):
+    """COR-002 (SDK model): an open source only in source_address_prefixes, using a real
+    SecurityRule instance with SDK enum fields, must still be detected and reported in
+    finding metadata."""
+    rule = SecurityRule(
+        name="AllowHTTPSPluralOpenEnum",
+        direction=SecurityRuleDirection.INBOUND,
+        access=SecurityRuleAccess.ALLOW,
+        source_address_prefix=None,
+        source_address_prefixes=["0.0.0.0/0"],
+        destination_port_range="443",
+    )
+    nsg = make_resource(
+        id=_nsg_id("nsg-plural-prefix-enum"),
+        name="nsg-plural-prefix-enum",
+        security_rules=[rule],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["matched_source_address_prefix"] == "0.0.0.0/0"
