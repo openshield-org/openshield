@@ -22,7 +22,7 @@ export const aiSettings = {
   getModel:    () => localStorage.getItem('ai_model')    || '',
   save: ({ provider, apiKey, model }) => {
     if (provider)           localStorage.setItem('ai_provider', provider);
-    if (apiKey !== undefined) localStorage.setItem('ai_api_key', apiKey);
+    if (apiKey !== undefined) /* key storage removed */;
     if (model !== undefined)  localStorage.setItem('ai_model', model || '');
   },
   isConfigured: () => !!localStorage.getItem('ai_api_key'),
@@ -87,7 +87,7 @@ export const aiApi = {
   settings: aiSettings,
 
   // ── Chat / Q&A  POST /api/ai/ask ──────────────────────────────────────────
-  chat: async ({ question, contextFinding, findings = [] }) => {
+  chat: async ({ question, findings = [] }) => {
     if (!aiSettings.isConfigured()) return null;
     const result = await aiApiFetch('/ai/ask', buildBody({ question, findings }));
     return {

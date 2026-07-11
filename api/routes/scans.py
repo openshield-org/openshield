@@ -59,9 +59,7 @@ def trigger_scan():
     """
     try:
         body = request.get_json(silent=True) or {}
-        subscription_id = body.get("subscription_id") or os.environ.get(
-            "AZURE_SUBSCRIPTION_ID"
-        )
+        subscription_id = body.get("subscription_id") or os.environ.get("AZURE_SUBSCRIPTION_ID")
 
         if not subscription_id:
             return jsonify({"error": "subscription_id is required"}), 400
@@ -76,11 +74,9 @@ def trigger_scan():
             logger.error("Failed to create pending scan: %s", exc, exc_info=True)
             return jsonify({"error": "Database error", "detail": str(exc)}), 500
 
-        return jsonify({
-            "scan_id": scan_id,
-            "status": "pending",
-            "message": "Scan has been queued and will start shortly."
-        }), 202
+        return jsonify(
+            {"scan_id": scan_id, "status": "pending", "message": "Scan has been queued and will start shortly."}
+        ), 202
 
     except Exception as exc:
         logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)
@@ -92,14 +88,14 @@ def enrich_scan(scan_id):
     """Trigger CVE enrichment for an existing scan."""
     try:
         db = _get_db()
-        
+
         # Check current status to avoid redundant NVD calls
         scans = db.get_scans()
         current_scan = next((s for s in scans if str(s["scan_id"]) == scan_id), None)
-        
+
         if not current_scan:
             return jsonify({"error": "Scan not found"}), 404
-            
+
         status = current_scan.get("cve_enrichment_status")
         if status == "COMPLETED":
             return jsonify({"message": "Scan already enriched", "scan_id": scan_id}), 200
@@ -122,11 +118,7 @@ def enrich_scan(scan_id):
             db.update_scan_enrichment_status(scan_id, "FAILED")
             return jsonify({"error": "Enrichment failed", "detail": str(exc)}), 500
 
-        return jsonify({
-            "scan_id": scan_id,
-            "status": "COMPLETED",
-            "enriched_count": len(enriched)
-        })
+        return jsonify({"scan_id": scan_id, "status": "COMPLETED", "enriched_count": len(enriched)})
 
     except Exception as exc:
         logger.error("Failed to enrich scan %s: %s", scan_id, exc)

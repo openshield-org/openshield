@@ -24,12 +24,14 @@ import urllib.parse
 import json
 from typing import Optional
 
+from api.observability import NVD_REQUEST_LATENCY_SECONDS
+
 logger = logging.getLogger(__name__)
 
 _NVD_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
-_REQUEST_DELAY_SECONDS = 7.0   # Stay under 5 req/30 sec limit
+_REQUEST_DELAY_SECONDS = 7.0  # Stay under 5 req/30 sec limit
 _MAX_RETRIES = 3
-_RESULTS_PER_PAGE = 5          # Top 5 CVEs per finding is enough for display
+_RESULTS_PER_PAGE = 5  # Top 5 CVEs per finding is enough for display
 
 # In-memory cache. Keyed by "keyword:results_per_page".
 # Resets each process - intentional, NVD data changes slowly.
@@ -125,10 +127,12 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
         logger.debug("NVD cache hit for: %s", keyword)
         return _cache[cache_key]
 
-    params = urllib.parse.urlencode({
-        "keywordSearch": keyword,
-        "resultsPerPage": results_per_page,
-    })
+    params = urllib.parse.urlencode(
+        {
+            "keywordSearch": keyword,
+            "resultsPerPage": results_per_page,
+        }
+    )
     url = f"{_NVD_BASE_URL}?{params}"
 
     for attempt in range(1, _MAX_RETRIES + 1):
@@ -138,19 +142,15 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
 
             req = urllib.request.Request(
                 url,
-                headers={
-                    "User-Agent": "OpenShield/0.1 (github.com/openshield-org/openshield)"
-                },
+                headers={"User-Agent": "OpenShield/0.1 (github.com/openshield-org/openshield)"},
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read())
+            # URL host is the hardcoded NVD API base, not user-controlled
+            with NVD_REQUEST_LATENCY_SECONDS.time():
+                with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+                    data = json.loads(resp.read())
 
             vulnerabilities = data.get("vulnerabilities", [])
-            results = [
-                parsed
-                for item in vulnerabilities
-                if (parsed := _parse_cve_item(item)) is not None
-            ]
+            results = [parsed for item in vulnerabilities if (parsed := _parse_cve_item(item)) is not None]
 
             _cache[cache_key] = results
             logger.info("NVD returned %d CVEs for: %s", len(results), keyword)
@@ -161,22 +161,25 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
                 wait = 30 * attempt  # Back off harder each retry
                 logger.warning(
                     "NVD rate limited (429). Waiting %ds before retry %d/%d",
-                    wait, attempt, _MAX_RETRIES,
+                    wait,
+                    attempt,
+                    _MAX_RETRIES,
                 )
                 time.sleep(wait)
             else:
-                logger.warning(
-                    "NVD HTTP %d for keyword '%s': %s", e.code, keyword, e
-                )
+                logger.warning("NVD HTTP %d for keyword '%s': %s", e.code, keyword, e)
                 break  # Non-rate-limit HTTP errors won't improve on retry
 
         except Exception as e:
             logger.warning(
                 "NVD query failed (attempt %d/%d) for '%s': %s",
-                attempt, _MAX_RETRIES, keyword, e,
+                attempt,
+                _MAX_RETRIES,
+                keyword,
+                e,
             )
             if attempt < _MAX_RETRIES:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
 
     logger.warning("NVD lookup failed for '%s' - returning empty list", keyword)
     _cache[cache_key] = []  # Cache the failure to avoid hammering NVD

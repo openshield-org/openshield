@@ -1,4 +1,5 @@
 """AZ-DB-003: PostgreSQL Flexible Server SSL enforcement disabled."""
+
 from typing import Any, Dict, List
 import logging
 
@@ -31,9 +32,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         parsed = azure_client.parse_resource_id(server.id)
         resource_group = parsed.get("resource_group", "")
 
-        params = azure_client.get_postgresql_flexible_server_parameters(
-            resource_group, server.name
-        )
+        params = azure_client.get_postgresql_flexible_server_parameters(resource_group, server.name)
 
         if not params:
             # Cannot determine SSL state — skip to avoid false positives
@@ -59,23 +58,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
         ssl_value = str(getattr(ssl_param, "value", "on")).lower()
         if ssl_value in ("off", "false", "0"):
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": server.id,
-                "resource_name": server.name,
-                "resource_type": "Microsoft.DBforPostgreSQL/flexibleServers",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": resource_group,
-                    "location": getattr(server, "location", ""),
-                    "ssl_value": ssl_value,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": server.id,
+                    "resource_name": server.name,
+                    "resource_type": "Microsoft.DBforPostgreSQL/flexibleServers",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": resource_group,
+                        "location": getattr(server, "location", ""),
+                        "ssl_value": ssl_value,
+                    },
+                }
+            )
 
     return findings

@@ -6,7 +6,7 @@ RULE_ID = "AZ-KV-001"
 RULE_NAME = "Key Vault with Soft Delete Disabled"
 SEVERITY = "MEDIUM"
 CATEGORY = "KeyVault"
-FRAMEWORKS = {"CIS": "8.5", "NIST": "PR.IP-4", "ISO27001": "A.17.2.1"}
+FRAMEWORKS = {"CIS": "8.8", "NIST": "PR.IP-4", "ISO27001": "A.17.2.1"}
 DESCRIPTION = (
     "Azure Key Vault soft delete is disabled. Without soft delete, secrets, keys, "
     "and certificates can be permanently destroyed immediately upon deletion — "
@@ -34,23 +34,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         soft_delete = getattr(props, "enable_soft_delete", True)
         if soft_delete is False:
             parsed = azure_client.parse_resource_id(vault.id)
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": vault.id,
-                "resource_name": vault.name,
-                "resource_type": "Microsoft.KeyVault/vaults",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": parsed.get("resource_group", ""),
-                    "location": getattr(vault, "location", ""),
-                    "purge_protection": getattr(props, "enable_purge_protection", False),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vault.id,
+                    "resource_name": vault.name,
+                    "resource_type": "Microsoft.KeyVault/vaults",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": parsed.get("resource_group", ""),
+                        "location": getattr(vault, "location", ""),
+                        "purge_protection": getattr(props, "enable_purge_protection", False),
+                    },
+                }
+            )
 
     return findings

@@ -35,15 +35,10 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     try:
         import requests
 
-        token = azure_client.credential.get_token(
-            "https://graph.microsoft.com/.default"
-        )
+        token = azure_client.credential.get_token("https://graph.microsoft.com/.default")
         headers = {"Authorization": f"Bearer {token.token}"}
 
-        next_url = (
-            "https://graph.microsoft.com/v1.0/reports/credentialUserRegistrationDetails"
-            "?$top=999"
-        )
+        next_url = "https://graph.microsoft.com/v1.0/reports/credentialUserRegistrationDetails?$top=999"
         registrations = []
         while next_url:
             response = requests.get(next_url, headers=headers, timeout=30)
@@ -57,10 +52,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             "AZ-IDN-007: Failed to fetch MFA registration report from Graph API: %s",
             exc,
         )
-        logger.warning(
-            "AZ-IDN-007: Ensure the service principal has "
-            "Reports.Read.All permission on Microsoft Graph."
-        )
+        logger.warning("AZ-IDN-007: Ensure the service principal has Reports.Read.All permission on Microsoft Graph.")
         return findings
 
     for reg in registrations:
@@ -73,25 +65,27 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         user_principal_name = reg.get("userPrincipalName", "")
         user_display_name = reg.get("userDisplayName", user_principal_name)
 
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": f"/users/{user_id}",
-            "resource_name": user_display_name,
-            "resource_type": "Microsoft.Graph/users",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "user_id": user_id,
-                "user_principal_name": user_principal_name,
-                "is_mfa_registered": False,
-                "is_mfa_capable": reg.get("isMfaCapable", False),
-                "is_sspr_registered": reg.get("isSsprRegistered", False),
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": f"/users/{user_id}",
+                "resource_name": user_display_name,
+                "resource_type": "Microsoft.Graph/users",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "user_id": user_id,
+                    "user_principal_name": user_principal_name,
+                    "is_mfa_registered": False,
+                    "is_mfa_capable": reg.get("isMfaCapable", False),
+                    "is_sspr_registered": reg.get("isSsprRegistered", False),
+                },
+            }
+        )
 
     return findings

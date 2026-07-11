@@ -1,14 +1,14 @@
 """AZ-PQC-001: App Service TLS below 1.3."""
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 RULE_ID = "AZ-PQC-001"
 RULE_NAME = "TLS Using Classical Key Exchange Algorithm"
 SEVERITY = "HIGH"
 CATEGORY = "PostQuantum"
 FRAMEWORKS = {
-    "CIS": "9.1",
+    "CIS": "9.9",
     "NIST": "PR.DS-2",
     "ISO27001": "A.10.1.1",
     "SOC2": "CC6.7",
@@ -31,14 +31,27 @@ PLAYBOOK = "playbooks/cli/fix_az_pqc_001.sh"
 logger = logging.getLogger(__name__)
 
 
+def _parse_version(version: Any) -> Optional[Tuple[int, ...]]:
+    """Parse a dotted version string into a tuple of ints for numeric
+    comparison, e.g. "1.10" -> (1, 10). Returns None if unparseable."""
+    try:
+        return tuple(int(part) for part in str(version).split("."))
+    except (TypeError, ValueError):
+        return None
+
+
 def _tls_version_below_13(version: Any) -> bool:
     if version is None:
         return False
-    try:
-        major, minor = str(version).split(".", maxsplit=1)
-        return (int(major), int(minor)) < (1, 3)
-    except (TypeError, ValueError):
-        return str(version) < "1.3"
+    parsed = _parse_version(version)
+    if parsed is None:
+        # Lexicographic string comparison would misorder versions like
+        # "1.10" vs "1.3" (a string compare falls to '1' < '3', treating
+        # 1.10 as *older* than 1.3). Rather than guess, skip unparseable
+        # values instead of flagging or clearing them incorrectly.
+        logger.warning("Unrecognized TLS version format %r; skipping", version)
+        return False
+    return parsed < (1, 3)
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
@@ -57,22 +70,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         min_tls = getattr(site_config, "min_tls_version", None) if site_config else None
 
         if _tls_version_below_13(min_tls):
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": app_id,
-                "resource_name": getattr(app, "name", ""),
-                "resource_type": "Microsoft.Web/sites",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": parsed.get("resource_group", ""),
-                    "min_tls_version": str(min_tls),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": app_id,
+                    "resource_name": getattr(app, "name", ""),
+                    "resource_type": "Microsoft.Web/sites",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": parsed.get("resource_group", ""),
+                        "min_tls_version": str(min_tls),
+                    },
+                }
+            )
 
     return findings

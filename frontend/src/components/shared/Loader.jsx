@@ -1,4 +1,3 @@
-import React from 'react';
 
 function Skeleton({ className }) {
   return <div className={`animate-pulse rounded bg-bg-secondary dark:bg-bg-dark-tertiary ${className}`} />;

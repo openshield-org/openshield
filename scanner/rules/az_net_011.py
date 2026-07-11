@@ -1,4 +1,5 @@
 """AZ-NET-011: Network Watcher not enabled in all regions."""
+
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-NET-011"
@@ -30,19 +31,21 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     unmonitored_regions = set(regions_with_resources) - set(regions_with_watcher)
 
     for region in sorted(unmonitored_regions):
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": f"/subscriptions/{subscription_id}/regions/{region}",
-            "resource_name": region,
-            "resource_type": "Microsoft.Network/networkWatchers",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {"region": region},
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": f"/subscriptions/{subscription_id}/regions/{region}",
+                "resource_name": region,
+                "resource_type": "Microsoft.Network/networkWatchers",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {"region": region},
+            }
+        )
 
     return findings

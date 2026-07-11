@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiCopy, FiCheck } from 'react-icons/fi';
 
 function CodeBlock({ command }) {

@@ -7,7 +7,7 @@ RULE_ID = "AZ-CMP-001"
 RULE_NAME = "VM with Public IP and No Associated NSG on Network Interface"
 SEVERITY = "HIGH"
 CATEGORY = "Compute"
-FRAMEWORKS = {"CIS": "7.2", "NIST": "PR.AC-3", "ISO27001": "A.13.1.1"}
+FRAMEWORKS = {"CIS": "7.1", "NIST": "PR.AC-3", "ISO27001": "A.13.1.1"}
 DESCRIPTION = (
     "A virtual machine has a public IP address assigned to its network interface "
     "but no Network Security Group protecting that interface. Without an NSG, "
@@ -49,29 +49,30 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 continue
 
             has_public_ip = any(
-                getattr(ip_cfg, "public_ip_address", None)
-                for ip_cfg in (getattr(nic, "ip_configurations", []) or [])
+                getattr(ip_cfg, "public_ip_address", None) for ip_cfg in (getattr(nic, "ip_configurations", []) or [])
             )
             has_nsg = bool(getattr(nic, "network_security_group", None))
 
             if has_public_ip and not has_nsg:
-                findings.append({
-                    "rule_id": RULE_ID,
-                    "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
-                    "category": CATEGORY,
-                    "resource_id": vm.id,
-                    "resource_name": vm.name,
-                    "resource_type": "Microsoft.Compute/virtualMachines",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
-                    "playbook": PLAYBOOK,
-                    "frameworks": FRAMEWORKS,
-                    "metadata": {
-                        "nic_id": nic_id,
-                        "nic_name": nic_name,
-                    },
-                })
+                findings.append(
+                    {
+                        "rule_id": RULE_ID,
+                        "rule_name": RULE_NAME,
+                        "severity": SEVERITY,
+                        "category": CATEGORY,
+                        "resource_id": vm.id,
+                        "resource_name": vm.name,
+                        "resource_type": "Microsoft.Compute/virtualMachines",
+                        "description": DESCRIPTION,
+                        "remediation": REMEDIATION,
+                        "playbook": PLAYBOOK,
+                        "frameworks": FRAMEWORKS,
+                        "metadata": {
+                            "nic_id": nic_id,
+                            "nic_name": nic_name,
+                        },
+                    }
+                )
                 break  # one finding per VM is sufficient
 
     return findings

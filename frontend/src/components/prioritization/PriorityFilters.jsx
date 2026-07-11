@@ -1,4 +1,3 @@
-import React from 'react';
 
 const CATEGORIES = ['All', 'Storage', 'Compute', 'Network', 'Identity', 'Database', 'KeyVault'];
 const SEVERITIES = ['All', 'HIGH', 'MEDIUM', 'LOW'];

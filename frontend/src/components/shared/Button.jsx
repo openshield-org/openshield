@@ -1,4 +1,3 @@
-import React from 'react';
 
 const variants = {
   primary: 'bg-brand-primary hover:bg-brand-secondary text-white',

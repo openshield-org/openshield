@@ -1,4 +1,5 @@
 """AZ-NET-015: Public DNS zone exposes private infrastructure via RFC1918 IPs or internal hostnames."""
+
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-NET-015"
@@ -6,7 +7,7 @@ RULE_NAME = "Public DNS Zone Exposes Internal Infrastructure Details"
 SEVERITY = "MEDIUM"
 CATEGORY = "Network"
 FRAMEWORKS = {
-    "CIS": "9.1",
+    "CIS": "9.8",
     "NIST": "PR.AC-5",
     "ISO27001": "A.13.1.1",
     "SOC2": "CC6.6",
@@ -27,8 +28,20 @@ REMEDIATION = (
 PLAYBOOK = "playbooks/cli/fix_az_net_015.sh"
 
 _INTERNAL_KEYWORDS = {
-    "admin", "vpn", "db", "internal", "dev", "staging", "test",
-    "corp", "intranet", "private", "mgmt", "management", "bastion", "jump",
+    "admin",
+    "vpn",
+    "db",
+    "internal",
+    "dev",
+    "staging",
+    "test",
+    "corp",
+    "intranet",
+    "private",
+    "mgmt",
+    "management",
+    "bastion",
+    "jump",
 }
 
 
@@ -41,11 +54,7 @@ def _is_rfc1918(ip: str) -> bool:
         first, second = int(parts[0]), int(parts[1])
     except ValueError:
         return False
-    return (
-        first == 10
-        or (first == 172 and 16 <= second <= 31)
-        or (first == 192 and second == 168)
-    )
+    return first == 10 or (first == 172 and 16 <= second <= 31) or (first == 192 and second == 168)
 
 
 def _is_internal_hostname(name: str) -> bool:
@@ -76,23 +85,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 internal_hostnames.append(record_name)
 
         if exposed_private_ips or internal_hostnames:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": zone.id,
-                "resource_name": zone.name,
-                "resource_type": "Microsoft.Network/dnsZones",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": resource_group,
-                    "zone_type": zone_type,
-                    "exposed_private_ips": exposed_private_ips,
-                    "internal_hostnames": internal_hostnames,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": zone.id,
+                    "resource_name": zone.name,
+                    "resource_type": "Microsoft.Network/dnsZones",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": resource_group,
+                        "zone_type": zone_type,
+                        "exposed_private_ips": exposed_private_ips,
+                        "internal_hostnames": internal_hostnames,
+                    },
+                }
+            )
     return findings

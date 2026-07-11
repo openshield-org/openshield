@@ -1,13 +1,13 @@
 """Tests proving that a clean (zero-finding) completed scan is shown by posture
 endpoints instead of falling back to stale data from an older scan."""
 
-from unittest.mock import MagicMock, patch, call
-import pytest
+from unittest.mock import MagicMock, patch
 
-from api.models.finding import DatabaseManager, FRAMEWORK_FILE_MAP
+from api.models.finding import DatabaseManager
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _db() -> DatabaseManager:
     """Return a DatabaseManager with a mock DSN (no real connection used)."""
@@ -28,6 +28,7 @@ def _mock_cursor(rows):
 
 
 # ── get_findings ──────────────────────────────────────────────────────────────
+
 
 def test_get_findings_uses_completed_status_not_total_findings():
     """get_findings() must filter on status='completed', not total_findings > 0."""
@@ -58,6 +59,7 @@ def test_get_findings_clean_scan_returns_empty_list():
 
 
 # ── get_score ─────────────────────────────────────────────────────────────────
+
 
 def test_get_score_uses_completed_status():
     """get_score() must scope to status='completed', not total_findings > 0."""
@@ -102,6 +104,7 @@ def test_get_score_does_not_include_old_scan_findings():
 
 # ── get_compliance_score ──────────────────────────────────────────────────────
 
+
 def test_get_compliance_score_scopes_to_latest_scan():
     """get_compliance_score() must only look at findings from the latest completed
     scan, not the entire findings table."""
@@ -112,15 +115,19 @@ def test_get_compliance_score_scopes_to_latest_scan():
 
     with patch.object(db, "_get_conn", return_value=conn):
         import json
-        fake_framework = json.dumps({
-            "framework": "Test",
-            "version": "1.0",
-            "controls": {"AZ-STOR-001": {"control_id": "3.1", "control_name": "Test control"}},
-        })
-        import builtins
+
+        fake_framework = json.dumps(
+            {
+                "framework": "Test",
+                "version": "1.0",
+                "controls": {"AZ-STOR-001": {"control_id": "3.1", "control_name": "Test control"}},
+            }
+        )
         import io
+
         with patch("builtins.open", return_value=io.StringIO(fake_framework)):
             from pathlib import Path
+
             with patch.object(Path, "exists", return_value=True):
                 db.get_compliance_score("cis")
 
@@ -136,16 +143,20 @@ def test_get_compliance_score_all_pass_after_clean_scan():
     cur = _mock_cursor([])
     conn.cursor.return_value = cur
 
-    import json, io
+    import json
+    import io
     from pathlib import Path
-    fake_framework = json.dumps({
-        "framework": "CIS Azure",
-        "version": "2.0",
-        "controls": {
-            "AZ-STOR-001": {"control_id": "3.1", "control_name": "No public blobs"},
-            "AZ-NET-001":  {"control_id": "6.1", "control_name": "No unrestricted SSH"},
-        },
-    })
+
+    fake_framework = json.dumps(
+        {
+            "framework": "CIS Azure",
+            "version": "2.0",
+            "controls": {
+                "AZ-STOR-001": {"control_id": "3.1", "control_name": "No public blobs"},
+                "AZ-NET-001": {"control_id": "6.1", "control_name": "No unrestricted SSH"},
+            },
+        }
+    )
 
     with patch.object(db, "_get_conn", return_value=conn):
         with patch("builtins.open", return_value=io.StringIO(fake_framework)):
@@ -157,7 +168,7 @@ def test_get_compliance_score_all_pass_after_clean_scan():
     assert result["score_percent"] == 100
     statuses = {c["rule_id"]: c["status"] for c in result["controls"]}
     assert statuses["AZ-STOR-001"] == "PASS"
-    assert statuses["AZ-NET-001"]  == "PASS"
+    assert statuses["AZ-NET-001"] == "PASS"
 
 
 def test_get_compliance_score_remediated_rule_shows_pass():
@@ -167,15 +178,19 @@ def test_get_compliance_score_remediated_rule_shows_pass():
     cur = _mock_cursor([])
     conn.cursor.return_value = cur
 
-    import json, io
+    import json
+    import io
     from pathlib import Path
-    fake_framework = json.dumps({
-        "framework": "CIS Azure",
-        "version": "2.0",
-        "controls": {
-            "AZ-STOR-001": {"control_id": "3.1", "control_name": "No public blobs"},
-        },
-    })
+
+    fake_framework = json.dumps(
+        {
+            "framework": "CIS Azure",
+            "version": "2.0",
+            "controls": {
+                "AZ-STOR-001": {"control_id": "3.1", "control_name": "No public blobs"},
+            },
+        }
+    )
 
     with patch.object(db, "_get_conn", return_value=conn):
         with patch("builtins.open", return_value=io.StringIO(fake_framework)):

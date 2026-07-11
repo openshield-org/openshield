@@ -3,6 +3,8 @@
 import logging
 import requests
 
+from api.observability import LLM_PROVIDER_LATENCY_SECONDS
+
 logger = logging.getLogger(__name__)
 
 PROVIDERS = ("anthropic", "groq", "gemini")
@@ -14,24 +16,21 @@ DEFAULT_MODELS = {
 }
 
 
-def get_completion(
-    provider: str, api_key: str, prompt: str, model: str = None
-) -> str:
+def get_completion(provider: str, api_key: str, prompt: str, model: str = None) -> str:
     provider = provider.lower().strip()
     if provider not in PROVIDERS:
-        raise ValueError(
-            f"Unsupported provider '{provider}'. Choose from: {', '.join(PROVIDERS)}"
-        )
+        raise ValueError(f"Unsupported provider '{provider}'. Choose from: {', '.join(PROVIDERS)}")
     if not api_key or not api_key.strip():
         raise ValueError("api_key is required and cannot be empty")
 
     resolved_model = model or DEFAULT_MODELS[provider]
 
-    if provider == "anthropic":
-        return _anthropic(api_key, prompt, resolved_model)
-    if provider == "groq":
-        return _groq(api_key, prompt, resolved_model)
-    return _gemini(api_key, prompt, resolved_model)
+    with LLM_PROVIDER_LATENCY_SECONDS.labels(provider=provider).time():
+        if provider == "anthropic":
+            return _anthropic(api_key, prompt, resolved_model)
+        if provider == "groq":
+            return _groq(api_key, prompt, resolved_model)
+        return _gemini(api_key, prompt, resolved_model)
 
 
 def _anthropic(api_key: str, prompt: str, model: str) -> str:

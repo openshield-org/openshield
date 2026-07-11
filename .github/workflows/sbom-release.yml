@@ -1,0 +1,31 @@
+name: SBOM Release
+
+# Attach a CycloneDX SBOM to each published GitHub Release (issue #156).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # required to upload assets to the release
+
+jobs:
+  attach-sbom:
+    name: Generate and attach SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install syft
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.46.0
+
+      - name: Generate SBOM
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: syft dir:. --source-name openshield --source-version "$TAG" -o "cyclonedx-json=openshield-${TAG}-sbom.cyclonedx.json"
+
+      - name: Upload SBOM to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" "openshield-${TAG}-sbom.cyclonedx.json" --clobber

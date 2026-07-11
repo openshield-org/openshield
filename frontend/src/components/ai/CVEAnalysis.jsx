@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiExternalLink, FiCheckCircle, FiAlertTriangle } from 'react-icons/fi';
 
 const CVSS_STYLE = (score) => {

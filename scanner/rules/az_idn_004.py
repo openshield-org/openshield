@@ -1,4 +1,5 @@
 """AZ-IDN-004: No Privileged Identity Management for admin roles."""
+
 import logging
 from typing import Any, Dict, List
 
@@ -6,7 +7,7 @@ RULE_ID = "AZ-IDN-004"
 RULE_NAME = "No Privileged Identity Management for Admin Roles"
 SEVERITY = "HIGH"
 CATEGORY = "Identity"
-FRAMEWORKS = {"CIS": "1.14", "NIST": "PR.AC-4", "ISO27001": "A.9.2.3", "SOC2": "CC6.3"}
+FRAMEWORKS = {"CIS": "1.16", "NIST": "PR.AC-4", "ISO27001": "A.9.2.3", "SOC2": "CC6.3"}
 DESCRIPTION = (
     "Privileged Identity Management (PIM) is not configured for one or more admin roles "
     "in Entra ID. Without PIM, admin roles are permanently assigned with no just-in-time "
@@ -45,9 +46,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         import requests
 
         # Fetch token once and reuse headers for both API calls
-        token = azure_client.credential.get_token(
-            "https://graph.microsoft.com/.default"
-        )
+        token = azure_client.credential.get_token("https://graph.microsoft.com/.default")
         headers = {"Authorization": f"Bearer {token.token}"}
 
         # Step 1 — Get all role definitions
@@ -69,20 +68,14 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         eligible_schedules = response.json().get("value", [])
 
     except Exception as exc:
-        logger.error(
-            "AZ-IDN-004: Failed to fetch data from Graph API: %s", exc
-        )
+        logger.error("AZ-IDN-004: Failed to fetch data from Graph API: %s", exc)
         logger.warning(
-            "AZ-IDN-004: Ensure the service principal has "
-            "RoleManagement.Read.Directory permission on Microsoft Graph."
+            "AZ-IDN-004: Ensure the service principal has RoleManagement.Read.Directory permission on Microsoft Graph."
         )
         return findings
 
     # Build set of role definition IDs that have PIM eligible assignments
-    pim_protected_role_ids = {
-        schedule.get("roleDefinitionId", "")
-        for schedule in eligible_schedules
-    }
+    pim_protected_role_ids = {schedule.get("roleDefinitionId", "") for schedule in eligible_schedules}
 
     # Check each privileged role
     for role in role_definitions:
@@ -93,23 +86,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             continue
 
         if role_id not in pim_protected_role_ids:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": f"/roleManagement/directory/roleDefinitions/{role_id}",
-                "resource_name": role_name,
-                "resource_type": "Microsoft.Graph/roleDefinitions",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "role_id": role_id,
-                    "role_name": role_name,
-                    "pim_configured": False,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": f"/roleManagement/directory/roleDefinitions/{role_id}",
+                    "resource_name": role_name,
+                    "resource_type": "Microsoft.Graph/roleDefinitions",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "role_id": role_id,
+                        "role_name": role_name,
+                        "pim_configured": False,
+                    },
+                }
+            )
 
     return findings

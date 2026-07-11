@@ -6,7 +6,7 @@ RULE_ID = "AZ-IDN-001"
 RULE_NAME = "Service Principal Assigned Owner Role at Subscription Scope"
 SEVERITY = "HIGH"
 CATEGORY = "Identity"
-FRAMEWORKS = {"CIS": "1.23", "NIST": "PR.AC-4", "ISO27001": "A.9.2.3"}
+FRAMEWORKS = {"CIS": "1.24", "NIST": "PR.AC-4", "ISO27001": "A.9.2.3"}
 DESCRIPTION = (
     "A service principal holds the Owner role at subscription scope, granting it "
     "full control over all resources and the ability to assign roles to other principals. "
@@ -36,22 +36,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         principal_id = getattr(assignment, "principal_id", "unknown")
         resource_id = getattr(assignment, "id", "")
 
-        findings.append({
-            "rule_id": RULE_ID,
-            "rule_name": RULE_NAME,
-            "severity": SEVERITY,
-            "category": CATEGORY,
-            "resource_id": resource_id,
-            "resource_name": principal_id,
-            "resource_type": "Microsoft.Authorization/roleAssignments",
-            "description": DESCRIPTION,
-            "remediation": REMEDIATION,
-            "playbook": PLAYBOOK,
-            "frameworks": FRAMEWORKS,
-            "metadata": {
-                "principal_id": principal_id,
-                "scope": getattr(assignment, "scope", ""),
-            },
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": resource_id,
+                "resource_name": principal_id,
+                "resource_type": "Microsoft.Authorization/roleAssignments",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {
+                    "principal_id": principal_id,
+                    "scope": getattr(assignment, "scope", ""),
+                },
+            }
+        )
 
     return findings

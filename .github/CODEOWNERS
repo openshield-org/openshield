@@ -1,0 +1,27 @@
+# Global owner - final merge approval
+* @Vishnu2707
+
+# Scanner rules
+/scanner/rules/ @SHAURYAKSHARMA24 @TFT444
+/playbooks/ @SHAURYAKSHARMA24 @TFT444
+
+# AI layer
+/ai/ @ritiksah141 @TFT444
+
+# Frontend
+/frontend/ @vogonPrayas @SHAURYAKSHARMA24
+
+# API and backend
+/api/ @ritiksah141
+
+# Tests
+/tests/ @ritiksah141 @parthrohit22
+
+# Compliance
+/compliance/ @SHAURYAKSHARMA24
+
+# Docs
+/docs/ @parthrohit22
+
+# CI/CD and infra
+/.github/ @Vishnu2707 @ritiksah141

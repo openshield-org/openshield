@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from api.observability import RULE_ERRORS_TOTAL
 from scanner.azure_client import AzureClient
 
 logger = logging.getLogger(__name__)
@@ -26,19 +27,19 @@ def make_serializable(data: Any) -> Any:
         return [make_serializable(i) for i in data]
     if isinstance(data, datetime):
         return data.isoformat()
-    
+
     # Handle Azure SDK models and other objects
     if hasattr(data, "as_dict") and callable(data.as_dict):
         return make_serializable(data.as_dict())
-    
+
     # Fallback to string representation for unknown objects
     try:
         # Check if it has a __dict__ but avoid infinite recursion for complex types
         if hasattr(data, "__dict__") and not str(type(data)).startswith("<class 'azure."):
             return make_serializable(data.__dict__)
-    except:
+    except Exception:
         pass
-        
+
     return str(data)
 
 
@@ -68,20 +69,14 @@ class ScanEngine:
             if rule_path.name.startswith("_"):
                 continue
             try:
-                spec = importlib.util.spec_from_file_location(
-                    rule_path.stem, rule_path
-                )
+                spec = importlib.util.spec_from_file_location(rule_path.stem, rule_path)
                 module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
                 spec.loader.exec_module(module)  # type: ignore[union-attr]
                 if callable(getattr(module, "scan", None)):
                     self.rules.append(module)
-                    logger.info(
-                        "Loaded rule: %s", getattr(module, "RULE_ID", rule_path.stem)
-                    )
+                    logger.info("Loaded rule: %s", getattr(module, "RULE_ID", rule_path.stem))
                 else:
-                    logger.warning(
-                        "Rule file %s has no scan() function — skipped", rule_path.name
-                    )
+                    logger.warning("Rule file %s has no scan() function — skipped", rule_path.name)
             except Exception as exc:
                 logger.error("Failed to load rule %s: %s", rule_path.name, exc)
 
@@ -118,16 +113,16 @@ class ScanEngine:
                 if not isinstance(rule_findings, list):
                     logger.warning("Rule %s returned %s instead of list — skipped", rule_id, type(rule_findings))
                     continue
-                    
+
                 for finding in rule_findings:
-                    if not isinstance(finding, dict): continue
+                    if not isinstance(finding, dict):
+                        continue
                     finding.setdefault("detected_at", detected_at)
                     finding.setdefault("scan_id", scan_id)
                 findings.extend(rule_findings)
-                logger.info(
-                    "Rule %s produced %d finding(s)", rule_id, len(rule_findings)
-                )
+                logger.info("Rule %s produced %d finding(s)", rule_id, len(rule_findings))
             except Exception as exc:
+                RULE_ERRORS_TOTAL.labels(rule_id=rule_id).inc()
                 logger.error("Rule %s raised an exception: %s", rule_id, exc, exc_info=True)
 
         completed_at = datetime.now(timezone.utc).isoformat()
@@ -148,8 +143,6 @@ class ScanEngine:
             "findings": findings,
         }
 
-        logger.info(
-            "Scan %s complete — %d total finding(s). Normalising results...", scan_id, len(findings)
-        )
+        logger.info("Scan %s complete — %d total finding(s). Normalising results...", scan_id, len(findings))
 
         return make_serializable(result)

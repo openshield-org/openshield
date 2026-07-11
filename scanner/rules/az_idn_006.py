@@ -36,14 +36,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     try:
         import requests
 
-        token = azure_client.credential.get_token(
-            "https://graph.microsoft.com/.default"
-        )
+        token = azure_client.credential.get_token("https://graph.microsoft.com/.default")
         headers = {"Authorization": f"Bearer {token.token}"}
 
         next_url = (
-            "https://graph.microsoft.com/v1.0/applications"
-            "?$select=id,displayName,appId,passwordCredentials&$top=100"
+            "https://graph.microsoft.com/v1.0/applications?$select=id,displayName,appId,passwordCredentials&$top=100"
         )
         applications = []
         while next_url:
@@ -54,12 +51,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             next_url = data.get("@odata.nextLink")
 
     except Exception as exc:
-        logger.error(
-            "AZ-IDN-006: Failed to fetch applications from Graph API: %s", exc
-        )
+        logger.error("AZ-IDN-006: Failed to fetch applications from Graph API: %s", exc)
         logger.warning(
-            "AZ-IDN-006: Ensure the service principal has "
-            "Application.Read.All permission on Microsoft Graph."
+            "AZ-IDN-006: Ensure the service principal has Application.Read.All permission on Microsoft Graph."
         )
         return findings
 
@@ -79,9 +73,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 continue
 
             try:
-                start_dt = datetime.fromisoformat(
-                    start_dt_str.replace("Z", "+00:00")
-                )
+                start_dt = datetime.fromisoformat(start_dt_str.replace("Z", "+00:00"))
             except ValueError:
                 continue
 
@@ -91,9 +83,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
             if end_dt_str:
                 try:
-                    end_dt = datetime.fromisoformat(
-                        end_dt_str.replace("Z", "+00:00")
-                    )
+                    end_dt = datetime.fromisoformat(end_dt_str.replace("Z", "+00:00"))
                     already_expired = end_dt < now
                 except ValueError:
                     logger.debug(
@@ -111,35 +101,32 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             elif already_expired:
                 reason = "secret has expired but is still present"
             else:
-                reason = (
-                    f"secret is {age_days} days old "
-                    f"(threshold: {EXPIRY_THRESHOLD_DAYS} days)"
-                )
+                reason = f"secret is {age_days} days old (threshold: {EXPIRY_THRESHOLD_DAYS} days)"
 
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": (
-                    f"/applications/{app_id}/passwordCredentials/{key_id}"
-                ),
-                "resource_name": app_display_name,
-                "resource_type": "Microsoft.Graph/applications",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "app_id": app_id,
-                    "app_client_id": app.get("appId", ""),
-                    "credential_hint": hint,
-                    "credential_key_id": key_id,
-                    "age_days": age_days,
-                    "no_expiry": no_expiry,
-                    "already_expired": already_expired,
-                    "reason": reason,
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": (f"/applications/{app_id}/passwordCredentials/{key_id}"),
+                    "resource_name": app_display_name,
+                    "resource_type": "Microsoft.Graph/applications",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "app_id": app_id,
+                        "app_client_id": app.get("appId", ""),
+                        "credential_hint": hint,
+                        "credential_key_id": key_id,
+                        "age_days": age_days,
+                        "no_expiry": no_expiry,
+                        "already_expired": already_expired,
+                        "reason": reason,
+                    },
+                }
+            )
 
     return findings

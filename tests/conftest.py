@@ -1,7 +1,5 @@
 """Shared pytest fixtures for the OpenShield test suite."""
 
-collect_ignore = ["smoke_test.py"]
-
 import secrets
 import time
 
@@ -9,21 +7,15 @@ import pytest
 
 from tests.helpers.mock_azure import MockAzureClient
 
+collect_ignore = ["smoke_test.py"]
+
 _TEST_JWT_SECRET = secrets.token_urlsafe(32)
 
 
-from unittest.mock import MagicMock
-
 @pytest.fixture
-def app(monkeypatch):
-    # Mock DatabaseManager before importing create_app
-    import api.app
-    import api.models.finding
-    
-    mock_db = MagicMock()
-    monkeypatch.setattr("api.app.DatabaseManager", MagicMock(return_value=mock_db))
-    
+def app():
     from api.app import create_app
+
     application = create_app()
     application.config["TESTING"] = True
     application.config["JWT_SECRET"] = _TEST_JWT_SECRET
@@ -38,6 +30,7 @@ def client(app):
 @pytest.fixture
 def auth_headers():
     import jwt
+
     payload = {
         "sub": "test-user",
         "role": "admin",

@@ -2,6 +2,7 @@
 
 import logging
 import os
+import sys
 
 import jwt
 from dotenv import load_dotenv
@@ -9,27 +10,26 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
 from api.models.finding import DatabaseManager
+from api.observability import configure_logging, get_request_id, init_app, init_sentry
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+configure_logging()
+init_sentry()
 logger = logging.getLogger(__name__)
 
-# Paths that are always public regardless of environment or demo mode
-_ALWAYS_PUBLIC = {"/", "/health"}
+# Paths that are always public regardless of environment or demo mode.
+# /ready and /metrics are probe/scrape endpoints and must never require auth.
+_ALWAYS_PUBLIC = {"/", "/health", "/ready", "/metrics"}
 
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
-_GENERATE_CMD = "python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+_GENERATE_CMD = 'python -c "import secrets; print(secrets.token_urlsafe(32))"'
 
 
 def _is_production() -> bool:
     return (
-        os.environ.get("OPENSHIELD_ENV", "").lower() == "production"
-        or os.environ.get("RENDER", "").lower() == "true"
+        os.environ.get("OPENSHIELD_ENV", "").lower() == "production" or os.environ.get("RENDER", "").lower() == "true"
     )
 
 
@@ -93,6 +93,14 @@ def create_app() -> Flask:
     app = Flask(__name__)
 
     # ------------------------------------------------------------------ #
+    # Observability                                                        #
+    # ------------------------------------------------------------------ #
+    # Registered first so request IDs and request timing are available to
+    # every later before_request handler (including JWT auth) and to the
+    # error handlers. Also mounts the public /metrics endpoint.
+    init_app(app)
+
+    # ------------------------------------------------------------------ #
     # Configuration & Security                                             #
     # ------------------------------------------------------------------ #
     app.config["JWT_SECRET"] = _resolve_jwt_secret()
@@ -118,23 +126,6 @@ def create_app() -> Flask:
             "PUBLIC DEMO MODE ENABLED (OPENSHIELD_PUBLIC_DEMO=true): "
             "Unauthenticated GET requests to /api/* are permitted. "
             "Do not use this setting with real Azure scan data in production."
-        )
-
-    # ------------------------------------------------------------------ #
-    # Database Management                                                   #
-    # ------------------------------------------------------------------ #
-    # Skip migrations when DATABASE_URL is not set (e.g. during unit tests).
-    # Deployment startup always sets DATABASE_URL so migrations still run in
-    # production and staging. Tests that need a real database should set
-    # DATABASE_URL explicitly in their environment.
-    if os.environ.get("DATABASE_URL"):
-        with app.app_context():
-            db = DatabaseManager()
-            db.run_migrations()
-    else:
-        logger.info(
-            "DATABASE_URL not set — skipping database migrations. "
-            "Set DATABASE_URL to connect to PostgreSQL."
         )
 
     @app.teardown_appcontext
@@ -167,7 +158,12 @@ def create_app() -> Flask:
 
         auth = request.headers.get("Authorization", "")
         if not auth.startswith("Bearer "):
-            return jsonify({"error": "Missing or malformed Authorization header"}), 401
+            return jsonify(
+                {
+                    "error": "Missing or malformed Authorization header",
+                    "request_id": get_request_id(),
+                }
+            ), 401
 
         token = auth.split(" ", 1)[1]
         try:
@@ -178,9 +174,10 @@ def create_app() -> Flask:
             )
             g.user = payload
         except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired"}), 401
+            return jsonify({"error": "Token has expired", "request_id": get_request_id()}), 401
         except jwt.InvalidTokenError as exc:
-            return jsonify({"error": f"Invalid token: {exc}"}), 401
+            logger.warning("Invalid JWT token: %s", exc)
+            return jsonify({"error": "Invalid token", "request_id": get_request_id()}), 401
 
         return None
 
@@ -211,16 +208,25 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return jsonify({
-            "message": "Welcome to the OpenShield REST API",
-            "version": "1.0.0",
-            "docs": "/docs",
-            "status": "online"
-        })
+        return jsonify(
+            {"message": "Welcome to the OpenShield REST API", "version": "1.0.0", "docs": "/docs", "status": "online"}
+        )
 
     @app.get("/health")
     def health():
+        """Liveness probe: process is up. Deliberately does not touch the DB."""
         return jsonify({"status": "ok"})
+
+    @app.get("/ready")
+    def ready():
+        """Readiness probe: 200 when the database is reachable, else 503."""
+        try:
+            db = DatabaseManager()
+            db.ping()
+            return jsonify({"status": "ready"}), 200
+        except Exception as exc:
+            logger.warning("Readiness check failed: %s", exc)
+            return jsonify({"status": "not_ready", "error": "database_unreachable"}), 503
 
     # ------------------------------------------------------------------ #
     # Error handlers                                                        #
@@ -228,36 +234,36 @@ def create_app() -> Flask:
 
     @app.errorhandler(400)
     def bad_request(exc):
-        return jsonify({"error": "Bad request", "detail": str(exc)}), 400
+        return jsonify({"error": "Bad request", "detail": str(exc), "request_id": get_request_id()}), 400
 
     @app.errorhandler(401)
     def unauthorized(exc):
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized", "request_id": get_request_id()}), 401
 
     @app.errorhandler(403)
     def forbidden(exc):
-        return jsonify({"error": "Forbidden"}), 403
+        return jsonify({"error": "Forbidden", "request_id": get_request_id()}), 403
 
     @app.errorhandler(404)
     def not_found(exc):
-        return jsonify({"error": "Not found"}), 404
+        return jsonify({"error": "Not found", "request_id": get_request_id()}), 404
 
     @app.errorhandler(500)
     def internal_error(exc):
         logger.error("Unhandled exception: %s", exc)
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": "Internal server error", "request_id": get_request_id()}), 500
 
     logger.info("OpenShield API created - %d blueprints registered", len(app.blueprints))
     return app
 
 
-import sys
-
 # Global application object for WSGI servers (e.g. Gunicorn, Render)
 # We wrap this in a check to avoid running migrations/connecting during test collection
-if os.environ.get("OPENSHIELD_ENV") != "testing" and \
-   os.environ.get("PYTEST_CURRENT_TEST") is None and \
-   "pytest" not in sys.modules:
+if (
+    os.environ.get("OPENSHIELD_ENV") != "testing"
+    and os.environ.get("PYTEST_CURRENT_TEST") is None
+    and "pytest" not in sys.modules
+):
     application = create_app()
 else:
     # During testing, we provide a placeholder or let conftest handle it
@@ -267,7 +273,7 @@ if __name__ == "__main__":
     if not application:
         application = create_app()
     application.run(
-        host="0.0.0.0",
+        host="0.0.0.0",  # nosec B104 - must bind all interfaces to be reachable inside a container/PaaS
         port=int(os.environ.get("PORT", 5000)),
         debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true",
     )

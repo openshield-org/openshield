@@ -1,86 +1,114 @@
-# Frontend/API Validation Results
+# Validation Test Results
 
-## Test Run Metadata
+This file tracks manual validation status for scanner and low-cost Azure
+scenario tests.
+
+No tests have been executed as part of this documentation update. Every result
+starts as `Pending`.
+
+## Validation Status Tracking
+
+| Area | Status | Notes |
+|---|---|---|
+| Scanner entry point documented | Pending | Documentation exists; execution not yet validated |
+| Rule loading behavior documented | Pending | Documentation exists; execution not yet validated |
+| Rule metadata matrix verified from files | Pending | Rule IDs are listed from current files; no runtime validation claimed |
+| Storage scenario execution | Pending | Not yet executed |
+| Network scenario execution | Pending | Not yet executed |
+| Key Vault scenario execution | Pending | Not yet executed |
+| Database persistence confirmation | Pending | Not yet executed |
+| API response confirmation | Pending | Not yet executed |
+| Frontend display confirmation | Pending | Not yet executed |
+| Cleanup confirmation | Pending | Not yet executed |
+
+## Environment
+
+Fill this section during manual validation. Do not add real secrets or
+sensitive identifiers.
 
 | Field | Value |
 |---|---|
-| Date | 2026-06-07 |
-| Branch | `docs/issue-132-frontend-api-validation-dev` |
-| Node Version | v22.x (npm 10.9.2) |
-| Python Version | 3.13.1 |
-| pytest Version | 9.0.3 |
-| OS | Windows 11 |
-| Tester | Automated validation run |
+| Tester | Pending |
+| Date | Pending |
+| OpenShield branch or commit | Pending |
+| Azure subscription type | Pending |
+| Azure region | Pending |
+| Validation resource group | Pending |
+| Authentication method | Pending |
+| Database used for persistence check | Pending |
+| API base URL for API check | Pending |
+| Frontend URL for display check | Pending |
 
----
+## Pre-Test Checklist
 
-## Frontend Build Validation
+| Check | Status | Notes |
+|---|---|---|
+| Azure CLI authenticated to the intended test subscription | Pending |  |
+| No production subscription selected | Pending |  |
+| Validation resource group name chosen | Pending |  |
+| Unique suffix chosen for global resource names | Pending |  |
+| Estimated resource cost reviewed | Pending |  |
+| Cleanup command reviewed | Pending |  |
+| OpenShield dependencies installed locally | Pending |  |
+| `AZURE_SUBSCRIPTION_ID` set locally, not committed | Pending |  |
+| No secrets added to repository files | Pending |  |
 
-| Test ID | Area | Command / Page Tested | Expected Result | Actual Result | Status | Evidence Notes | Follow-up Needed |
-|---|---|---|---|---|---|---|---|
-| FE-001 | Frontend | `npm install` | 0 exit code, packages installed | 243 packages added, 0 vulnerabilities | Pass | npm 10.9.2; noted npm 11.16.0 available | No |
-| FE-002 | Frontend | `npm run lint` | 0 errors | 65 errors, 4 warnings | Fail | Mostly `no-unused-vars` for React imports (cosmetic in React 19). Also: unused vars in AILayer, DriftEventCard, RiskRanking, ActionItems; 1 `no-undef` in tailwind.config.js; 4 `react-hooks/exhaustive-deps` warnings | Non-blocking — does not affect build or runtime |
-| FE-003 | Frontend | `npm run build` | Production bundle created | Built in 3.53s. Output: index.html (0.47 KB), CSS (31.16 KB gzip 6.36 KB), JS (782.15 KB gzip 218.81 KB) | Pass | Warning: JS chunk >500 KB — consider code splitting | No (cosmetic warning) |
-| FE-004 | Frontend | `npm run dev` | Vite dev server starts | Vite v8.0.14 started in 697ms on http://localhost:5173 | Pass | Server confirmed running, then stopped | No |
+## Scenario Results
 
----
+| Test ID | Expected Rule | Scanner Result | Database Result | API Result | Frontend Result | Cleanup Result | Overall Status | Notes |
+|---|---|---|---|---|---|---|---|---|
+| `VAL-STOR-001` | `AZ-STOR-001` | Pending | Pending | Pending | Pending | Pending | Pending | Storage public blob access |
+| `VAL-NET-001` | `AZ-NET-001` | Pending | Pending | Pending | Pending | Pending | Pending | NSG open SSH |
+| `VAL-NET-002` | `AZ-NET-002` | Pending | Pending | Pending | Pending | Pending | Pending | NSG open RDP |
+| `VAL-KV-002` | `AZ-KV-002` | Pending | Pending | Pending | Pending | Pending | Pending | Key Vault public network access |
+| `VAL-KV-004` | `AZ-KV-004` | Pending | Pending | Pending | Pending | Pending | Pending | Key Vault purge protection disabled |
 
-## Backend Test Validation
+## Evidence Checklist
 
-| Test ID | Area | Command / Page Tested | Expected Result | Actual Result | Status | Evidence Notes | Follow-up Needed |
-|---|---|---|---|---|---|---|---|
-| API-001 | Backend | `pytest` (full suite) | All tests pass | Collection error: `KeyError: 'DATABASE_URL'` in `tests/test_jwt_config.py` | Fail | `api/app.py` calls `DatabaseManager()` at import time which requires `DATABASE_URL` env var. 73 tests collected but 1 collection error halted execution. | Yes — need DATABASE_URL set or test isolation for JWT config tests |
+Record evidence without adding secrets, access tokens, real tenant IDs, or
+other sensitive identifiers.
 
----
+| Evidence Item | Status | Notes |
+|---|---|---|
+| Scanner command recorded | Pending |  |
+| Scanner output captured with expected `rule_id` | Pending |  |
+| Scanner output contains expected validation resource name | Pending |  |
+| Finding severity matches expected severity | Pending |  |
+| Finding category matches current scanner output | Pending |  |
+| Finding persisted to PostgreSQL | Pending |  |
+| API response includes expected finding | Pending |  |
+| Frontend displays expected finding | Pending |  |
+| Remediation guidance visible | Pending |  |
+| Cleanup command executed | Pending |  |
+| Resource group deletion confirmed | Pending |  |
 
-## API Endpoint Validation
+## Failure And Investigation Log
 
-> **Note:** API endpoint tests require a running backend with DATABASE_URL configured. These are marked Pending as the backend could not be started locally without a PostgreSQL instance.
+Use this section to track failed or inconclusive validation. Do not mark a
+scenario as passed until the expected rule appears and cleanup is confirmed.
 
-| Test ID | Area | Command / Page Tested | Expected Result | Actual Result | Status | Evidence Notes | Follow-up Needed |
-|---|---|---|---|---|---|---|---|
-| API-001 | API | `GET /health` without JWT | 200 `{"status":"ok"}` | Not tested (backend not running) | Pending | Endpoint registered in `app.py` — public, no DB needed | Run when backend available |
-| API-002 | API | `GET /api/findings` without JWT | 200 with findings array | Not tested | Pending | Public GET per `_is_public_get()` in `app.py` | Run when backend available |
-| API-003 | API | `GET /api/findings` with JWT | 200 with findings array | Not tested | Pending | Should behave identically to without JWT (GETs are public) | Run when backend available |
-| API-004 | API | `GET /api/scans` with JWT | 200 with scans array | Not tested | Pending | Public GET endpoint | Run when backend available |
-| API-005 | API | `GET /api/score` with JWT | 200 `{"score":N,"max_score":100}` | Not tested | Pending | Computed from findings count | Run when backend available |
-| API-006 | API | `GET /api/compliance/cis` with JWT | 200 with framework + controls | Not tested | Pending | Requires rules table populated | Run when backend available |
-| API-007 | API | `POST /api/scans/trigger` with JWT | 201 with scan result | Not tested | Pending | Requires valid JWT + Azure credentials | Run when backend available |
-| API-008 | API | `GET /api/resources` with JWT | 200 with summary + resources | Not tested | Pending | Derived from findings | Run when backend available |
-| API-009 | API | `GET /api/prioritization` with JWT | 200 with matrix + rankings | Not tested | Pending | Computed from findings | Run when backend available |
-| API-010 | API | `GET /api/drift` with JWT | 200 with summary + events | Not tested | Pending | Requires 2+ scans with findings | Run when backend available |
+| Date | Test ID | Issue Type | Description | Follow-Up Owner | Status |
+|---|---|---|---|---|---|
+| Pending | Pending | False positive / false negative / cleanup / permissions / other | Pending | Pending | Pending |
 
----
+## Issue Type Definitions
 
-## Integration (Frontend-to-API Data Flow) Validation
+- False positive: OpenShield reports a finding when the resource is expected
+  to be compliant.
+- False negative: OpenShield does not report the expected finding for an
+  intentionally vulnerable resource.
+- Cleanup issue: Validation resources could not be deleted or remain in a
+  soft-deleted state.
+- Permission issue: The scanner could not read the resource or tenant setting
+  required for the rule.
+- Other: Any result that does not fit the categories above.
 
-> **Note:** Integration tests require both frontend dev server and backend API running simultaneously. Marked Pending as backend could not be started.
+## Post-Test Checklist
 
-| Test ID | Area | Command / Page Tested | Expected Result | Actual Result | Status | Evidence Notes | Follow-up Needed |
-|---|---|---|---|---|---|---|---|
-| INT-001 | Integration | Monitoring page data flow | Page loads score gauge, trend chart, stat cards, findings distribution | Not tested | Pending | Requires running API with seeded data | Run when full stack available |
-| INT-002 | Integration | Discovery page data flow | Page shows resource summary cards, filterable resource table | Not tested | Pending | Requires resources endpoint returning data | Run when full stack available |
-| INT-003 | Integration | DetailedScan page data flow | Findings list renders, selecting a finding loads playbook | Not tested | Pending | Requires findings + playbook endpoints | Run when full stack available |
-| INT-004 | Integration | Compliance page data flow | Framework cards show scores, controls table populates | Not tested | Pending | Requires all 4 compliance endpoints + scans | Run when full stack available |
-| INT-005 | Integration | Drift page data flow | Summary cards + timeline renders drift events | Not tested | Pending | Requires 2+ scans to compute drift | Run when full stack available |
-| INT-006 | Integration | Prioritization page data flow | Matrix chart + rankings + action items render | Not tested | Pending | Requires prioritization endpoint with data | Run when full stack available |
-| INT-007 | Integration | AI Layer page data flow | Findings picker populates, chat accepts input, summary/CVE panels load | Not tested | Pending | Requires AI provider API key + findings data | Run when full stack available |
-
----
-
-## Summary
-
-| Category | Total | Pass | Fail | Pending |
-|---|---|---|---|---|
-| Frontend Build (FE-*) | 4 | 3 | 1 | 0 |
-| Backend Tests | 1 | 0 | 1 | 0 |
-| API Endpoints (API-*) | 10 | 0 | 0 | 10 |
-| Integration (INT-*) | 7 | 0 | 0 | 7 |
-| **Total** | **22** | **3** | **2** | **17** |
-
-### Key Findings
-
-1. **Frontend builds successfully** — production bundle compiles without errors despite lint warnings
-2. **Lint failures are cosmetic** — 65 errors are predominantly unused `React` imports (safe to remove in React 19)
-3. **Backend tests blocked** — `DATABASE_URL` is required at import time; tests cannot run without PostgreSQL
-4. **API/Integration tests pending** — require a running backend with seeded database; document infrastructure needed for full validation
+| Check | Status | Notes |
+|---|---|---|
+| Validation resource group deleted or deletion started | Pending |  |
+| No unexpected resources left behind | Pending |  |
+| Key Vault soft-delete state reviewed if applicable | Pending |  |
+| No credentials written to docs or logs committed to git | Pending |  |
+| Results updated without claiming unverified pass status | Pending |  |

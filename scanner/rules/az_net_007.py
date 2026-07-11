@@ -31,9 +31,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     try:
         from azure.mgmt.network import NetworkManagementClient
-        client = NetworkManagementClient(
-            azure_client.credential, azure_client.subscription_id
-        )
+
+        client = NetworkManagementClient(azure_client.credential, azure_client.subscription_id)
         app_gateways = list(client.application_gateways.list_all())
     except Exception as exc:
         logger.error("Failed to list application gateways: %s", exc)
@@ -46,23 +45,25 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         waf_enabled = getattr(waf_config, "enabled", False) if waf_config else False
 
         if "WAF" not in sku_name or not waf_enabled:
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": getattr(agw, "id", ""),
-                "resource_name": getattr(agw, "name", ""),
-                "resource_type": "Microsoft.Network/applicationGateways",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "sku": sku_name,
-                    "waf_enabled": waf_enabled,
-                    "location": getattr(agw, "location", ""),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": getattr(agw, "id", ""),
+                    "resource_name": getattr(agw, "name", ""),
+                    "resource_type": "Microsoft.Network/applicationGateways",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "sku": sku_name,
+                        "waf_enabled": waf_enabled,
+                        "location": getattr(agw, "location", ""),
+                    },
+                }
+            )
 
     return findings

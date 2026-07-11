@@ -18,6 +18,11 @@ When a scan is triggered, the API performs minimal work. It validates the subscr
 ### 2. The Queue (PostgreSQL)
 The scans table acts as a persistent task queue. This avoids the need for additional infrastructure like Redis or RabbitMQ while providing ACID compliance, visibility, and auditability. Scan states are never lost during crashes, status polling is a simple SQL query, and every scan has a persistent record of its error state.
 
+### Render restart behavior
+Scan state is not stored in Flask memory. `POST /api/scans/trigger` inserts a `pending` row into PostgreSQL, and `GET /api/scans/<scan_id>` reads that same row back from PostgreSQL. If the Render web process restarts, queued scan state remains in the database and the dashboard can continue polling by `scan_id` after the app process comes back.
+
+If the worker process restarts while a scan is marked `running`, `scanner/worker.py` calls `recover_stale_scans()` on each loop. Stale running scans are moved back to `pending` while retry attempts remain, so a Render restart can resume queued work instead of losing it. Once a scan reaches the maximum attempt count, it is marked `failed` so bad credentials or persistent Azure errors cannot retry forever.
+
 ### 3. The Worker (Python)
 The scanner/worker.py process runs independently of the web server. Its lifecycle involves several steps. It queries the DB for scans where status is pending. It updates the status to running to prevent other workers from picking it up. It invokes ScanEngine.run_scan(scan_id). On success, it saves findings and sets status to completed. On failure, it captures the traceback and sets status to failed with the error_message.
 

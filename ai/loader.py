@@ -64,18 +64,20 @@ def load_rule_documents() -> List[Dict[str, Any]]:
                 f"Remediation: {remediation}\n"
             )
 
-            documents.append({
-                "id": f"rule_{rule_id.lower().replace('-', '_')}",
-                "content": text,
-                "metadata": {
-                    "source": "openShield_rule",
-                    "rule_id": rule_id,
-                    "rule_name": rule_name,
-                    "severity": severity,
-                    "category": category,
-                    "file": rule_file.name,
-                },
-            })
+            documents.append(
+                {
+                    "id": f"rule_{rule_id.lower().replace('-', '_')}",
+                    "content": text,
+                    "metadata": {
+                        "source": "openShield_rule",
+                        "rule_id": rule_id,
+                        "rule_name": rule_name,
+                        "severity": severity,
+                        "category": category,
+                        "file": rule_file.name,
+                    },
+                }
+            )
 
             logger.debug("Loaded rule: %s", rule_id)
 
@@ -121,27 +123,27 @@ def load_compliance_documents() -> List[Dict[str, Any]]:
                     f"Description: {description}\n"
                 )
 
-                documents.append({
-                    "id": f"compliance_{framework_name.lower().replace(' ', '_')}_{rule_id.lower().replace('-', '_')}",
-                    "content": text,
-                    "metadata": {
-                        "source": "compliance_framework",
-                        "framework": framework_name,
-                        "framework_version": framework_version,
-                        "rule_id": rule_id,
-                        "control_id": control_id,
-                        "control_name": control_name,
-                    },
-                })
+                framework_slug = framework_name.lower().replace(" ", "_")
+                rule_slug = rule_id.lower().replace("-", "_")
+                documents.append(
+                    {
+                        "id": f"compliance_{framework_slug}_{rule_slug}",
+                        "content": text,
+                        "metadata": {
+                            "source": "compliance_framework",
+                            "framework": framework_name,
+                            "framework_version": framework_version,
+                            "rule_id": rule_id,
+                            "control_id": control_id,
+                            "control_name": control_name,
+                        },
+                    }
+                )
 
-            logger.info(
-                "Loaded %d controls from %s", len(controls), framework_name
-            )
+            logger.info("Loaded %d controls from %s", len(controls), framework_name)
 
         except Exception as exc:
-            logger.error(
-                "Failed to load compliance file %s: %s", filepath, exc
-            )
+            logger.error("Failed to load compliance file %s: %s", filepath, exc)
 
     logger.info("Loaded %d compliance documents total", len(documents))
     return documents
@@ -186,38 +188,40 @@ def load_skill_documents() -> List[Dict[str, Any]]:
         try:
             content = skill_file.read_text(encoding="utf-8")
             skill_name = skill_file.parent.name
-            
+
             # Dynamic Grounding: Find relevant rules for this skill
             relevant_rules = []
             content_lower = content.lower()
-            
+
             for category, keywords in mapping.items():
                 for keyword in keywords:
                     # Use boundary-aware matching to avoid short tokens matching inside unrelated words
                     # e.g., 'vm' inside 'devmac', or 'shor' inside 'shortest'
-                    pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+                    pattern = r"\b" + re.escape(keyword.lower()) + r"\b"
                     if re.search(pattern, content_lower):
                         relevant_rules.extend(rules_by_category.get(category, []))
-                        break # Only need one keyword match per category
-            
+                        break  # Only need one keyword match per category
+
             if relevant_rules:
                 # Remove duplicates while preserving order
                 unique_rules = list(dict.fromkeys(relevant_rules))
                 injection = "\n\n## OpenShield Implementation Capabilities\n"
-                injection += "The following automated scanner rules in OpenShield implement or detect the methodologies described above:\n\n"
+                injection += "The following automated scanner rules in OpenShield implement or detect the methodologies described above:\n\n"  # noqa: E501
                 injection += "\n".join(unique_rules)
-                injection += "\n\nWhen these rules trigger findings, use the investigation steps in this skill for deep-dive analysis."
+                injection += "\n\nWhen these rules trigger findings, use the investigation steps in this skill for deep-dive analysis."  # noqa: E501
                 content += injection
 
-            documents.append({
-                "id": f"skill_{skill_name.lower().replace('-', '_')}",
-                "content": content,
-                "metadata": {
-                    "source": "claude_red_skill",
-                    "skill_name": skill_name,
-                    "file": skill_file.name,
-                },
-            })
+            documents.append(
+                {
+                    "id": f"skill_{skill_name.lower().replace('-', '_')}",
+                    "content": content,
+                    "metadata": {
+                        "source": "claude_red_skill",
+                        "skill_name": skill_name,
+                        "file": skill_file.name,
+                    },
+                }
+            )
 
             logger.debug("Loaded grounded skill: %s", skill_name)
 
@@ -246,6 +250,7 @@ def load_all_documents() -> List[Dict[str, Any]]:
 # ------------------------------------------------------------------ #
 # Private helpers                                                      #
 # ------------------------------------------------------------------ #
+
 
 def _extract_string(content: str, key: str) -> str:
     """Extract a simple string constant from Python source."""

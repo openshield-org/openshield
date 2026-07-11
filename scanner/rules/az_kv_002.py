@@ -6,11 +6,7 @@ RULE_ID = "AZ-KV-002"
 RULE_NAME = "Key Vault Allows Public Network Access Without Private Endpoint"
 SEVERITY = "HIGH"
 CATEGORY = "KeyVault"
-FRAMEWORKS = {
-    "CIS": "8.3",
-    "NIST": "AC-17",
-    "ISO27001": "A.13.1.1"
-}
+FRAMEWORKS = {"CIS": "8.7", "NIST": "AC-17", "ISO27001": "A.13.1.1"}
 
 DESCRIPTION = (
     "The Azure Key Vault is accessible over the public internet without a private endpoint configured. "
@@ -50,22 +46,24 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if is_public and not has_private_endpoint:
             parsed = azure_client.parse_resource_id(vault.id)
 
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": vault.id,
-                "resource_name": vault.name,
-                "resource_type": "Microsoft.KeyVault/vaults",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {
-                    "resource_group": parsed.get("resource_group", ""),
-                    "location": getattr(vault, "location", ""),
-                },
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vault.id,
+                    "resource_name": vault.name,
+                    "resource_type": "Microsoft.KeyVault/vaults",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": parsed.get("resource_group", ""),
+                        "location": getattr(vault, "location", ""),
+                    },
+                }
+            )
 
     return findings

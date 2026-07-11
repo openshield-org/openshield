@@ -73,8 +73,8 @@ class Finding:
 class DatabaseManager:
     """Manages PostgreSQL persistence for scans, findings, and scoring.
 
-    All public methods open a new connection on first use. Call connect()
-    explicitly if you want to pre-warm the connection.
+    Database operations open a new connection on first use. Call connect()
+    explicitly to pre-warm the connection.
     """
 
     def __init__(self, dsn: Optional[str] = None) -> None:
@@ -103,124 +103,24 @@ class DatabaseManager:
             self.conn = None
             logger.debug("Database connection closed")
 
-    # ------------------------------------------------------------------ #
-    # Schema                                                                #
-    # ------------------------------------------------------------------ #
+    def ping(self) -> bool:
+        """Execute a trivial query to confirm database connectivity.
 
-    def init_db(self) -> None:
-        """Alias for run_migrations. Called by startup.sh on every boot.
-
-        Calling this is always safe — run_migrations() handles both fresh
-        databases and existing ones via IF NOT EXISTS guards throughout.
-        """
-        self.run_migrations()
-
-    def create_tables(self) -> None:
-        """Create the findings, scans, and rules tables if they do not exist.
-
-        Includes all columns — including CVE columns — so fresh databases
-        never need the ALTER TABLE path in run_migrations().
+        Used by the /ready probe. Raises on failure so the caller can map it
+        to a 503; returns True when the database answers.
         """
         conn = self._get_conn()
         with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS scans (
-                    scan_id         UUID PRIMARY KEY,
-                    subscription_id TEXT NOT NULL,
-                    started_at      TIMESTAMPTZ NOT NULL,
-                    claimed_at      TIMESTAMPTZ,
-                    completed_at    TIMESTAMPTZ,
-                    total_findings  INTEGER DEFAULT 0,
-                    score           INTEGER DEFAULT NULL,
-                    cve_enrichment_status TEXT DEFAULT 'PENDING',
-                    status          TEXT DEFAULT 'pending',
-                    error_message   TEXT
-                );
-            """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS findings (
-                    id              SERIAL PRIMARY KEY,
-                    scan_id         UUID REFERENCES scans(scan_id),
-                    rule_id         TEXT NOT NULL,
-                    rule_name       TEXT NOT NULL,
-                    severity        TEXT NOT NULL,
-                    category        TEXT,
-                    resource_id     TEXT,
-                    resource_name   TEXT,
-                    resource_type   TEXT,
-                    description     TEXT,
-                    remediation     TEXT,
-                    playbook        TEXT,
-                    frameworks      JSONB,
-                    metadata        JSONB,
-                    cve_references  JSONB DEFAULT '[]',
-                    cvss_score      FLOAT DEFAULT NULL,
-                    exploit_available BOOLEAN DEFAULT FALSE,
-                    detected_at     TIMESTAMPTZ NOT NULL
-                );
-            """)
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_findings_scan_id
-                    ON findings(scan_id);
-                CREATE INDEX IF NOT EXISTS idx_findings_severity
-                    ON findings(severity);
-                CREATE INDEX IF NOT EXISTS idx_findings_rule_id
-                    ON findings(rule_id);
-            """)
-        conn.commit()
-        logger.info("Database tables created / verified")
+            cur.execute("SELECT 1")
+            cur.fetchone()
+        return True
 
-    def run_migrations(self) -> None:
-        """Ensure the schema is fully current. Safe to call on every startup.
-
-        Calls create_tables() first so the call order never matters — this
-        method is safe whether the database is brand new or has existing data.
-
-        On a fresh database:
-            create_tables() creates all tables including CVE columns.
-            The ALTER TABLE below is a no-op (IF NOT EXISTS).
-
-        On a pre-CVE database (existed before this feature was merged):
-            create_tables() verifies tables exist and skips creation.
-            The ALTER TABLE adds the three CVE columns.
-
-        Concurrent startup safety:
-            Both CREATE TABLE IF NOT EXISTS and ALTER TABLE ADD COLUMN IF NOT
-            EXISTS are atomic at the PostgreSQL catalog level. Two Render
-            instances racing at boot will not error — the second call silently
-            no-ops on whichever statement the first already completed.
-        """
-        self.create_tables()
-
-        conn = self._get_conn()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    ALTER TABLE findings
-                        ADD COLUMN IF NOT EXISTS cve_references    JSONB   DEFAULT '[]',
-                        ADD COLUMN IF NOT EXISTS cvss_score        FLOAT   DEFAULT NULL,
-                        ADD COLUMN IF NOT EXISTS exploit_available BOOLEAN DEFAULT FALSE
-                """)
-                cur.execute("""
-                    ALTER TABLE scans
-                        ADD COLUMN IF NOT EXISTS cve_enrichment_status TEXT DEFAULT 'COMPLETED',
-                        ADD COLUMN IF NOT EXISTS status                TEXT DEFAULT 'completed',
-                        ADD COLUMN IF NOT EXISTS error_message         TEXT,
-                        ADD COLUMN IF NOT EXISTS claimed_at            TIMESTAMPTZ
-                """)
-                # Fix: If status already existed but was backfilled as 'pending' (e.g. from 
-                # a previous buggy deploy), force it to 'completed' for all historical 
-                # scans that have already finished.
-                cur.execute("UPDATE scans SET status = 'completed' WHERE status = 'pending' AND completed_at IS NOT NULL")
-                
-                # Backfill claimed_at for any currently running scans so they don't get 
-                # immediately marked as stale by the new recovery logic.
-                cur.execute("UPDATE scans SET claimed_at = started_at WHERE status = 'running' AND claimed_at IS NULL")
-            conn.commit()
-            logger.info("CVE migrations applied successfully")
-        except Exception as e:
-            logger.error("Failed to run CVE migrations: %s", e)
-            conn.rollback()
+    def init_db(self) -> None:
+        """Deprecated compatibility hook; schema changes are managed by Alembic."""
+        logger.warning(
+            "DatabaseManager.init_db() is deprecated and no longer manages the schema; "
+            "run 'alembic upgrade head' instead"
+        )
 
     # ------------------------------------------------------------------ #
     # Write                                                                 #
@@ -230,12 +130,17 @@ class DatabaseManager:
         """Persist a full scan result (scan header + all findings)."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         completed_at = scan_result.get("completed_at") or datetime.now(timezone.utc).isoformat()
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, completed_at, total_findings, score, cve_enrichment_status, status, error_message)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO scans (
+                    scan_id, subscription_id, started_at, completed_at,
+                    total_findings, score, cve_enrichment_status, status,
+                    attempt_count, error_message
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO UPDATE SET
                     completed_at = EXCLUDED.completed_at,
                     total_findings = EXCLUDED.total_findings,
@@ -252,6 +157,7 @@ class DatabaseManager:
                     scan_result.get("score"),
                     scan_result.get("cve_enrichment_status", "PENDING"),
                     scan_result.get("status", "completed"),
+                    scan_result.get("attempt_count", 0),
                     scan_result.get("error_message"),
                 ),
             )
@@ -320,9 +226,10 @@ class DatabaseManager:
             clauses.append(
                 "scan_id = (SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1)"
             )
-            
+
         where = "WHERE " + " AND ".join(clauses) if clauses else ""
-        sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"
+        # Bandit false positive: clauses are fixed, parameterized fragments; values go through `params`
+        sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"  # nosec B608
 
         conn = self._get_conn()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -383,12 +290,13 @@ class DatabaseManager:
         """Create a scan record in the 'pending' state."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         started_at = datetime.now(timezone.utc).isoformat()
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO scans (scan_id, subscription_id, started_at, status)
-                VALUES (%s, %s, %s, 'pending')
+                INSERT INTO scans (scan_id, subscription_id, started_at, status, attempt_count)
+                VALUES (%s, %s, %s, 'pending', 0)
                 """,
                 (scan_id, subscription_id, started_at),
             )
@@ -399,11 +307,12 @@ class DatabaseManager:
         """Update the status of a scan (running, completed, failed)."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         with conn.cursor() as cur:
             if status == "completed":
                 completed_at = datetime.now(timezone.utc).isoformat()
                 cur.execute(
-                    "UPDATE scans SET status = %s, completed_at = %s WHERE scan_id = %s",
+                    "UPDATE scans SET status = %s, completed_at = %s, error_message = NULL WHERE scan_id = %s",
                     (status, completed_at, scan_id),
                 )
             else:
@@ -418,23 +327,27 @@ class DatabaseManager:
         """Atomically claim the next pending scan using SKIP LOCKED."""
         conn = self._get_conn()
         from datetime import datetime, timezone
+
         claimed_at = datetime.now(timezone.utc).isoformat()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """
-                UPDATE scans 
-                SET status = 'running', claimed_at = %s
+                UPDATE scans
+                SET status = 'running',
+                    claimed_at = %s,
+                    attempt_count = COALESCE(attempt_count, 0) + 1,
+                    error_message = NULL
                 WHERE scan_id = (
-                    SELECT scan_id 
-                    FROM scans 
-                    WHERE status = 'pending' 
-                    ORDER BY started_at ASC 
-                    FOR UPDATE SKIP LOCKED 
+                    SELECT scan_id
+                    FROM scans
+                    WHERE status = 'pending'
+                    ORDER BY started_at ASC
+                    FOR UPDATE SKIP LOCKED
                     LIMIT 1
-                ) 
+                )
                 RETURNING *
                 """,
-                (claimed_at,)
+                (claimed_at,),
             )
             row = cur.fetchone()
             if row:
@@ -442,25 +355,51 @@ class DatabaseManager:
                 return dict(row)
             return None
 
-    def recover_stale_scans(self, timeout_minutes: int = 60) -> int:
-        """Mark scans that have been 'running' for too long as 'failed'."""
+    def recover_stale_scans(self, timeout_minutes: int = 60, max_attempts: int = 3) -> int:
+        """Recover scans left running after a worker crash or restart.
+
+        Stale scans are returned to pending while retry attempts remain. Once a
+        scan has reached max_attempts, it is marked failed so it cannot loop
+        forever on bad credentials or persistent Azure errors.
+        """
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
                 """
-                UPDATE scans 
-                SET status = 'failed', 
-                    error_message = 'Scan timed out after remaining in running state for too long.'
-                WHERE status = 'running' 
-                  AND claimed_at < (CURRENT_TIMESTAMP - INTERVAL '%s minutes')
+                UPDATE scans
+                SET status = 'failed',
+                    error_message = 'Scan exceeded maximum retry attempts after worker interruption.'
+                WHERE status = 'running'
+                  AND COALESCE(attempt_count, 1) >= %s
+                  AND claimed_at < (CURRENT_TIMESTAMP - (%s * INTERVAL '1 minute'))
                 """,
-                (timeout_minutes,)
+                (max_attempts, timeout_minutes),
             )
-            count = cur.rowcount
+            failed_count = cur.rowcount
+
+            cur.execute(
+                """
+                UPDATE scans
+                SET status = 'pending',
+                    claimed_at = NULL,
+                    error_message = 'Scan worker interrupted before completion. Queued for retry.'
+                WHERE status = 'running'
+                  AND COALESCE(attempt_count, 0) < %s
+                  AND claimed_at < (CURRENT_TIMESTAMP - (%s * INTERVAL '1 minute'))
+                """,
+                (max_attempts, timeout_minutes),
+            )
+            retry_count = cur.rowcount
         conn.commit()
-        if count > 0:
-            logger.info("Recovered %d stale 'running' scans", count)
-        return count
+        total_count = failed_count + retry_count
+        if total_count > 0:
+            logger.info(
+                "Recovered %d stale 'running' scans (%d retried, %d failed)",
+                total_count,
+                retry_count,
+                failed_count,
+            )
+        return total_count
 
     def get_pending_scans(self) -> List[Dict[str, Any]]:
         """Return all scans in the 'pending' state."""
@@ -510,9 +449,7 @@ class DatabaseManager:
             )
             rows = cur.fetchall()
 
-        deduction = sum(
-            SEVERITY_WEIGHTS.get(sev.upper(), 0) * count for sev, count in rows
-        )
+        deduction = sum(SEVERITY_WEIGHTS.get(sev.upper(), 0) * count for sev, count in rows)
         return max(0, 100 - deduction)
 
     def get_cve_summary(self) -> Dict[str, Any]:
@@ -520,7 +457,7 @@ class DatabaseManager:
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT 
+                SELECT
                     s.cve_enrichment_status,
                     COUNT(f.*) as total_findings,
                     COUNT(CASE WHEN f.exploit_available = TRUE THEN 1 END) as exploit_count,
@@ -578,7 +515,7 @@ class DatabaseManager:
 
         controls = framework_data.get("controls", {})
 
-            # Get rule IDs that fired in the latest completed scan only
+        # Get rule IDs that fired in the latest completed scan only
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
@@ -594,12 +531,14 @@ class DatabaseManager:
         results = []
         for rule_id, control in controls.items():
             status = "FAIL" if rule_id in failed_rule_ids else "PASS"
-            results.append({
-                "rule_id": rule_id,
-                "control_id": control["control_id"],
-                "control_name": control["control_name"],
-                "status": status,
-            })
+            results.append(
+                {
+                    "rule_id": rule_id,
+                    "control_id": control["control_id"],
+                    "control_name": control["control_name"],
+                    "status": status,
+                }
+            )
 
         total = len(results)
         passed = sum(1 for r in results if r["status"] == "PASS")

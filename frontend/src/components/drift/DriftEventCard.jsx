@@ -1,5 +1,4 @@
-import React from 'react';
-import { FiPlusCircle, FiMinusCircle, FiEdit, FiAlertTriangle, FiUser, FiClock } from 'react-icons/fi';
+import { FiPlusCircle, FiMinusCircle, FiEdit, FiUser, FiClock } from 'react-icons/fi';
 import SeverityBadge from '../shared/SeverityBadge';
 import { formatDateTime } from '../../utils/helpers';
 
