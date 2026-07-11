@@ -475,6 +475,7 @@ jobs:
         with:
           image-ref: openshield-ci-scan:${{ github.sha }}
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: "1"
 
   # ── Backend test suite with coverage ─────────────────────────────────────

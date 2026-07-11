@@ -1,9 +1,12 @@
-FROM python:3.11-slim-bookworm
+FROM python:3.11-slim-trixie
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade \
+        pip==26.1.2 \
+        setuptools==83.0.0 \
+        wheel==0.46.3 && \
     pip install --no-cache-dir -r requirements.txt
 
 COPY . .
