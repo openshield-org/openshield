@@ -1,0 +1,26 @@
+# Copy this file to terraform.tfvars and fill in real values. terraform.tfvars
+# is gitignored (see infra/terraform/.gitignore) — never commit real credentials.
+
+render_api_key  = "rnd_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+render_owner_id = "tea-xxxxxxxxxxxxxxxxxxxx"
+
+vercel_api_token = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+vercel_team      = "your-team-slug"
+
+database_url    = "postgresql://user:password@host:5432/openshield"
+jwt_secret      = "generate-with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+allowed_origins = "https://openshield-gules.vercel.app,https://openshield-website.vercel.app"
+
+anthropic_api_key = ""
+groq_api_key      = ""
+gemini_api_key    = ""
+nvd_api_key       = ""
+sentry_dsn        = ""
+
+azure_subscription_id = ""
+azure_client_id       = ""
+azure_tenant_id       = ""
+
+render_postgres_plan    = "free"
+render_web_service_plan = "starter"
+render_region            = "oregon"
