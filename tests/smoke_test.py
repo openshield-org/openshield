@@ -375,22 +375,45 @@ if _scan_status == 200 and isinstance(_scan_body, list):
 
 if _scan_id is not None:
     test(
-        f"TC-33 POST /api/scans/{_scan_id}/enrich returns 200",
+        f"TC-33 POST /api/scans/{_scan_id}/enrich returns 200 or 202",
         "POST",
         f"/api/scans/{_scan_id}/enrich",
-        lambda s, b: s == 200,
+        lambda s, b: s in (200, 202),
         body={},
     )
     test(
-        f"TC-34 POST /api/scans/{_scan_id}/enrich returns status COMPLETED or already enriched",
+        f"TC-34 POST /api/scans/{_scan_id}/enrich returns status ENRICHING, already enriched, or in progress",
         "POST",
         f"/api/scans/{_scan_id}/enrich",
-        lambda s, b: b.get("status") == "COMPLETED" or "already enriched" in b.get("message", ""),
+        lambda s, b: (
+            b.get("status") == "ENRICHING"
+            or "already enriched" in b.get("message", "")
+            or "in progress" in b.get("message", "")
+        ),
         body={},
     )
+
+    # Enrichment now runs in a background thread, so TC-33/34 above only
+    # prove it was accepted, not that it succeeded. Poll for the real
+    # outcome so a completely broken enrichment pipeline still fails here.
+    _enrich_final_status = None
+    for _ in range(20):  # up to ~100s: NVD lookups are rate-limited to ~1 per 7s
+        _poll_status, _poll_body = request("GET", f"/api/scans/{_scan_id}")
+        _enrich_final_status = _poll_body.get("cve_enrichment_status")
+        if _enrich_final_status in ("COMPLETED", "FAILED"):
+            break
+        time.sleep(5)
+
+    test(
+        f"TC-34b Background enrichment for {_scan_id} reaches COMPLETED",
+        "GET",
+        f"/api/scans/{_scan_id}",
+        lambda s, b: _enrich_final_status == "COMPLETED",
+    )
 else:
-    skip("TC-33 POST /api/scans/<id>/enrich returns 200", "No scans in DB — trigger a scan first.")
-    skip("TC-34 POST /api/scans/<id>/enrich returns status COMPLETED", "No scans in DB — trigger a scan first.")
+    skip("TC-33 POST /api/scans/<id>/enrich returns 200 or 202", "No scans in DB — trigger a scan first.")
+    skip("TC-34 POST /api/scans/<id>/enrich returns status ENRICHING", "No scans in DB — trigger a scan first.")
+    skip("TC-34b Background enrichment reaches COMPLETED", "No scans in DB — trigger a scan first.")
 
 test(
     "TC-35 GET /api/score/cve-summary returns status field",

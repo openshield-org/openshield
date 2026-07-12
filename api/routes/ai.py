@@ -5,12 +5,15 @@ import logging
 
 from flask import Blueprint, jsonify, request
 
+from api.rate_limit import rate_limit
 from api.services.ai_provider import PROVIDERS as SUPPORTED_PROVIDERS
 from api.services.ai_provider import get_completion
 from ai.retriever import retrieve, VectorStoreNotBuilt
 
 ai_bp = Blueprint("ai", __name__)
 logger = logging.getLogger(__name__)
+
+_AI_RATE_LIMIT = 20  # requests per minute per client IP, per endpoint
 
 _SEVERITY_RANK = {
     "CRITICAL": 5,
@@ -156,6 +159,7 @@ def _read_request():
 
 
 @ai_bp.post("/api/ai/insights")
+@rate_limit(_AI_RATE_LIMIT)
 def insights():
     data = request.get_json(silent=True)
     if data is None:
@@ -206,6 +210,7 @@ def insights():
 
 
 @ai_bp.post("/api/ai/summary")
+@rate_limit(_AI_RATE_LIMIT)
 def ai_summary():
     body, error = _read_request()
     if error:
@@ -244,6 +249,7 @@ def ai_summary():
 
 
 @ai_bp.post("/api/ai/prioritise")
+@rate_limit(_AI_RATE_LIMIT)
 def ai_prioritise():
     body, error = _read_request()
     if error:
@@ -289,6 +295,7 @@ def ai_prioritise():
 
 
 @ai_bp.post("/api/ai/ask")
+@rate_limit(_AI_RATE_LIMIT)
 def ai_ask():
     body, error = _read_request()
     if error:
@@ -330,6 +337,7 @@ def ai_ask():
 
 
 @ai_bp.post("/api/ai/threat-simulation")
+@rate_limit(_AI_RATE_LIMIT)
 def ai_threat_simulation():
     body, error = _read_request()
     if error:

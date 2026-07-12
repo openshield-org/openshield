@@ -8,6 +8,7 @@ import jwt
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from api.models.finding import DatabaseManager
 from api.observability import configure_logging, get_request_id, init_app, init_sentry
@@ -21,6 +22,10 @@ logger = logging.getLogger(__name__)
 # Paths that are always public regardless of environment or demo mode.
 # /ready and /metrics are probe/scrape endpoints and must never require auth.
 _ALWAYS_PUBLIC = {"/", "/health", "/ready", "/metrics"}
+
+# Maximum accepted request body size (bytes). Guards AI endpoints and the rest
+# of the API against oversized payloads tying up worker threads.
+_MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
 
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
@@ -92,6 +97,12 @@ def create_app() -> Flask:
     """
     app = Flask(__name__)
 
+    # Trust exactly one reverse-proxy hop (Render's edge) for the client IP
+    # and scheme, so request.remote_addr reflects the real caller instead of
+    # collapsing every client onto Render's proxy address. Rate limiting and
+    # any other per-IP logic depend on this being accurate.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+
     # ------------------------------------------------------------------ #
     # Observability                                                        #
     # ------------------------------------------------------------------ #
@@ -104,6 +115,7 @@ def create_app() -> Flask:
     # Configuration & Security                                             #
     # ------------------------------------------------------------------ #
     app.config["JWT_SECRET"] = _resolve_jwt_secret()
+    app.config["MAX_CONTENT_LENGTH"] = _MAX_CONTENT_LENGTH
 
     # ------------------------------------------------------------------ #
     # CORS                                                                  #
@@ -130,15 +142,13 @@ def create_app() -> Flask:
 
     @app.teardown_appcontext
     def close_db(error=None):
-        """Ensure the database connection is closed after the request."""
+        """Return the request's pooled database connection after the request."""
         for key in ("db", "db_conn"):
             db = g.pop(key, None)
             if db is None:
                 continue
             try:
-                if hasattr(db, "conn") and db.conn is not None:
-                    db.conn.close()
-                    logger.debug("Database connection closed gracefully")
+                db.close()
             except Exception as exc:
                 logger.error("Error closing database connection: %s", exc)
 
@@ -247,6 +257,10 @@ def create_app() -> Flask:
     @app.errorhandler(404)
     def not_found(exc):
         return jsonify({"error": "Not found", "request_id": get_request_id()}), 404
+
+    @app.errorhandler(413)
+    def payload_too_large(exc):
+        return jsonify({"error": "Request body too large"}), 413
 
     @app.errorhandler(500)
     def internal_error(exc):

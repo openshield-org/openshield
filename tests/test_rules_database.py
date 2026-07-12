@@ -1,8 +1,10 @@
-"""Rule regression tests for AZ-DB-002 and AZ-DB-004."""
+"""Rule regression tests for the database rules AZ-DB-001 .. AZ-DB-004."""
 
 import pytest
 
+import scanner.rules.az_db_001 as az_db_001
 import scanner.rules.az_db_002 as az_db_002
+import scanner.rules.az_db_003 as az_db_003
 import scanner.rules.az_db_004 as az_db_004
 from tests.helpers.mock_azure import make_resource
 
@@ -159,3 +161,94 @@ def test_db_002_enabled_policy_with_real_sdk_enum_returns_no_findings(mock_azure
     mock_azure.set_sql_server_auditing_policy(_RG, "sql-audited-enum", policy)
     findings = az_db_002.scan(mock_azure, subscription_id)
     assert findings == []
+
+
+def _pg_id(name, provider="Microsoft.DBforPostgreSQL/servers"):
+    return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/{provider}/{name}"
+
+
+# ── AZ-DB-001: PostgreSQL single-server public network access ───────────────
+
+
+def test_db_001_compliant_returns_no_findings(mock_azure, subscription_id):
+    server = make_resource(
+        id=_pg_id("pg-private"),
+        name="pg-private",
+        public_network_access="Disabled",
+        location="eastus",
+    )
+    mock_azure.set_postgresql_servers([server])
+    assert az_db_001.scan(mock_azure, subscription_id) == []
+
+
+def test_db_001_noncompliant_returns_one_finding(mock_azure, subscription_id):
+    server = make_resource(
+        id=_pg_id("pg-public"),
+        name="pg-public",
+        public_network_access="Enabled",
+        location="eastus",
+    )
+    mock_azure.set_postgresql_servers([server])
+    findings = az_db_001.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-DB-001"
+    assert findings[0]["severity"] == "HIGH"
+    assert findings[0]["resource_name"] == "pg-public"
+
+
+# ── AZ-DB-002: Azure SQL server auditing disabled ───────────────────────────
+
+
+def test_db_002_compliant_returns_no_findings(mock_azure, subscription_id):
+    server = make_resource(id=_sql_id("sql-audited"), name="sql-audited")
+    mock_azure.set_sql_servers([server])
+    mock_azure.set_sql_server_auditing_policy(_RG, "sql-audited", make_resource(state="Enabled"))
+    assert az_db_002.scan(mock_azure, subscription_id) == []
+
+
+def test_db_002_noncompliant_returns_one_finding(mock_azure, subscription_id):
+    server = make_resource(id=_sql_id("sql-unaudited"), name="sql-unaudited")
+    mock_azure.set_sql_servers([server])
+    mock_azure.set_sql_server_auditing_policy(_RG, "sql-unaudited", make_resource(state="Disabled"))
+    findings = az_db_002.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-DB-002"
+    assert findings[0]["severity"] == "MEDIUM"
+    assert findings[0]["resource_name"] == "sql-unaudited"
+
+
+# ── AZ-DB-003: PostgreSQL flexible server SSL enforcement disabled ──────────
+
+
+def test_db_003_compliant_returns_no_findings(mock_azure, subscription_id):
+    server = make_resource(
+        id=_pg_id("pgflex-ssl", "Microsoft.DBforPostgreSQL/flexibleServers"),
+        name="pgflex-ssl",
+        location="eastus",
+    )
+    mock_azure.set_postgresql_flexible_servers([server])
+    mock_azure.set_postgresql_flexible_server_parameters(
+        _RG,
+        "pgflex-ssl",
+        [make_resource(name="require_secure_transport", value="on")],
+    )
+    assert az_db_003.scan(mock_azure, subscription_id) == []
+
+
+def test_db_003_noncompliant_returns_one_finding(mock_azure, subscription_id):
+    server = make_resource(
+        id=_pg_id("pgflex-nossl", "Microsoft.DBforPostgreSQL/flexibleServers"),
+        name="pgflex-nossl",
+        location="eastus",
+    )
+    mock_azure.set_postgresql_flexible_servers([server])
+    mock_azure.set_postgresql_flexible_server_parameters(
+        _RG,
+        "pgflex-nossl",
+        [make_resource(name="require_secure_transport", value="off")],
+    )
+    findings = az_db_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-DB-003"
+    assert findings[0]["severity"] == "HIGH"
+    assert findings[0]["resource_name"] == "pgflex-nossl"

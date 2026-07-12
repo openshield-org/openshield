@@ -94,7 +94,7 @@ def _gemini(api_key: str, prompt: str, model: str) -> str:
     try:
         resp = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-            params={"key": api_key},
+            headers={"x-goog-api-key": api_key, "content-type": "application/json"},
             json={"contents": [{"parts": [{"text": prompt}]}]},
             timeout=30,
         )

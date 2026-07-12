@@ -2,6 +2,7 @@
 
 import logging
 import os
+import threading
 import uuid
 from flask import Blueprint, g, jsonify, request
 
@@ -83,9 +84,45 @@ def trigger_scan():
         return jsonify({"error": "Critical route failure", "detail": str(exc)}), 500
 
 
+def _run_enrichment_in_background(scan_id: str, findings: list, db_url: str) -> None:
+    """Run CVE enrichment off the request thread and persist the result.
+
+    Runs outside the Flask request/app context (it's started via
+    threading.Thread), so it opens its own DatabaseManager rather than
+    reusing flask.g.
+    """
+    db = DatabaseManager(db_url)
+    try:
+        enriched = enrich_findings(findings)
+        db.update_cve_fields(enriched)
+        db.update_scan_enrichment_status(scan_id, "COMPLETED")
+        logger.info("Background CVE enrichment complete for scan %s (%d findings)", scan_id, len(enriched))
+    except Exception as exc:
+        logger.error("Background enrichment failed for scan %s: %s", scan_id, exc)
+        try:
+            # A failed write (e.g. in update_cve_fields) can leave db.conn in
+            # an aborted-transaction state. Roll back first, or this status
+            # update itself raises InFailedSqlTransaction and gets swallowed
+            # below, leaving the scan stuck at ENRICHING forever.
+            if db.conn is not None:
+                db.conn.rollback()
+            db.update_scan_enrichment_status(scan_id, "FAILED")
+        except Exception as status_exc:
+            logger.error("Failed to record FAILED status for scan %s: %s", scan_id, status_exc)
+    finally:
+        db.close()
+
+
 @scans_bp.post("/api/scans/<scan_id>/enrich")
 def enrich_scan(scan_id):
-    """Trigger CVE enrichment for an existing scan."""
+    """Kick off CVE enrichment for an existing scan in the background.
+
+    Returns immediately with 202 and status ENRICHING; poll
+    GET /api/scans/<scan_id> (cve_enrichment_status) for completion.
+    Running enrichment synchronously here previously caused the request to
+    time out on scans spanning many rule categories, since NVD lookups are
+    rate-limited to one every ~7 seconds.
+    """
     try:
         db = _get_db()
 
@@ -106,20 +143,23 @@ def enrich_scan(scan_id):
         if not findings:
             return jsonify({"error": "No findings found for this scan"}), 404
 
-        logger.info("Enriching %d findings for scan %s", len(findings), scan_id)
+        logger.info("Starting background CVE enrichment for %d findings in scan %s", len(findings), scan_id)
         db.update_scan_enrichment_status(scan_id, "ENRICHING")
 
-        try:
-            enriched = enrich_findings(findings)
-            db.update_cve_fields(enriched)
-            db.update_scan_enrichment_status(scan_id, "COMPLETED")
-        except Exception as exc:
-            logger.error("Enrichment failed for scan %s: %s", scan_id, exc)
-            db.update_scan_enrichment_status(scan_id, "FAILED")
-            return jsonify({"error": "Enrichment failed", "detail": str(exc)}), 500
+        threading.Thread(
+            target=_run_enrichment_in_background,
+            args=(scan_id, findings, db.dsn),
+            daemon=True,
+        ).start()
 
-        return jsonify({"scan_id": scan_id, "status": "COMPLETED", "enriched_count": len(enriched)})
+        return jsonify(
+            {
+                "scan_id": scan_id,
+                "status": "ENRICHING",
+                "message": "CVE enrichment started; poll GET /api/scans/<scan_id> for completion.",
+            }
+        ), 202
 
     except Exception as exc:
-        logger.error("Failed to enrich scan %s: %s", scan_id, exc)
+        logger.error("Failed to start enrichment for scan %s: %s", scan_id, exc)
         return jsonify({"error": "Internal server error", "detail": str(exc)}), 500

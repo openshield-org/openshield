@@ -2,14 +2,18 @@
 
 import logging
 import os
+import re
 from pathlib import Path
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
 
-_PLAYBOOKS_DIR = Path(__file__).parent.parent.parent / "playbooks" / "cli"
+_PLAYBOOKS_DIR = (Path(__file__).parent.parent.parent / "playbooks" / "cli").resolve()
 
-_PLAYBOOKS_DIR = Path(__file__).parent.parent.parent / "playbooks" / "cli"
+# Known rule_id shape, e.g. AZ-STOR-001. Anything else is rejected before it
+# ever reaches the filesystem, closing off path traversal via a crafted or
+# corrupted rule_id.
+_RULE_ID_RE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 
 findings_bp = Blueprint("findings", __name__)
 logger = logging.getLogger(__name__)
@@ -73,12 +77,18 @@ def get_playbook(finding_id: int):
         remediation = finding.get("remediation", "")
         cve_refs = finding.get("cve_references") or []
 
-        # Map rule_id (e.g. AZ-STOR-001) to script filename (fix_az_stor_001.sh)
-        script_name = "fix_" + rule_id.lower().replace("-", "_") + ".sh"
-        script_path = _PLAYBOOKS_DIR / script_name
-
         cli_commands = []
-        if script_path.exists():
+        script_path = None
+        if _RULE_ID_RE.match(rule_id or ""):
+            # Map rule_id (e.g. AZ-STOR-001) to script filename (fix_az_stor_001.sh)
+            script_name = "fix_" + rule_id.lower().replace("-", "_") + ".sh"
+            candidate = (_PLAYBOOKS_DIR / script_name).resolve()
+            if candidate.is_relative_to(_PLAYBOOKS_DIR):
+                script_path = candidate
+        else:
+            logger.warning("Rejected malformed rule_id for playbook lookup: %r", rule_id)
+
+        if script_path is not None and script_path.exists():
             raw = script_path.read_text()
             # Strip comment-only lines and blank lines; join multi-line commands
             lines = raw.splitlines()

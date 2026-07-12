@@ -1,0 +1,62 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: Terraform fmt / validate / plan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: "~1.6"
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Check for Terraform Cloud token
+        id: check_token
+        run: |
+          if [ -n "${{ secrets.TF_API_TOKEN }}" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Terraform validate (no credentials)
+        if: steps.check_token.outputs.has_token == 'false'
+        run: |
+          echo "TF_API_TOKEN not configured — skipping real plan, running structural validation only."
+          echo 'terraform {' > override.tf
+          echo '  backend "local" {}' >> override.tf
+          echo '}' >> override.tf
+          terraform init -backend=false
+          terraform validate
+          rm override.tf
+
+      - name: Terraform init (real backend)
+        if: steps.check_token.outputs.has_token == 'true'
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: terraform init
+
+      - name: Terraform plan
+        if: steps.check_token.outputs.has_token == 'true'
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+        run: terraform plan -no-color

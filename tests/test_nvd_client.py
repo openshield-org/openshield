@@ -13,12 +13,14 @@ Test classes:
 """
 
 import json
+import threading
+import time
 import unittest
 import urllib.error
 from unittest.mock import patch, MagicMock
 
 # Clear the module cache before import so previous test runs don't bleed in
-from scanner.nvd_client import query_nvd, _parse_cve_item, _cache
+from scanner.nvd_client import query_nvd, _parse_cve_item, _cache, _wait_for_rate_limit
 
 
 # ---------------------------------------------------------------------------
@@ -251,6 +253,45 @@ class TestQueryNvd(unittest.TestCase):
         self.assertEqual(results, [])
         # time.sleep should have been called (back-off logic)
         self.assertTrue(mock_sleep.called)
+
+
+# ---------------------------------------------------------------------------
+# TestRateLimitThreadSafety
+# REL-005: _wait_for_rate_limit must serialize concurrent callers so two
+# threads can't both read a stale _last_request_time and fire requests
+# closer together than _REQUEST_DELAY_SECONDS apart.
+# ---------------------------------------------------------------------------
+
+
+class TestRateLimitThreadSafety(unittest.TestCase):
+    def setUp(self):
+        patcher = patch("scanner.nvd_client._rate_limiter._last_request_time", 0.0)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    @patch("scanner.nvd_client._REQUEST_DELAY_SECONDS", 0.05)
+    def test_concurrent_calls_are_serialized_not_interleaved(self):
+        timestamps = []
+        record_lock = threading.Lock()
+
+        def call():
+            _wait_for_rate_limit()
+            with record_lock:
+                timestamps.append(time.monotonic())
+
+        threads = [threading.Thread(target=call) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        timestamps.sort()
+        gaps = [b - a for a, b in zip(timestamps, timestamps[1:])]
+        # Each recorded call must be spaced by roughly the delay; a broken
+        # (unlocked) guard lets threads read the same stale timestamp and
+        # return almost simultaneously, producing near-zero gaps.
+        for gap in gaps:
+            self.assertGreaterEqual(gap, 0.04)
 
 
 if __name__ == "__main__":

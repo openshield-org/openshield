@@ -3,16 +3,40 @@
 import json
 import logging
 import os
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 
 logger = logging.getLogger(__name__)
 
 FRAMEWORKS_DIR = Path(__file__).parent.parent.parent / "compliance" / "frameworks"
+
+# One pool per DSN, shared across all DatabaseManager instances in this
+# process. Routes create a new DatabaseManager per request, but they all
+# borrow from the same small set of long-lived connections instead of
+# opening a fresh PostgreSQL connection on every request.
+_POOLS: Dict[str, "psycopg2.pool.ThreadedConnectionPool"] = {}
+_POOLS_LOCK = threading.Lock()
+
+
+_POOL_MAX_CONN = int(os.environ.get("DB_POOL_MAX_CONN", "10"))
+
+
+def _get_pool(dsn: str) -> "psycopg2.pool.ThreadedConnectionPool":
+    # Pool creation happens at most once per DSN per process lifetime, so a
+    # plain lock (no unlocked fast path) is simpler and just as cheap here.
+    with _POOLS_LOCK:
+        pool = _POOLS.get(dsn)
+        if pool is None:
+            pool = psycopg2.pool.ThreadedConnectionPool(1, _POOL_MAX_CONN, dsn)
+            _POOLS[dsn] = pool
+        return pool
+
 
 SEVERITY_WEIGHTS = {"HIGH": 10, "MEDIUM": 5, "LOW": 2, "INFO": 0}
 
@@ -86,10 +110,10 @@ class DatabaseManager:
     # ------------------------------------------------------------------ #
 
     def connect(self) -> None:
-        """Open a persistent database connection."""
-        self.conn = psycopg2.connect(self.dsn)
+        """Acquire a connection from this DSN's shared pool."""
+        self.conn = _get_pool(self.dsn).getconn()
         self.conn.autocommit = False
-        logger.info("Database connection established")
+        logger.debug("Database connection acquired from pool")
 
     def _get_conn(self) -> Any:
         if self.conn is None or self.conn.closed:
@@ -97,11 +121,16 @@ class DatabaseManager:
         return self.conn
 
     def close(self) -> None:
-        """Close the database connection."""
-        if self.conn and not self.conn.closed:
-            self.conn.close()
+        """Return the connection to its pool (or discard it if broken)."""
+        if self.conn is None:
+            return
+        try:
+            _get_pool(self.dsn).putconn(self.conn, close=bool(self.conn.closed))
+            logger.debug("Database connection returned to pool")
+        except Exception as exc:
+            logger.error("Error returning connection to pool: %s", exc)
+        finally:
             self.conn = None
-            logger.debug("Database connection closed")
 
     def ping(self) -> bool:
         """Execute a trivial query to confirm database connectivity.
@@ -443,7 +472,6 @@ class DatabaseManager:
                 WHERE scan_id = (
                     SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1
                 )
-                GROUP BY severity
                 GROUP BY severity
                 """
             )

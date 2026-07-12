@@ -120,12 +120,14 @@ To enable the automated smoke tests in the CI/CD pipeline, you **must** add the 
 |---|---|---|
 | `JWT_SECRET` | All smoke tests | Must match the value set in Render. Used to sign tokens for test requests. |
 | `API_URL` | All smoke tests (optional) | Your Render Service URL. Defaults to the main production instance if not set. |
-| `AZURE_SUBSCRIPTION_ID` | Real scan tests | Azure Subscription ID passed to the scan trigger endpoint. |
-| `AZURE_CLIENT_ID` | Real scan tests | Service principal client ID for `DefaultAzureCredential`. |
-| `AZURE_CLIENT_SECRET` | Real scan tests | Service principal secret for `DefaultAzureCredential`. |
-| `AZURE_TENANT_ID` | Real scan tests | Azure AD tenant ID for `DefaultAzureCredential`. |
+| `AZURE_SUBSCRIPTION_ID` | Real scan tests | Azure Subscription ID passed to the scan trigger endpoint, and to the `azure/login` OIDC step. |
+| `AZURE_CLIENT_ID` | Real scan tests | Service principal client ID for `DefaultAzureCredential` and the `azure/login` OIDC step. |
+| `AZURE_TENANT_ID` | Real scan tests | Azure AD tenant ID for `DefaultAzureCredential` and the `azure/login` OIDC step. |
 
 > **Note:** `RUN_REAL_SCAN=true` is set automatically by `deploy.yml` on `dev` and `main` branches. Forks and contributor PRs never set this flag, so TC-13 and TC-14 are always skipped in fork CI regardless of which secrets are present.
+>
+> As of #160, Azure authentication for real-scan smoke tests uses GitHub OIDC federation
+> instead of a stored client secret. See `docs/ci-oidc-setup.md` for the one-time setup.
 
 ---
 
