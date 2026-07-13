@@ -75,7 +75,6 @@ class MockAzureClient:
         self._kv_certificates: Dict[str, List[Any]] = {}
         self._kv_keys: Dict[str, List[Any]] = {}
         self._diagnostic_settings: Dict[str, Optional[bool]] = {}
-<<<<<<< HEAD
         self._diagnostic_default: Optional[bool] = False
         self._conditional_access_policies: List[Any] = []
         # Credential stub for Graph/SDK-based rules (idn_003..009).
@@ -98,10 +97,6 @@ class MockAzureClient:
         # Some rules read azure_client.subscription_id when constructing an
         # SDK management client inside scan() (e.g. AZ-NET-007..010).
         self.subscription_id = "00000000-0000-0000-0000-000000000001"
-=======
-        self._key_vault_certificates: Dict[str, List[Any]] = {}
-        self._sql_auditing_policies: Dict[Tuple[str, str], Any] = {}
->>>>>>> de986c9 (fix(scanner): resolve COR-001-004 scanner correctness issues (#151))
 
     def set_storage_accounts(self, accounts: List[Any]) -> "MockAzureClient":
         self._storage_accounts = accounts
@@ -212,28 +207,6 @@ class MockAzureClient:
         self._sql_firewall_rules[(resource_group, server_name)] = rules
         return self
 
-<<<<<<< HEAD
-=======
-    def set_diagnostic_settings(self, resource_id: str, status: Optional[bool]) -> "MockAzureClient":
-        self._diagnostic_settings[resource_id] = status
-        return self
-
-    def set_key_vault_certificates(self, vault_name: str, certificates: List[Any]) -> "MockAzureClient":
-        self._key_vault_certificates[vault_name] = certificates
-        return self
-
-    def set_sql_server_auditing_policy(
-        self, resource_group: str, server_name: str, policy: Optional[Any]
-    ) -> "MockAzureClient":
-        """Configure the auditing policy returned for a server.
-
-        Pass None to simulate an API failure (e.g. throttling, auth error),
-        distinct from a real policy object with state="Disabled".
-        """
-        self._sql_auditing_policies[(resource_group, server_name)] = policy
-        return self
-
->>>>>>> de986c9 (fix(scanner): resolve COR-001-004 scanner correctness issues (#151))
     def get_storage_accounts(self) -> List[Any]:
         return self._storage_accounts
 
@@ -460,9 +433,6 @@ class MockAzureClient:
 
     def get_web_apps(self) -> List[Any]:
         return self._web_apps
-
-    def get_sql_server_auditing_policy(self, resource_group: str, server_name: str) -> Optional[Any]:
-        return self._sql_auditing_policies.get((resource_group, server_name))
 
     @staticmethod
     def parse_resource_id(resource_id: str) -> Dict[str, str]:
