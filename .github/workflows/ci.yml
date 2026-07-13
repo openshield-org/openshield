@@ -548,6 +548,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Run aiSettings tests
+        run: node src/utils/aiApi.test.mjs
+
       - name: Build
         run: npm run build
 

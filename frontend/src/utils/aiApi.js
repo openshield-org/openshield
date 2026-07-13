@@ -15,19 +15,27 @@ const API_BASE = import.meta.env.VITE_API_URL
   || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://openshield-api.onrender.com');
 const TIMEOUT = 30000;
 
-// ── Provider settings stored in localStorage ───────────────────────────────
+// ── Provider settings ───────────────────────────────────────────────────────
+// The API key is the user's own bring-your-own AI provider credential. It is
+// kept in memory only for the life of the page — never written to
+// localStorage/sessionStorage, which any script running on the page can read
+// (XSS-exfiltrable) and which persists indefinitely. The trade-off is that
+// the key does not survive a page reload; provider/model (not secret) still
+// persist in localStorage as before.
+let apiKeyInMemory = '';
+
 export const aiSettings = {
   getProvider: () => localStorage.getItem('ai_provider') || 'anthropic',
-  getApiKey:   () => localStorage.getItem('ai_api_key')  || '',
+  getApiKey:   () => apiKeyInMemory,
   getModel:    () => localStorage.getItem('ai_model')    || '',
   save: ({ provider, apiKey, model }) => {
-    if (provider)           localStorage.setItem('ai_provider', provider);
-    if (apiKey !== undefined) /* key storage removed */;
-    if (model !== undefined)  localStorage.setItem('ai_model', model || '');
+    if (provider)              localStorage.setItem('ai_provider', provider);
+    if (apiKey !== undefined)  apiKeyInMemory = apiKey;
+    if (model !== undefined)   localStorage.setItem('ai_model', model || '');
   },
-  isConfigured: () => !!localStorage.getItem('ai_api_key'),
+  isConfigured: () => !!apiKeyInMemory,
   clear: () => {
-    localStorage.removeItem('ai_api_key');
+    apiKeyInMemory = '';
     localStorage.removeItem('ai_provider');
     localStorage.removeItem('ai_model');
   },
