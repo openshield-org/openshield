@@ -25,6 +25,12 @@ def http_error(code):
     return urllib.error.HTTPError("https://api.render.com", code, "error", {}, io.BytesIO(b"detail"))
 
 
+def test_open_rejects_untrusted_endpoint():
+    request = render_deploy.urllib.request.Request("file:///etc/passwd")
+    with pytest.raises(SystemExit):
+        render_deploy._open(request)
+
+
 def sequence(monkeypatch, values):
     calls = []
     iterator = iter(values)

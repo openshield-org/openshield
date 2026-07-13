@@ -151,6 +151,14 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
         }
     )
     url = f"{_NVD_BASE_URL}?{params}"
+    parsed_url = urllib.parse.urlsplit(url)
+    if (
+        parsed_url.scheme != "https"
+        or parsed_url.hostname != "services.nvd.nist.gov"
+        or parsed_url.port not in (None, 443)
+    ):
+        logger.error("Refusing request to an untrusted NVD endpoint")
+        return []
 
     for attempt in range(1, _MAX_RETRIES + 1):
         try:
@@ -163,7 +171,10 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
             )
             # URL host is the hardcoded NVD API base, not user-controlled
             with NVD_REQUEST_LATENCY_SECONDS.time():
-                with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+                # The URL is built from the fixed HTTPS NVD endpoint; only its query string varies.
+                with urllib.request.urlopen(  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+                    req, timeout=10
+                ) as resp:  # nosec B310
                     data = json.loads(resp.read())
 
             vulnerabilities = data.get("vulnerabilities", [])

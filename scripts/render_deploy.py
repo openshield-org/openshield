@@ -12,6 +12,7 @@ import socket
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import NoReturn
 
@@ -65,7 +66,12 @@ def _decode_json(body: str, context: str) -> dict:
 
 
 def _open(request: urllib.request.Request) -> str:
-    with urllib.request.urlopen(request, timeout=30) as response:
+    parsed = urllib.parse.urlsplit(request.full_url)
+    if parsed.scheme != "https" or parsed.hostname != "api.render.com" or parsed.port not in (None, 443):
+        _fail("refusing request to an untrusted Render API endpoint")
+    with urllib.request.urlopen(  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        request, timeout=30
+    ) as response:
         return response.read().decode("utf-8")
 
 

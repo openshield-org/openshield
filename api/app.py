@@ -185,8 +185,8 @@ def create_app() -> Flask:
             g.user = payload
         except jwt.ExpiredSignatureError:
             return jsonify({"error": "Token has expired", "request_id": get_request_id()}), 401
-        except jwt.InvalidTokenError as exc:
-            logger.warning("Invalid JWT token: %s", exc)
+        except jwt.InvalidTokenError:
+            logger.warning("Invalid JWT token")
             return jsonify({"error": "Invalid token", "request_id": get_request_id()}), 401
 
         return None

@@ -235,30 +235,25 @@ class DatabaseManager:
     def get_findings(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Return findings, optionally filtered by severity, category, or rule_id."""
         filters = filters or {}
-        clauses: List[str] = []
-        params: List[Any] = []
+        severity = filters.get("severity")
+        severity = severity.upper() if severity is not None else None
+        category = filters.get("category")
+        rule_id = filters.get("rule_id")
+        scan_id = filters.get("scan_id")
 
-        if "severity" in filters:
-            clauses.append("severity = %s")
-            params.append(filters["severity"].upper())
-        if "category" in filters:
-            clauses.append("LOWER(category) = LOWER(%s)")
-            params.append(filters["category"])
-        if "rule_id" in filters:
-            clauses.append("rule_id = %s")
-            params.append(filters["rule_id"])
-        if "scan_id" in filters:
-            clauses.append("scan_id = %s")
-            params.append(filters["scan_id"])
-        else:
-            # Default to the latest completed scan (includes clean scans with 0 findings)
-            clauses.append(
-                "scan_id = (SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1)"
-            )
-
-        where = "WHERE " + " AND ".join(clauses) if clauses else ""
-        # Bandit false positive: clauses are fixed, parameterized fragments; values go through `params`
-        sql = f"SELECT * FROM findings {where} ORDER BY detected_at DESC LIMIT 1000"  # nosec B608
+        sql = """
+            SELECT * FROM findings
+            WHERE (%s IS NULL OR severity = %s)
+              AND (%s IS NULL OR LOWER(category) = LOWER(%s))
+              AND (%s IS NULL OR rule_id = %s)
+              AND scan_id = COALESCE(
+                  %s,
+                  (SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1)
+              )
+            ORDER BY detected_at DESC
+            LIMIT 1000
+        """
+        params = (severity, severity, category, category, rule_id, rule_id, scan_id)
 
         conn = self._get_conn()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:

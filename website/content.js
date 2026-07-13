@@ -523,3 +523,7 @@ const siteContent = {
         }
     ]
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = siteContent;
+}

@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 
 /**
@@ -8,29 +7,7 @@ const path = require('path');
 
 function generateRSS() {
     try {
-        const contentPath = path.join(__dirname, 'content.js');
-        const contentFile = fs.readFileSync(contentPath, 'utf8');
-
-        // Extract the JSON object from the siteContent constant
-        const startIndex = contentFile.indexOf('const siteContent = {') + 'const siteContent = '.length;
-        const endIndex = contentFile.lastIndexOf('};') + 1;
-        
-        if (startIndex === -1 || endIndex === 0) {
-            console.error("Could not find siteContent in content.js");
-            return;
-        }
-
-        const jsonString = contentFile.substring(startIndex, endIndex);
-
-        // We use eval here safely because we are in a trusted build environment 
-        let siteContent;
-        try {
-            siteContent = eval('(' + jsonString + ')');
-        } catch (e) {
-            console.error("Eval error:", e.message);
-            // Fallback: try to find the last }; more precisely if needed
-            return;
-        }
+        const siteContent = require(path.join(__dirname, 'content.js'));
 
         let rssItems = '';
 

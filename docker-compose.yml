@@ -3,6 +3,12 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
     environment:
       POSTGRES_DB: openshield
       POSTGRES_USER: openshield
@@ -32,6 +38,11 @@ services:
 
   frontend:
     image: node:20-alpine
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
     working_dir: /app
     volumes:
       - ./frontend:/app
