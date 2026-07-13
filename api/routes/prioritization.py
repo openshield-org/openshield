@@ -180,4 +180,4 @@ def get_prioritization():
 
     except Exception as exc:
         logger.error("Failed to build prioritization: %s", exc)
-        return jsonify({"error": "Failed to retrieve prioritization", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to retrieve prioritization"}), 500

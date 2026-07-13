@@ -32,7 +32,7 @@ def list_scans():
         return jsonify(result)
     except Exception as exc:
         logger.error("Failed to list scans: %s", exc)
-        return jsonify({"error": "Failed to retrieve scans", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to retrieve scans"}), 500
 
 
 @scans_bp.get("/api/scans/<scan_id>")
@@ -46,7 +46,7 @@ def get_scan_status(scan_id):
         return jsonify(scan)
     except Exception as exc:
         logger.error("Failed to get scan status: %s", exc)
-        return jsonify({"error": "Database error", "detail": str(exc)}), 500
+        return jsonify({"error": "Database error"}), 500
 
 
 @scans_bp.post("/api/scans/trigger")
@@ -73,7 +73,7 @@ def trigger_scan():
             db.create_pending_scan(scan_id, subscription_id)
         except Exception as exc:
             logger.error("Failed to create pending scan: %s", exc, exc_info=True)
-            return jsonify({"error": "Database error", "detail": str(exc)}), 500
+            return jsonify({"error": "Database error"}), 500
 
         return jsonify(
             {"scan_id": scan_id, "status": "pending", "message": "Scan has been queued and will start shortly."}
@@ -81,7 +81,7 @@ def trigger_scan():
 
     except Exception as exc:
         logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)
-        return jsonify({"error": "Critical route failure", "detail": str(exc)}), 500
+        return jsonify({"error": "Critical route failure"}), 500
 
 
 def _run_enrichment_in_background(scan_id: str, findings: list, db_url: str) -> None:
@@ -162,4 +162,4 @@ def enrich_scan(scan_id):
 
     except Exception as exc:
         logger.error("Failed to start enrichment for scan %s: %s", scan_id, exc)
-        return jsonify({"error": "Internal server error", "detail": str(exc)}), 500
+        return jsonify({"error": "Internal server error"}), 500

@@ -47,7 +47,8 @@ def get_compliance(framework: str):
 
         return jsonify(result)
     except FileNotFoundError as exc:
-        return jsonify({"error": f"Frameworks directory not found: {exc}"}), 500
+        logger.error("Frameworks directory not found: %s", exc)
+        return jsonify({"error": "Compliance frameworks are not available"}), 500
     except Exception as exc:
         logger.error("Failed to retrieve compliance score for %s: %s", framework, exc)
-        return jsonify({"error": "Compliance calculation failed", "detail": str(exc)}), 500
+        return jsonify({"error": "Compliance calculation failed"}), 500

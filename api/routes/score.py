@@ -34,7 +34,7 @@ def get_score():
         return jsonify(result)
     except Exception as exc:
         logger.error("Failed to calculate score: %s", exc)
-        return jsonify({"error": "Failed to calculate score", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to calculate score"}), 500
 
 
 @score_bp.get("/api/score/cve-summary")
@@ -46,4 +46,4 @@ def get_cve_summary():
         return jsonify(result)
     except Exception as exc:
         logger.error("Failed to fetch CVE summary: %s", exc)
-        return jsonify({"error": "Failed to fetch CVE summary", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to fetch CVE summary"}), 500

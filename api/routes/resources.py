@@ -121,4 +121,4 @@ def get_resources():
 
     except Exception as exc:
         logger.error("Failed to build resources: %s", exc)
-        return jsonify({"error": "Failed to retrieve resources", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to retrieve resources"}), 500

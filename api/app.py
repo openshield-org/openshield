@@ -244,7 +244,8 @@ def create_app() -> Flask:
 
     @app.errorhandler(400)
     def bad_request(exc):
-        return jsonify({"error": "Bad request", "detail": str(exc), "request_id": get_request_id()}), 400
+        logger.warning("Bad request: %s", exc)
+        return jsonify({"error": "Bad request", "request_id": get_request_id()}), 400
 
     @app.errorhandler(401)
     def unauthorized(exc):

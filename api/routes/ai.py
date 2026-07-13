@@ -158,6 +158,25 @@ def _read_request():
     return body, None
 
 
+_AI_ERROR_MESSAGES = {
+    503: "AI knowledge base is not available",
+    400: "Invalid AI request parameters",
+    502: "AI provider request failed",
+}
+
+
+def _ai_error_response(exc: Exception, status: int, log_context: str):
+    """Return a safe, generic error response, logging the real exception server-side.
+
+    Never reflect str(exc) back to the client: get_completion() wraps
+    third-party provider errors (e.g. "Anthropic request failed: {exc}"),
+    which could carry response bodies or connection details from the
+    underlying HTTP client that shouldn't reach the caller.
+    """
+    logger.error("%s: %s", log_context, exc)
+    return jsonify({"error": _AI_ERROR_MESSAGES.get(status, "AI request failed")}), status
+
+
 @ai_bp.post("/api/ai/insights")
 @rate_limit(_AI_RATE_LIMIT)
 def insights():
@@ -223,7 +242,7 @@ def ai_summary():
     try:
         context, sources = _context_for(findings_text)
     except VectorStoreNotBuilt as exc:
-        return jsonify({"error": str(exc)}), 503
+        return _ai_error_response(exc, 503, "Vector store unavailable in ai_summary")
 
     prompt = (
         "You are a cloud security advisor. Using ONLY the grounded knowledge "
@@ -234,9 +253,9 @@ def ai_summary():
     try:
         answer = get_completion(body["provider"], body["api_key"], prompt, model=body.get("model"))
     except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+        return _ai_error_response(exc, 400, "Invalid request in ai_summary")
     except RuntimeError as exc:
-        return jsonify({"error": str(exc)}), 502
+        return _ai_error_response(exc, 502, "Provider failure in ai_summary")
 
     return jsonify(
         {
@@ -262,7 +281,7 @@ def ai_prioritise():
     try:
         context, sources = _context_for(findings_text)
     except VectorStoreNotBuilt as exc:
-        return jsonify({"error": str(exc)}), 503
+        return _ai_error_response(exc, 503, "Vector store unavailable in ai_prioritise")
 
     prompt = (
         "You are a cloud security advisor. Using ONLY the grounded knowledge "
@@ -275,9 +294,9 @@ def ai_prioritise():
     try:
         raw = get_completion(body["provider"], body["api_key"], prompt, model=body.get("model"))
     except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+        return _ai_error_response(exc, 400, "Invalid request in ai_prioritise")
     except RuntimeError as exc:
-        return jsonify({"error": str(exc)}), 502
+        return _ai_error_response(exc, 502, "Provider failure in ai_prioritise")
 
     try:
         prioritised = json.loads(raw)
@@ -307,7 +326,7 @@ def ai_ask():
     try:
         context, sources = _context_for(question)
     except VectorStoreNotBuilt as exc:
-        return jsonify({"error": str(exc)}), 503
+        return _ai_error_response(exc, 503, "Vector store unavailable in ai_ask")
 
     findings = body.get("findings", [])
     findings_text = _findings_to_text(findings) if findings else "Not provided."
@@ -322,9 +341,9 @@ def ai_ask():
     try:
         answer = get_completion(body["provider"], body["api_key"], prompt, model=body.get("model"))
     except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+        return _ai_error_response(exc, 400, "Invalid request in ai_ask")
     except RuntimeError as exc:
-        return jsonify({"error": str(exc)}), 502
+        return _ai_error_response(exc, 502, "Provider failure in ai_ask")
 
     return jsonify(
         {
@@ -352,15 +371,15 @@ def ai_threat_simulation():
     try:
         context, sources = _context_for(findings_text)
     except VectorStoreNotBuilt as exc:
-        return jsonify({"error": str(exc)}), 503
+        return _ai_error_response(exc, 503, "Vector store unavailable in ai_threat_simulation")
 
     prompt = _build_threat_simulation_prompt(findings_text, context)
     try:
         raw = get_completion(body["provider"], body["api_key"], prompt, model=body.get("model"))
     except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+        return _ai_error_response(exc, 400, "Invalid request in ai_threat_simulation")
     except RuntimeError as exc:
-        return jsonify({"error": str(exc)}), 502
+        return _ai_error_response(exc, 502, "Provider failure in ai_threat_simulation")
 
     try:
         simulation = json.loads(raw)

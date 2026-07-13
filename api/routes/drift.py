@@ -147,4 +147,4 @@ def get_drift():
 
     except Exception as exc:
         logger.error("Failed to compute drift: %s", exc)
-        return jsonify({"error": "Failed to retrieve drift", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to retrieve drift"}), 500

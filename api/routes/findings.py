@@ -43,7 +43,7 @@ def list_findings():
         return jsonify({"count": len(findings), "findings": findings})
     except Exception as exc:
         logger.error("Failed to list findings: %s", exc)
-        return jsonify({"error": "Failed to retrieve findings", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to retrieve findings"}), 500
 
 
 @findings_bp.get("/api/findings/<int:finding_id>")
@@ -57,7 +57,7 @@ def get_finding(finding_id: int):
         return jsonify(finding)
     except Exception as exc:
         logger.error("Failed to get finding %d: %s", finding_id, exc)
-        return jsonify({"error": "Database error", "detail": str(exc)}), 500
+        return jsonify({"error": "Database error"}), 500
 
 
 @findings_bp.get("/api/findings/<int:finding_id>/playbook")
@@ -126,4 +126,4 @@ def get_playbook(finding_id: int):
 
     except Exception as exc:
         logger.error("Failed to get playbook for finding %d: %s", finding_id, exc)
-        return jsonify({"error": "Failed to retrieve playbook", "detail": str(exc)}), 500
+        return jsonify({"error": "Failed to retrieve playbook"}), 500
