@@ -17,7 +17,16 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Install syft
-        run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.46.0
+        env:
+          SYFT_VERSION: "1.46.0"
+          SYFT_SHA256: d654f678b709eb53c393d38519d5ed7d2e57205529404018614cfefa0fb2b5ca
+        run: |
+          SYFT_ARCHIVE="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location \
+            --output "$SYFT_ARCHIVE" \
+            "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/${SYFT_ARCHIVE}"
+          echo "${SYFT_SHA256}  ${SYFT_ARCHIVE}" | sha256sum --check --strict
+          sudo tar --extract --gzip --file "$SYFT_ARCHIVE" --directory /usr/local/bin syft
 
       - name: Generate SBOM
         env:

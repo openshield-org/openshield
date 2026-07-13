@@ -21,9 +21,6 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
-
-permissions:
   id-token: write
   contents: read
 
@@ -135,6 +132,8 @@ jobs:
           echo "API deploy $API_DEPLOY_ID and worker deploy $WORKER_DEPLOY_ID are live at SHA $GITHUB_SHA."
 
       - name: Health gate check
+        env:
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
         run: |
           MAX_RETRIES=5
           RETRY_DELAY=15
@@ -151,7 +150,7 @@ jobs:
             echo "Got HTTP $HTTP_STATUS; retrying in ${RETRY_DELAY}s..."
             sleep $RETRY_DELAY
           done
-          echo "ERROR: Health gate failed after $MAX_RETRIES attempts on ${{ inputs.environment }}."
+          echo "ERROR: Health gate failed after $MAX_RETRIES attempts on $DEPLOY_ENVIRONMENT."
           exit 1
 
       - name: Run smoke tests against live deployment
