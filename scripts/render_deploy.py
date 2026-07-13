@@ -69,9 +69,11 @@ def _open(request: urllib.request.Request) -> str:
     parsed = urllib.parse.urlsplit(request.full_url)
     if parsed.scheme != "https" or parsed.hostname != "api.render.com" or parsed.port not in (None, 443):
         _fail("refusing request to an untrusted Render API endpoint")
-    with urllib.request.urlopen(  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        request, timeout=30
-    ) as response:
+    with (
+        urllib.request.urlopen(  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected  # noqa: E501
+            request, timeout=30
+        ) as response
+    ):
         return response.read().decode("utf-8")
 
 

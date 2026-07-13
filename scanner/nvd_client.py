@@ -172,9 +172,11 @@ def query_nvd(keyword: str, results_per_page: int = _RESULTS_PER_PAGE) -> list[d
             # URL host is the hardcoded NVD API base, not user-controlled
             with NVD_REQUEST_LATENCY_SECONDS.time():
                 # The URL is built from the fixed HTTPS NVD endpoint; only its query string varies.
-                with urllib.request.urlopen(  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-                    req, timeout=10
-                ) as resp:  # nosec B310
+                with (
+                    urllib.request.urlopen(  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected  # noqa: E501
+                        req, timeout=10
+                    ) as resp
+                ):  # nosec B310
                     data = json.loads(resp.read())
 
             vulnerabilities = data.get("vulnerabilities", [])
