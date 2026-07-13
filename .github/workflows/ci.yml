@@ -551,6 +551,21 @@ jobs:
       - name: Build
         run: npm run build
 
+  website:
+    name: Website (script tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+
+      - name: Run website script tests
+        run: node website/test_toEmbedUrl.mjs
+
   # ── Enforce branch flow: main may only receive PRs from dev ───────────────
   # No-op on dev PRs (step skipped -> job succeeds). To allow hotfixes straight
   # to main, widen the condition below to also accept a 'hotfix/*' head branch.
@@ -575,7 +590,7 @@ jobs:
     name: CI Summary
     runs-on: ubuntu-latest
     needs:
-      [lint, rule-validation, secret-scan, sast-bandit, sca-pip-audit, sbom, container-scan, backend-tests, frontend, enforce-source-branch]
+      [lint, rule-validation, secret-scan, sast-bandit, sca-pip-audit, sbom, container-scan, backend-tests, frontend, website, enforce-source-branch]
     if: always()
     steps:
       - name: Build summary
@@ -589,6 +604,7 @@ jobs:
           CONTAINER_SCAN: ${{ needs.container-scan.result }}
           BACKEND_TESTS: ${{ needs.backend-tests.result }}
           FRONTEND: ${{ needs.frontend.result }}
+          WEBSITE: ${{ needs.website.result }}
           ENFORCE_SOURCE: ${{ needs.enforce-source-branch.result }}
         run: |
           python3 - <<'PYEOF'
@@ -604,6 +620,7 @@ jobs:
               ("Container Scan (Trivy, INFRA 1 pending)", os.environ["CONTAINER_SCAN"]),
               ("Backend Tests (pytest + coverage)",  os.environ["BACKEND_TESTS"]),
               ("Frontend (lint + build)",            os.environ["FRONTEND"]),
+              ("Website (script tests)",             os.environ["WEBSITE"]),
               ("Enforce dev to main source",        os.environ["ENFORCE_SOURCE"]),
           ]
 
@@ -654,5 +671,6 @@ jobs:
           needs.sbom.result != 'success' ||
           needs.backend-tests.result != 'success' ||
           needs.frontend.result != 'success' ||
+          needs.website.result != 'success' ||
           needs.enforce-source-branch.result != 'success'
         run: exit 1

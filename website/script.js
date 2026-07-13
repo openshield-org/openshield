@@ -229,13 +229,27 @@ let selectedImageFile = null;
 // Base64 adds ~33% overhead, so the raw file must be under ~750 KB.
 const MAX_IMAGE_BYTES = 700 * 1024;
 
+const EMBED_ALLOWED_HOSTS = new Set(['www.youtube.com', 'youtube.com', 'player.vimeo.com']);
+
 function toEmbedUrl(raw) {
     if (!raw) return '';
     const yt = raw.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
     const vi = raw.match(/vimeo\.com\/(\d+)/);
     if (vi) return `https://player.vimeo.com/video/${vi[1]}`;
-    if (raw.includes('youtube.com/embed') || raw.includes('player.vimeo.com')) return raw;
+
+    // Already-an-embed-URL fallback: verify the actual origin instead of a
+    // substring check, which a crafted string (e.g. containing
+    // "youtube.com/embed" anywhere but hosted elsewhere) can bypass and
+    // break out of the iframe's src="..." attribute when interpolated.
+    try {
+        const parsed = new URL(raw);
+        if (parsed.protocol === 'https:' && EMBED_ALLOWED_HOSTS.has(parsed.hostname)) {
+            return raw;
+        }
+    } catch {
+        // Not a valid absolute URL — fall through to reject below.
+    }
     return '';
 }
 
@@ -342,7 +356,7 @@ function updatePreview() {
         const videoRaw = document.getElementById('edit-video')?.value || '';
         const embedUrl = toEmbedUrl(videoRaw);
         const videoHtml = embedUrl
-            ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${embedUrl}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
+            ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${escapeHTML(embedUrl)}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
             : '';
 
         preview.textContent = `
@@ -981,7 +995,7 @@ async function runMockScan() {
     // Reset UI
     btn.disabled = true;
     btn.textContent = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Running...';
-    terminal.textContent = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + document.getElementById('pg-env').value + ' --pkg ' + document.getElementById('pg-framework').value + '</div>';
+    terminal.textContent = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + escapeHTML(document.getElementById('pg-env').value) + ' --pkg ' + escapeHTML(document.getElementById('pg-framework').value) + '</div>';
     feed.textContent = '';
     scoreEl.textContent = '100';
     scoreEl.className = 'text-6xl font-black text-emerald-500 transition-colors duration-500';
@@ -993,7 +1007,7 @@ async function runMockScan() {
 
     const events = [
         { type: 'log', val: '[INFO] Initializing OpenShield Core v0.1.0...', delay: 400 },
-        { type: 'log', val: '[INFO] Loading security modules for ' + document.getElementById('pg-framework').value.toUpperCase() + '...', delay: 600 },
+        { type: 'log', val: '[INFO] Loading security modules for ' + escapeHTML(document.getElementById('pg-framework').value.toUpperCase()) + '...', delay: 600 },
         { type: 'log', val: '[INFO] Authenticating with Azure Resource Manager...', delay: 800 },
         { type: 'status', val: 'Status: Discovery Phase', color: 'text-blue-500' },
         { type: 'log', val: '[INFO] Discovering resources in subscription \'mock-sub-123\'...', delay: 500 },
