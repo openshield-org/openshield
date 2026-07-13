@@ -87,9 +87,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     already_expired = end_dt < now
                 except ValueError:
                     logger.debug(
-                        "AZ-IDN-006: Invalid endDateTime for app_id=%s key_id=%s: %r",
+                        "AZ-IDN-006: Invalid endDateTime for app_id=%s: %r",
                         app_id,
-                        key_id,
                         end_dt_str,
                     )
 
