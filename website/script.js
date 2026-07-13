@@ -356,7 +356,7 @@ function updatePreview() {
         const videoRaw = document.getElementById('edit-video')?.value || '';
         const embedUrl = toEmbedUrl(videoRaw);
         const videoHtml = embedUrl
-            ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${escapeHTML(embedUrl)}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
+            ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${embedUrl}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
             : '';
 
         preview.textContent = `
@@ -995,7 +995,7 @@ async function runMockScan() {
     // Reset UI
     btn.disabled = true;
     btn.textContent = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Running...';
-    terminal.textContent = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + escapeHTML(document.getElementById('pg-env').value) + ' --pkg ' + escapeHTML(document.getElementById('pg-framework').value) + '</div>';
+    terminal.textContent = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + document.getElementById('pg-env').value + ' --pkg ' + document.getElementById('pg-framework').value + '</div>';
     feed.textContent = '';
     scoreEl.textContent = '100';
     scoreEl.className = 'text-6xl font-black text-emerald-500 transition-colors duration-500';
@@ -1007,7 +1007,7 @@ async function runMockScan() {
 
     const events = [
         { type: 'log', val: '[INFO] Initializing OpenShield Core v0.1.0...', delay: 400 },
-        { type: 'log', val: '[INFO] Loading security modules for ' + escapeHTML(document.getElementById('pg-framework').value.toUpperCase()) + '...', delay: 600 },
+        { type: 'log', val: '[INFO] Loading security modules for ' + document.getElementById('pg-framework').value.toUpperCase() + '...', delay: 600 },
         { type: 'log', val: '[INFO] Authenticating with Azure Resource Manager...', delay: 800 },
         { type: 'status', val: 'Status: Discovery Phase', color: 'text-blue-500' },
         { type: 'log', val: '[INFO] Discovering resources in subscription \'mock-sub-123\'...', delay: 500 },
