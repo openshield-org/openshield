@@ -71,7 +71,6 @@ class MockAzureClient:
         self._kv_certificates: Dict[str, List[Any]] = {}
         self._kv_keys: Dict[str, List[Any]] = {}
         self._diagnostic_settings: Dict[str, Optional[bool]] = {}
-        self._diagnostic_settings: Dict[str, Optional[bool]] = {}
         self._diagnostic_default: Optional[bool] = False
         self._conditional_access_policies: List[Any] = []
         # Credential stub for Graph/SDK-based rules (idn_003..009).
