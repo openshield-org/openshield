@@ -30,6 +30,36 @@ PLAYBOOK = "playbooks/cli/fix_az_pqc_001.sh"
 
 logger = logging.getLogger(__name__)
 
+NCSC_GUIDANCE_URL = "https://www.ncsc.gov.uk/guidance/pqc-migration-timelines"
+ENISA_GUIDANCE_URL = (
+    "https://www.enisa.europa.eu/publications/post-quantum-cryptography-current-state-and-quantum-mitigation"
+)
+
+
+def _quantum_risk_score() -> int:
+    """Return the quantum risk score for an internet-facing TLS endpoint."""
+    return 10
+
+
+def _quantum_risk() -> Dict[str, Any]:
+    """Build the CBOM risk record for a vulnerable App Service TLS policy."""
+    return {
+        "quantum_risk_score": _quantum_risk_score(),
+        "algorithm_type": "RSA/ECDH classical TLS key exchange",
+        "internet_exposed": True,
+        "harvest_now_decrypt_later_exposed": True,
+        "hndl_risk_description": (
+            "Internet-facing encrypted traffic can be collected now and decrypted "
+            "later when a cryptographically relevant quantum computer is available."
+        ),
+        "migration_priority": "HIGH",
+        "recommended_target_algorithm": "ML-KEM (NIST FIPS 203)",
+        "nist_guidance_url": "https://csrc.nist.gov/pubs/fips/203/final",
+        "ncsc_guidance_url": NCSC_GUIDANCE_URL,
+        "enisa_guidance_url": ENISA_GUIDANCE_URL,
+        "cbom_asset_type": "tls_configuration",
+    }
+
 
 def _parse_version(version: Any) -> Optional[Tuple[int, ...]]:
     """Parse a dotted version string into a tuple of ints for numeric
@@ -70,6 +100,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         min_tls = getattr(site_config, "min_tls_version", None) if site_config else None
 
         if _tls_version_below_13(min_tls):
+            quantum_risk = _quantum_risk()
             findings.append(
                 {
                     "rule_id": RULE_ID,
@@ -83,9 +114,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "remediation": REMEDIATION,
                     "playbook": PLAYBOOK,
                     "frameworks": FRAMEWORKS,
+                    "quantum_risk": quantum_risk,
                     "metadata": {
                         "resource_group": parsed.get("resource_group", ""),
                         "min_tls_version": str(min_tls),
+                        "quantum_risk": quantum_risk,
                     },
                 }
             )

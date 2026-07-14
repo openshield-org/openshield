@@ -45,6 +45,8 @@ FRAMEWORK_FILE_MAP = {
     "nist": "nist_csf.json",
     "iso27001": "iso27001.json",
     "soc2": "soc2.json",
+    "ncsc_pqc": "ncsc_pqc.json",
+    "enisa_pqc": "enisa_pqc.json",
 }
 
 
@@ -265,6 +267,21 @@ class DatabaseManager:
         conn = self._get_conn()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("SELECT * FROM findings WHERE id = %s", (finding_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+    def get_latest_completed_scan(self) -> Optional[Dict[str, Any]]:
+        """Return the most recently started completed scan."""
+        conn = self._get_conn()
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT * FROM scans
+                WHERE status = 'completed'
+                ORDER BY started_at DESC
+                LIMIT 1
+                """
+            )
             row = cur.fetchone()
             return dict(row) if row else None
 

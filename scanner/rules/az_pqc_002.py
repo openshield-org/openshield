@@ -32,6 +32,37 @@ PLAYBOOK = "playbooks/cli/fix_az_pqc_002.sh"
 logger = logging.getLogger(__name__)
 
 _CLASSICAL_KEY_TYPES = {"RSA", "EC", "EC-HSM", "RSA-HSM"}
+NCSC_GUIDANCE_URL = "https://www.ncsc.gov.uk/guidance/pqc-migration-timelines"
+ENISA_GUIDANCE_URL = (
+    "https://www.enisa.europa.eu/publications/post-quantum-cryptography-current-state-and-quantum-mitigation"
+)
+
+
+def _quantum_risk_score(algorithm_type: str) -> int:
+    """Score RSA above EC because of its common encryption and HNDL exposure."""
+    return 9 if algorithm_type.upper().startswith("RSA") else 8
+
+
+def _quantum_risk(algorithm_type: str) -> Dict[str, Any]:
+    """Build the CBOM risk record for a classical asymmetric key."""
+    return {
+        "quantum_risk_score": _quantum_risk_score(algorithm_type),
+        "algorithm_type": algorithm_type,
+        "internet_exposed": False,
+        "harvest_now_decrypt_later_exposed": True,
+        "hndl_risk_description": (
+            "Data protected by this key may already be collected for later decryption. "
+            "The exposure depends on the key's use, data lifetime, and dependent services."
+        ),
+        "migration_priority": "HIGH",
+        "recommended_target_algorithm": (
+            "ML-KEM (NIST FIPS 203) for key encapsulation or ML-DSA (NIST FIPS 204) for signing"
+        ),
+        "nist_guidance_url": "https://csrc.nist.gov/pubs/fips/203/final",
+        "ncsc_guidance_url": NCSC_GUIDANCE_URL,
+        "enisa_guidance_url": ENISA_GUIDANCE_URL,
+        "cbom_asset_type": "asymmetric_key",
+    }
 
 
 def _key_type_value(key: Any) -> str:
@@ -64,6 +95,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             if key_type.upper() in _CLASSICAL_KEY_TYPES:
                 key_id = getattr(key, "id", "") or f"{vault_id}/keys/{getattr(key, 'name', '')}"
                 key_name = getattr(key, "name", "") or key_id.rstrip("/").split("/")[-1]
+                quantum_risk = _quantum_risk(key_type)
                 findings.append(
                     {
                         "rule_id": RULE_ID,
@@ -77,10 +109,12 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "remediation": REMEDIATION,
                         "playbook": PLAYBOOK,
                         "frameworks": FRAMEWORKS,
+                        "quantum_risk": quantum_risk,
                         "metadata": {
                             "resource_group": resource_group,
                             "vault_name": vault_name,
                             "key_type": key_type,
+                            "quantum_risk": quantum_risk,
                         },
                     }
                 )

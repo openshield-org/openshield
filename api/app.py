@@ -195,6 +195,7 @@ def create_app() -> Flask:
     # Blueprints                                                            #
     # ------------------------------------------------------------------ #
     from api.routes.ai import ai_bp
+    from api.routes.cbom import cbom_bp
     from api.routes.compliance import compliance_bp
     from api.routes.drift import drift_bp
     from api.routes.findings import findings_bp
@@ -204,6 +205,7 @@ def create_app() -> Flask:
     from api.routes.score import score_bp
 
     app.register_blueprint(ai_bp)
+    app.register_blueprint(cbom_bp)
     app.register_blueprint(compliance_bp)
     app.register_blueprint(drift_bp)
     app.register_blueprint(findings_bp)
