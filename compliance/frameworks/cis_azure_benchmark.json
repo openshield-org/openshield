@@ -227,6 +227,36 @@
       "control_id": "8.9",
       "control_name": "Ensure certificates use quantum-safe signature algorithms",
       "description": "Key Vault certificates signed with RSA or ECDSA are vulnerable to quantum attacks. CIS 8.9 requires that certificate management includes monitoring of algorithm strength. Certificates should be migrated to post-quantum safe signature algorithms such as ML-DSA when CA support is available."
+    },
+    "AZ-AKS-001": {
+      "control_id": "N/A-AKS-001",
+      "control_name": "AKS private cluster baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends private AKS clusters to keep control-plane traffic on private networks. This OpenShield check is intentionally marked not applicable to the repository's CIS Azure Foundations 2.0.0 benchmark rather than claiming an unsupported CIS mapping."
+    },
+    "AZ-AKS-002": {
+      "control_id": "N/A-AKS-002",
+      "control_name": "AKS local account baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends disabling AKS local accounts so authentication is governed through Microsoft Entra ID. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-AKS-003": {
+      "control_id": "N/A-AKS-003",
+      "control_name": "AKS managed identity baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends managed identities instead of AKS service-principal credentials. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-AKS-004": {
+      "control_id": "N/A-AKS-004",
+      "control_name": "AKS Workload Identity baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends Workload Identity for scoped, secretless access from pods to Azure resources. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-AKS-005": {
+      "control_id": "N/A-AKS-005",
+      "control_name": "AKS Azure Policy baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends the Azure Policy add-on for centralized Kubernetes governance. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-AKS-006": {
+      "control_id": "N/A-AKS-006",
+      "control_name": "AKS node OS upgrade baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends a managed node OS upgrade channel for timely security patches. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     }
   }
 }

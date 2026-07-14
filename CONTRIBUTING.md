@@ -51,7 +51,7 @@ from typing import Any, Dict, List
 RULE_ID = "AZ-STOR-001"
 RULE_NAME = "Public Blob Access Enabled on Storage Account"
 SEVERITY = "HIGH"           # HIGH / MEDIUM / LOW / INFO
-CATEGORY = "Storage"        # Storage / Network / Identity / Database / Compute / Key Vault
+CATEGORY = "Storage"        # Storage / Network / Identity / Database / Compute / Key Vault / Kubernetes
 FRAMEWORKS = {
     "CIS": "3.5",
     "NIST": "PR.AC-3",
@@ -178,6 +178,7 @@ Use the format: `AZ-[CATEGORY]-[NUMBER]`
 | Database | DB | AZ-DB-001 |
 | Compute | CMP | AZ-CMP-001 |
 | Key Vault | KV | AZ-KV-001 |
+| Kubernetes (AKS) | AKS | AZ-AKS-001 |
 
 Check existing rules before picking a number to avoid clashes.
 
@@ -201,6 +202,7 @@ Use the existing wrapper methods in `scanner/azure_client.py` rather than constr
 | `azure_client.get_sql_servers()` | List of Azure SQL Server objects |
 | `azure_client.get_sql_server_auditing_policy(resource_group, server_name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Key Vault objects |
+| `azure_client.get_managed_clusters()` | List of AKS ManagedCluster objects, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of role assignments for service principals |
 | `azure_client.get_conditional_access_policies()` | List of Conditional Access policy dicts from Microsoft Graph |
 

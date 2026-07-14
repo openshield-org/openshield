@@ -9,7 +9,7 @@ assignees: ''
 ## Rule Details
 - Rule ID: AZ-XXX-000
 - Severity: HIGH / MEDIUM / LOW
-- Category: Storage / Network / Identity / Database / Compute / Key Vault / PostQuantum
+- Category: Storage / Network / Identity / Database / Compute / Key Vault / Kubernetes / PostQuantum
 - Frameworks: CIS / NIST / ISO 27001 / SOC 2
 
 ## What does it detect?

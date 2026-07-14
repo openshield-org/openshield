@@ -43,11 +43,11 @@ def _nsg_id(name):
     return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Network/networkSecurityGroups/{name}"
 
 
-def test_engine_loads_all_45_rules(monkeypatch):
-    """The engine must dynamically load all 45 rule modules."""
+def test_engine_loads_all_51_rules(monkeypatch):
+    """The engine must dynamically load the complete rule set."""
     _patch_engine_client(monkeypatch, _offline_mock())
     eng = ScanEngine(_SUB)
-    assert len(eng.rules) >= 45
+    assert len(eng.rules) >= 51
     # Every loaded rule must expose a callable scan() and a RULE_ID.
     for rule in eng.rules:
         assert callable(getattr(rule, "scan", None))
@@ -129,7 +129,7 @@ def test_engine_isolates_a_failing_rule(monkeypatch):
 
     result = eng.run_scan()  # must not raise
     assert result["status"] == "completed"
-    # The other 44 rules still ran (empty mock -> no findings) and the scan
+    # The other rules still ran (empty mock -> no findings) and the scan
     # completed. Crucially, there is NO field in the result naming the failed
     # rule -- this is the observability gap flagged in the validation report.
     assert "errored_rules" not in result

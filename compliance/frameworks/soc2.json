@@ -227,6 +227,36 @@
       "control_id": "CC6.7",
       "control_name": "Protects Data in Transit",
       "description": "Certificates using classical signature algorithms will be vulnerable to quantum-enabled forgery, undermining authentication and data integrity. CC6.7 requires that data integrity is maintained through encryption and signing. Migration to post-quantum safe certificate algorithms should be planned."
+    },
+    "AZ-AKS-001": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access to Information Assets",
+      "description": "A private AKS API endpoint restricts control-plane access to approved private network paths."
+    },
+    "AZ-AKS-002": {
+      "control_id": "CC6.1",
+      "control_name": "Logical and Physical Access Controls",
+      "description": "Disabling AKS local accounts makes centrally governed Microsoft Entra identities the required authentication path."
+    },
+    "AZ-AKS-003": {
+      "control_id": "CC6.1",
+      "control_name": "Logical and Physical Access Controls",
+      "description": "Managed identities reduce reliance on long-lived service-principal credentials for AKS control-plane operations."
+    },
+    "AZ-AKS-004": {
+      "control_id": "CC6.3",
+      "control_name": "Role-Based Access",
+      "description": "Workload Identity enables permissions to be assigned to specific Kubernetes workloads according to least privilege."
+    },
+    "AZ-AKS-005": {
+      "control_id": "CC8.1",
+      "control_name": "Change Management",
+      "description": "The Azure Policy add-on supports consistent audit and enforcement of approved Kubernetes configurations."
+    },
+    "AZ-AKS-006": {
+      "control_id": "CC7.1",
+      "control_name": "Detects and Monitors Configuration Changes",
+      "description": "Managed node OS upgrade channels maintain worker-node security patches through an observable Azure-controlled process."
     }
   }
 }

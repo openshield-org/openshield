@@ -81,6 +81,7 @@ class MockAzureClient:
         self._dns_zones: List[Any] = []
         self._dns_record_sets: Dict[Tuple[str, str], List[Any]] = {}
         self._web_apps: List[Any] = []
+        self._managed_clusters: Optional[List[Any]] = []
         # Some rules read azure_client.subscription_id when constructing an
         # SDK management client inside scan() (e.g. AZ-NET-007..010).
         self.subscription_id = "00000000-0000-0000-0000-000000000001"
@@ -88,6 +89,14 @@ class MockAzureClient:
     def set_storage_accounts(self, accounts: List[Any]) -> "MockAzureClient":
         self._storage_accounts = accounts
         return self
+
+    def set_managed_clusters(self, clusters: Optional[List[Any]]) -> "MockAzureClient":
+        """Configure AKS inventory; ``None`` represents an API failure."""
+        self._managed_clusters = clusters
+        return self
+
+    def get_managed_clusters(self) -> Optional[List[Any]]:
+        return self._managed_clusters
 
     def set_network_security_groups(self, nsgs: List[Any]) -> "MockAzureClient":
         self._network_security_groups = nsgs

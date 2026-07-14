@@ -7,6 +7,7 @@ from azure.core.exceptions import HttpResponseError, ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.compute import ComputeManagementClient
+from azure.mgmt.containerservice import ContainerServiceClient
 from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.rdbms.postgresql import PostgreSQLManagementClient
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Azure built-in role definition GUIDs (subscription-scoped)
 OWNER_ROLE_ID = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+_UNSET = object()
 
 
 class AzureClient:
@@ -32,6 +34,7 @@ class AzureClient:
     def __init__(self, subscription_id: str, credential: Optional[Any] = None) -> None:
         self.subscription_id = subscription_id
         self.credential = credential or DefaultAzureCredential()
+        self._managed_clusters_cache: Any = _UNSET
 
     # ------------------------------------------------------------------ #
     # Static helpers                                                        #
@@ -286,6 +289,41 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_dns_record_sets failed for zone %s: %s", zone_name, exc)
             return []
+
+    # ------------------------------------------------------------------ #
+    # Kubernetes / AKS                                                     #
+    # ------------------------------------------------------------------ #
+
+    def get_managed_clusters(self) -> Optional[List[Any]]:
+        """List AKS managed clusters, preserving an indeterminate failure state.
+
+        The result is cached for the lifetime of this client because every AKS
+        rule evaluates the same subscription-level collection.
+
+        Returns:
+            A list (including an empty list) when Azure responds successfully,
+            or ``None`` when permissions, networking, or the SDK prevent the
+            collection from being evaluated. Callers must never interpret
+            ``None`` as a compliant result.
+        """
+        if self._managed_clusters_cache is not _UNSET:
+            return self._managed_clusters_cache
+
+        try:
+            client = ContainerServiceClient(self.credential, self.subscription_id)
+            self._managed_clusters_cache = list(client.managed_clusters.list())
+        except HttpResponseError as exc:
+            logger.error(
+                "get_managed_clusters HTTP %s - check Microsoft.ContainerService/managedClusters/read: %s",
+                exc.status_code,
+                exc,
+            )
+            self._managed_clusters_cache = None
+        except Exception as exc:
+            logger.error("get_managed_clusters failed: %s", exc)
+            self._managed_clusters_cache = None
+
+        return self._managed_clusters_cache
 
     # ------------------------------------------------------------------ #
     # Compute                                                               #

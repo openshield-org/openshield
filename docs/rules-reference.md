@@ -48,6 +48,12 @@ OpenShield currently ships 44 Azure scan rules. This table is generated from the
 | AZ-STOR-003 | Storage Account Has No Lifecycle Management Policy | MEDIUM | Storage | 3.7 | PR.DS-3 | A.8.3.1 |
 | AZ-STOR-004 | Storage Account Diagnostic Logging Disabled | MEDIUM | Storage | 3.3 | DE.CM-7 | A.12.4.1 |
 | AZ-STOR-005 | Storage Account Not Using Geo-Redundant Replication | MEDIUM | Storage | 3.8 | PR.IP-4 | A.17.2.1 |
+| AZ-AKS-001 | AKS Private Cluster Not Enabled | HIGH | Kubernetes | N/A-AKS-001 | PR.AC-3 | A.13.1.1 |
+| AZ-AKS-002 | AKS Local Accounts Enabled | HIGH | Kubernetes | N/A-AKS-002 | PR.AC-1 | A.9.2.1 |
+| AZ-AKS-003 | AKS Cluster Not Using Managed Identity | HIGH | Kubernetes | N/A-AKS-003 | PR.AC-1 | A.9.2.1 |
+| AZ-AKS-004 | AKS Workload Identity Not Fully Enabled | MEDIUM | Kubernetes | N/A-AKS-004 | PR.AC-4 | A.9.2.3 |
+| AZ-AKS-005 | AKS Azure Policy Add-on Not Enabled | MEDIUM | Kubernetes | N/A-AKS-005 | PR.IP-1 | A.12.1.2 |
+| AZ-AKS-006 | AKS Node OS Automatic Upgrades Disabled | HIGH | Kubernetes | N/A-AKS-006 | PR.IP-12 | A.12.6.1 |
 
 SOC 2 mappings are maintained in `compliance/frameworks/soc2.json`.
 

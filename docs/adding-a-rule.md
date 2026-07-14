@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 RULE_ID = "AZ-XXXX-000"          # Unique ID. Check existing rules to avoid clashes.
 RULE_NAME = "Human-readable name" # Shown in the dashboard and reports.
 SEVERITY = "HIGH"                 # HIGH | MEDIUM | LOW | INFO
-CATEGORY = "Storage"              # Storage | Network | Identity | Database | Compute | Key Vault
+CATEGORY = "Storage"              # Storage | Network | Identity | Database | Compute | Key Vault | Kubernetes
 FRAMEWORKS = {
     "CIS":      "3.5",            # CIS Azure Benchmark control ID
     "NIST":     "PR.AC-3",        # NIST CSF subcategory
@@ -124,6 +124,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `azure_client.get_sql_servers()` | List of Server objects (Azure SQL) |
 | `azure_client.get_sql_server_auditing_policy(rg, name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Vault objects (with full properties) |
+| `azure_client.get_managed_clusters()` | List of AKS ManagedCluster objects, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of RoleAssignment objects for service principals |
 | `azure_client.get_conditional_access_policies()` | List of CA policy dicts from MS Graph |
 | `azure_client.parse_resource_id(id)` | Dict with `resource_group` and `name` |

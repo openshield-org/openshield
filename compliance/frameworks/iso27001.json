@@ -227,6 +227,36 @@
       "control_id": "A.10.1.1",
       "control_name": "Policy on the use of cryptographic controls",
       "description": "Certificates using classical signature algorithms expose the organisation to quantum-enabled signature forgery. A.10.1.1 requires that the cryptographic controls policy covers all cryptographic assets including certificates. Migration planning to post-quantum safe signature algorithms is required."
+    },
+    "AZ-AKS-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Private AKS API access restricts the control plane to approved network paths and reduces exposure to internet-originated attacks."
+    },
+    "AZ-AKS-002": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "Disabling local accounts ensures AKS administrator access follows the centralized Microsoft Entra identity lifecycle."
+    },
+    "AZ-AKS-003": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "Managed identity removes separately managed service-principal credentials from the AKS control plane."
+    },
+    "AZ-AKS-004": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "Workload Identity allows Azure permissions to be scoped and lifecycle-managed for individual Kubernetes workloads."
+    },
+    "AZ-AKS-005": {
+      "control_id": "A.12.1.2",
+      "control_name": "Change management",
+      "description": "Azure Policy provides controlled and repeatable governance for Kubernetes resource admission and configuration changes."
+    },
+    "AZ-AKS-006": {
+      "control_id": "A.12.6.1",
+      "control_name": "Management of technical vulnerabilities",
+      "description": "Automatic AKS node OS upgrades help deploy tested security patches within a managed maintenance process."
     }
   }
 }

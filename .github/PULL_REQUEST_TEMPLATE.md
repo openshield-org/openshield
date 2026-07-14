@@ -13,7 +13,7 @@
 ## Rule details (if applicable)
 - Rule ID: AZ-XXX-000
 - Severity: HIGH / MEDIUM / LOW
-- Category: Storage / Network / Identity / Database / Compute / Key Vault
+- Category: Storage / Network / Identity / Database / Compute / Key Vault / Kubernetes
 - Frameworks mapped: CIS / NIST / ISO 27001 / SOC 2
 
 ## Testing

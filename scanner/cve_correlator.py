@@ -42,6 +42,8 @@ _RULE_CVE_KEYWORD_MAP: dict[str, str] = {
     # Identity
     "AZ-IDN": "Azure Active Directory",
     "AZ-IDN-001": "Azure RBAC privilege escalation",
+    # Azure Kubernetes Service
+    "AZ-AKS": "Azure Kubernetes Service",
     # App Service
     "AZ-APP": "Azure App Service",
 }

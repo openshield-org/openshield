@@ -227,6 +227,36 @@
       "control_id": "PR.DS-2",
       "control_name": "Data in transit is protected",
       "description": "Certificates using classical signature algorithms are vulnerable to quantum attacks, undermining authentication and integrity guarantees. PR.DS-2 requires that data protection includes integrity mechanisms. Migration to ML-DSA or SLH-DSA signature algorithms should be planned."
+    },
+    "AZ-AKS-001": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "A private AKS API endpoint reduces public control-plane exposure and ensures administrative access is mediated through approved private network paths."
+    },
+    "AZ-AKS-002": {
+      "control_id": "PR.AC-1",
+      "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
+      "description": "Disabling local AKS accounts ensures cluster access uses centrally governed Microsoft Entra identities instead of unmanaged static credentials."
+    },
+    "AZ-AKS-003": {
+      "control_id": "PR.AC-1",
+      "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
+      "description": "Managed identities remove manually rotated service-principal credentials from AKS control-plane access to Azure resources."
+    },
+    "AZ-AKS-004": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Workload Identity supports workload-specific, least-privilege authorization to Azure resources without shared application secrets."
+    },
+    "AZ-AKS-005": {
+      "control_id": "PR.IP-1",
+      "control_name": "A baseline configuration is created and maintained",
+      "description": "The Azure Policy add-on enables centrally defined Kubernetes security baselines to be audited and enforced consistently."
+    },
+    "AZ-AKS-006": {
+      "control_id": "PR.IP-12",
+      "control_name": "A vulnerability management plan is developed and implemented",
+      "description": "Managed node OS upgrade channels apply tested security updates to reduce exposure to known operating-system vulnerabilities."
     }
   }
 }
