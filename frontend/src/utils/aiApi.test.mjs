@@ -15,7 +15,7 @@ import path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function loadAiApiModule() {
+function loadAiApiModule(seed = {}) {
   let source = readFileSync(path.join(__dirname, 'aiApi.js'), 'utf8');
 
   // Neutralize the one Vite-only construct so this can run under plain Node.
@@ -30,7 +30,10 @@ function loadAiApiModule() {
   source = source.replace(/^export const /gm, 'const ');
   source += '\nreturn { aiSettings, aiApi };';
 
-  const backingStore = new Map();
+  // `seed` pre-populates localStorage before the module body runs, so tests can
+  // simulate a browser that already has values from a previous app version
+  // (e.g. a legacy plaintext ai_api_key that predates the in-memory switch).
+  const backingStore = new Map(Object.entries(seed));
   const localStorageStub = {
     getItem: (k) => (backingStore.has(k) ? backingStore.get(k) : null),
     setItem: (k, v) => backingStore.set(k, String(v)),
@@ -105,6 +108,32 @@ check('a fresh module load never sees a key from a previous instance (no shared 
   const second = loadAiApiModule();
   assert.equal(second.aiSettings.isConfigured(), false);
   assert.equal(second.aiSettings.getApiKey(), '');
+});
+
+check('loading the module purges a legacy plaintext ai_api_key left by an older version', () => {
+  // Users who ran a build before the in-memory switch (issue #180) still have
+  // their key sitting in localStorage. The module must delete it on load, or
+  // the very leak the fix was meant to close persists indefinitely for them.
+  const { backingStore } = loadAiApiModule({ ai_api_key: 'legacy-plaintext-key' });
+  assert.equal(backingStore.has('ai_api_key'), false);
+  assert.ok(
+    ![...backingStore.values()].some((v) => String(v).includes('legacy-plaintext-key')),
+    'legacy key still present in localStorage after module load',
+  );
+});
+
+check('the migration does not resurrect the legacy key into the in-memory field', () => {
+  // Purging the stored key must not silently load it into memory either — a
+  // fresh load with a legacy key present should still start unconfigured.
+  const { aiSettings } = loadAiApiModule({ ai_api_key: 'legacy-plaintext-key' });
+  assert.equal(aiSettings.isConfigured(), false);
+  assert.equal(aiSettings.getApiKey(), '');
+});
+
+check('clear() also removes any legacy ai_api_key still in storage', () => {
+  const { aiSettings, backingStore } = loadAiApiModule({ ai_api_key: 'legacy-plaintext-key' });
+  aiSettings.clear();
+  assert.equal(backingStore.has('ai_api_key'), false);
 });
 
 if (failures > 0) {

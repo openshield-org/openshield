@@ -245,7 +245,12 @@ function toEmbedUrl(raw) {
     try {
         const parsed = new URL(raw);
         if (parsed.protocol === 'https:' && EMBED_ALLOWED_HOSTS.has(parsed.hostname)) {
-            return raw;
+            // Return the canonicalised href, not the raw input: a valid host
+            // still lets an attribute-injection payload (e.g. a literal
+            // double-quote) through on an allowed origin. parsed.href
+            // percent-encodes quotes/spaces/brackets so the value is safe to
+            // interpolate into the iframe src="..." attribute.
+            return parsed.href;
         }
     } catch {
         // Not a valid absolute URL — fall through to reject below.

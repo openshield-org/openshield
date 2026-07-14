@@ -24,6 +24,13 @@ const TIMEOUT = 30000;
 // persist in localStorage as before.
 let apiKeyInMemory = '';
 
+// One-time migration: builds before the in-memory switch (issue #180) stored
+// the key at localStorage['ai_api_key']. Purge it on load so existing users
+// don't keep a plaintext key sitting in storage indefinitely. Deliberately not
+// read into apiKeyInMemory — the whole point is that the secret no longer lives
+// in a persistent, XSS-readable store.
+localStorage.removeItem('ai_api_key');
+
 export const aiSettings = {
   getProvider: () => localStorage.getItem('ai_provider') || 'anthropic',
   getApiKey:   () => apiKeyInMemory,
@@ -36,6 +43,7 @@ export const aiSettings = {
   isConfigured: () => !!apiKeyInMemory,
   clear: () => {
     apiKeyInMemory = '';
+    localStorage.removeItem('ai_api_key'); // defence in depth: also drop any legacy stored key
     localStorage.removeItem('ai_provider');
     localStorage.removeItem('ai_model');
   },

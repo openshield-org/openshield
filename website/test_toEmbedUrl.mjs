@@ -80,7 +80,33 @@ const rejected = [
   'not a url at all but contains youtube.com/embed',
 ];
 
+// Inputs on an ALLOWED host that still carry an attribute-injection payload.
+// The host passes the allowlist, so the earlier "rejected" cases don't cover
+// this — the returned value is interpolated into an iframe src="..." attribute,
+// so it must never contain a raw double-quote that could break out of it.
+// The fix returns the canonicalised URL.href (which percent-encodes quotes and
+// spaces) instead of the raw input.
+const sanitizedPassthrough = [
+  [
+    'https://www.youtube.com/embed/abc" onload="alert(1)',
+    'https://www.youtube.com/embed/abc%22%20onload=%22alert(1)',
+    'attribute-injection payload on allowed host is percent-encoded',
+  ],
+  [
+    'https://player.vimeo.com/video/1"><script>alert(1)</script>',
+    'https://player.vimeo.com/video/1%22%3E%3Cscript%3Ealert(1)%3C/script%3E',
+    'script-injection payload on allowed vimeo host is percent-encoded',
+  ],
+];
+
 let failures = 0;
+
+function assertNoDoubleQuote(value, description) {
+  assert.ok(
+    !String(value).includes('"'),
+    `${description}: return value must not contain a raw double-quote (iframe src breakout): ${JSON.stringify(value)}`,
+  );
+}
 
 for (const [input, expected, description] of cases) {
   const actual = toEmbedUrl(input);
@@ -101,6 +127,18 @@ for (const input of rejected) {
   } catch {
     failures++;
     console.error(`FAIL: bypass NOT rejected — input=${JSON.stringify(input)} got=${JSON.stringify(actual)}`);
+  }
+}
+
+for (const [input, expected, description] of sanitizedPassthrough) {
+  const actual = toEmbedUrl(input);
+  try {
+    assert.equal(actual, expected);
+    assertNoDoubleQuote(actual, description);
+    console.log(`PASS: ${description}`);
+  } catch (err) {
+    failures++;
+    console.error(`FAIL: ${description} — input=${JSON.stringify(input)} got=${JSON.stringify(actual)}\n  ${err.message}`);
   }
 }
 
