@@ -35,8 +35,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             logger.warning("%s: local-account status unknown for %s", RULE_ID, resource_name)
             continue
         if disabled is False:
-            findings.append(finding(cluster, rule_id=RULE_ID, rule_name=RULE_NAME, severity=SEVERITY,
-                                    category=CATEGORY, description=DESCRIPTION, remediation=REMEDIATION,
-                                    playbook=PLAYBOOK, frameworks=FRAMEWORKS,
-                                    metadata={"local_accounts_disabled": False}))
+            findings.append(
+                finding(
+                    cluster,
+                    rule_id=RULE_ID,
+                    rule_name=RULE_NAME,
+                    severity=SEVERITY,
+                    category=CATEGORY,
+                    description=DESCRIPTION,
+                    remediation=REMEDIATION,
+                    playbook=PLAYBOOK,
+                    frameworks=FRAMEWORKS,
+                    metadata={"local_accounts_disabled": False},
+                )
+            )
     return findings

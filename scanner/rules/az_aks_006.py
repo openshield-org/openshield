@@ -34,8 +34,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         profile = cluster_property(cluster, "auto_upgrade_profile")
         channel = str(getattr(profile, "node_os_upgrade_channel", "") or "")
         if channel.lower() not in _COMPLIANT_CHANNELS:
-            findings.append(finding(cluster, rule_id=RULE_ID, rule_name=RULE_NAME, severity=SEVERITY,
-                                    category=CATEGORY, description=DESCRIPTION, remediation=REMEDIATION,
-                                    playbook=PLAYBOOK, frameworks=FRAMEWORKS,
-                                    metadata={"node_os_upgrade_channel": channel or "None"}))
+            findings.append(
+                finding(
+                    cluster,
+                    rule_id=RULE_ID,
+                    rule_name=RULE_NAME,
+                    severity=SEVERITY,
+                    category=CATEGORY,
+                    description=DESCRIPTION,
+                    remediation=REMEDIATION,
+                    playbook=PLAYBOOK,
+                    frameworks=FRAMEWORKS,
+                    metadata={"node_os_upgrade_channel": channel or "None"},
+                )
+            )
     return findings

@@ -36,9 +36,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         oidc_enabled = bool(getattr(oidc_profile, "enabled", False))
         workload_enabled = bool(getattr(workload_profile, "enabled", False))
         if not (oidc_enabled and workload_enabled):
-            findings.append(finding(cluster, rule_id=RULE_ID, rule_name=RULE_NAME, severity=SEVERITY,
-                                    category=CATEGORY, description=DESCRIPTION, remediation=REMEDIATION,
-                                    playbook=PLAYBOOK, frameworks=FRAMEWORKS,
-                                    metadata={"oidc_issuer_enabled": oidc_enabled,
-                                              "workload_identity_enabled": workload_enabled}))
+            findings.append(
+                finding(
+                    cluster,
+                    rule_id=RULE_ID,
+                    rule_name=RULE_NAME,
+                    severity=SEVERITY,
+                    category=CATEGORY,
+                    description=DESCRIPTION,
+                    remediation=REMEDIATION,
+                    playbook=PLAYBOOK,
+                    frameworks=FRAMEWORKS,
+                    metadata={"oidc_issuer_enabled": oidc_enabled, "workload_identity_enabled": workload_enabled},
+                )
+            )
     return findings

@@ -34,8 +34,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         azure_policy = profiles.get("azurepolicy") if isinstance(profiles, Mapping) else None
         enabled = bool(getattr(azure_policy, "enabled", False))
         if not enabled:
-            findings.append(finding(cluster, rule_id=RULE_ID, rule_name=RULE_NAME, severity=SEVERITY,
-                                    category=CATEGORY, description=DESCRIPTION, remediation=REMEDIATION,
-                                    playbook=PLAYBOOK, frameworks=FRAMEWORKS,
-                                    metadata={"azure_policy_enabled": False}))
+            findings.append(
+                finding(
+                    cluster,
+                    rule_id=RULE_ID,
+                    rule_name=RULE_NAME,
+                    severity=SEVERITY,
+                    category=CATEGORY,
+                    description=DESCRIPTION,
+                    remediation=REMEDIATION,
+                    playbook=PLAYBOOK,
+                    frameworks=FRAMEWORKS,
+                    metadata={"azure_policy_enabled": False},
+                )
+            )
     return findings

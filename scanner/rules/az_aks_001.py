@@ -37,8 +37,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             logger.warning("%s: private-cluster status unknown for %s", RULE_ID, resource_name)
             continue
         if enabled is False:
-            findings.append(finding(cluster, rule_id=RULE_ID, rule_name=RULE_NAME, severity=SEVERITY,
-                                    category=CATEGORY, description=DESCRIPTION, remediation=REMEDIATION,
-                                    playbook=PLAYBOOK, frameworks=FRAMEWORKS,
-                                    metadata={"private_cluster_enabled": False}))
+            findings.append(
+                finding(
+                    cluster,
+                    rule_id=RULE_ID,
+                    rule_name=RULE_NAME,
+                    severity=SEVERITY,
+                    category=CATEGORY,
+                    description=DESCRIPTION,
+                    remediation=REMEDIATION,
+                    playbook=PLAYBOOK,
+                    frameworks=FRAMEWORKS,
+                    metadata={"private_cluster_enabled": False},
+                )
+            )
     return findings

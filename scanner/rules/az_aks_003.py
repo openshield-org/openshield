@@ -34,8 +34,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         identity = getattr(cluster, "identity", None)
         identity_type = str(getattr(identity, "type", "") or "").replace(" ", "").lower()
         if identity_type not in _MANAGED_TYPES:
-            findings.append(finding(cluster, rule_id=RULE_ID, rule_name=RULE_NAME, severity=SEVERITY,
-                                    category=CATEGORY, description=DESCRIPTION, remediation=REMEDIATION,
-                                    playbook=PLAYBOOK, frameworks=FRAMEWORKS,
-                                    metadata={"identity_type": identity_type or "service-principal"}))
+            findings.append(
+                finding(
+                    cluster,
+                    rule_id=RULE_ID,
+                    rule_name=RULE_NAME,
+                    severity=SEVERITY,
+                    category=CATEGORY,
+                    description=DESCRIPTION,
+                    remediation=REMEDIATION,
+                    playbook=PLAYBOOK,
+                    frameworks=FRAMEWORKS,
+                    metadata={"identity_type": identity_type or "service-principal"},
+                )
+            )
     return findings
