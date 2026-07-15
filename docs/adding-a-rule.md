@@ -125,6 +125,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `azure_client.get_sql_server_auditing_policy(rg, name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Vault objects (with full properties) |
 | `azure_client.get_managed_clusters()` | List of AKS ManagedCluster objects, or `None` on API failure |
+| `azure_client.get_applications()` | Paginated App Registration dictionaries, or `None` on Graph failure |
+| `azure_client.get_managed_identity_service_principals()` | Managed Identity service principals, or `None` on Graph failure |
+| `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of RoleAssignment objects for service principals |
 | `azure_client.get_conditional_access_policies()` | List of CA policy dicts from MS Graph |
 | `azure_client.parse_resource_id(id)` | Dict with `resource_group` and `name` |

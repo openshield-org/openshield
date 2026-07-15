@@ -257,6 +257,36 @@
       "control_id": "PR.IP-12",
       "control_name": "A vulnerability management plan is developed and implemented",
       "description": "Managed node OS upgrade channels apply tested security updates to reduce exposure to known operating-system vulnerabilities."
+    },
+    "AZ-IDN-010": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Assigned owners establish accountability for reviewing and maintaining application access."
+    },
+    "AZ-IDN-011": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data in transit is protected",
+      "description": "HTTPS redirect URIs protect authorization responses from interception and modification in transit."
+    },
+    "AZ-IDN-012": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Disabling implicit grant reduces exposure of front-channel tokens used for remote application access."
+    },
+    "AZ-IDN-013": {
+      "control_id": "PR.AC-1",
+      "control_name": "Identities and credentials are managed",
+      "description": "Replacing client secrets with managed credentials reduces credential leakage and rotation risk."
+    },
+    "AZ-IDN-014": {
+      "control_id": "PR.IP-1",
+      "control_name": "A baseline configuration is created and maintained",
+      "description": "Application-instance property lock preserves the approved sensitive-property baseline across tenants."
+    },
+    "AZ-IDN-015": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Managed identities should receive only the minimum role and scope required by their workloads."
     }
   }
 }

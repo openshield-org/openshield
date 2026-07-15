@@ -257,6 +257,36 @@
       "control_id": "A.12.6.1",
       "control_name": "Management of technical vulnerabilities",
       "description": "Automatic AKS node OS upgrades help deploy tested security patches within a managed maintenance process."
+    },
+    "AZ-IDN-010": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "App Registration ownership supports accountable identity lifecycle administration."
+    },
+    "AZ-IDN-011": {
+      "control_id": "A.14.1.2",
+      "control_name": "Securing application services on public networks",
+      "description": "Secure redirect URIs protect identity protocol responses traversing public networks."
+    },
+    "AZ-IDN-012": {
+      "control_id": "A.9.4.2",
+      "control_name": "Secure log-on procedures",
+      "description": "Modern authorization code flow with PKCE provides stronger token handling than implicit grant."
+    },
+    "AZ-IDN-013": {
+      "control_id": "A.9.4.3",
+      "control_name": "Password management system",
+      "description": "Avoiding client secrets reduces password-style application credential exposure."
+    },
+    "AZ-IDN-014": {
+      "control_id": "A.12.1.2",
+      "control_name": "Change management",
+      "description": "Property lock prevents unauthorized changes to sensitive service-principal instance configuration."
+    },
+    "AZ-IDN-015": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "Subscription Owner and Contributor assignments to managed identities require least-privilege reduction."
     }
   }
 }

@@ -33,25 +33,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect service principals with stale or non-expiring client secrets."""
     findings: List[Dict[str, Any]] = []
 
-    try:
-        import requests
-
-        token = azure_client.credential.get_token("https://graph.microsoft.com/.default")
-        headers = {"Authorization": f"Bearer {token.token}"}
-
-        next_url = (
-            "https://graph.microsoft.com/v1.0/applications?$select=id,displayName,appId,passwordCredentials&$top=100"
-        )
-        applications = []
-        while next_url:
-            response = requests.get(next_url, headers=headers, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            applications.extend(data.get("value", []))
-            next_url = data.get("@odata.nextLink")
-
-    except Exception as exc:
-        logger.error("AZ-IDN-006: Failed to fetch applications from Graph API: %s", exc)
+    applications = azure_client.get_applications()
+    if applications is None:
+        logger.error("AZ-IDN-006: Application inventory is unavailable")
         logger.warning(
             "AZ-IDN-006: Ensure the service principal has Application.Read.All permission on Microsoft Graph."
         )
