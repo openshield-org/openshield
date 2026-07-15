@@ -9,6 +9,8 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- OpenSSF Best Practices Passing Badge achieved with 100% of applicable Passing-level criteria completed
+- Official live OpenSSF badge and verified project record added to project documentation
 - CBOM endpoints with per-asset quantum risk scoring and migration guidance
 - NCSC UK and ENISA post-quantum compliance framework mappings
 - Harvest Now Decrypt Later exposure window calculation per cryptographic asset

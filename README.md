@@ -1,5 +1,6 @@
 # OpenShield
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13618/badge)](https://www.bestpractices.dev/projects/13618)
 [![OpenShield CI](https://github.com/openshield-org/openshield/actions/workflows/ci.yml/badge.svg)](https://github.com/openshield-org/openshield/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/openshield-org/openshield/actions/workflows/codeql.yml/badge.svg)](https://github.com/openshield-org/openshield/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -54,6 +55,26 @@ Findings map to NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA
 | **Security Dashboard** | Full React dashboard deployed on Vercel - live monitoring, findings, compliance, drift, prioritization, and AI-layer views |
 | **Project Website** | Documentation and reference site at [openshield-website.vercel.app](https://openshield-website.vercel.app) - blog, rules gallery, docs, roadmap, releases, and interactive playground |
 | **Sentinel Integration** | Normalises findings and pushes them into Microsoft Sentinel via a Log Analytics custom table and KQL analytics rules |
+
+---
+
+## Security Assurance
+
+OpenShield has achieved the **OpenSSF Best Practices Passing Badge**, completing 100% of the applicable Passing-level criteria across project governance, change control, reporting, quality, security, and code analysis.
+
+<p align="center">
+  <a href="https://www.bestpractices.dev/projects/13618">
+    <img src="docs/assets/openssf-best-practices.svg" alt="OpenSSF Best Practices Passing Badge" width="170">
+  </a>
+</p>
+
+<p align="center">
+  <strong>OpenSSF Best Practices - Passing</strong>
+</p>
+
+The project's OpenSSF status is publicly verifiable through the official OpenSSF Best Practices project record. OpenShield continues to strengthen its engineering, security assurance, and open source governance practices as it progresses through the higher-level criteria.
+
+**[View OpenShield's verified OpenSSF Best Practices record](https://www.bestpractices.dev/projects/13618)**
 
 ---
 
