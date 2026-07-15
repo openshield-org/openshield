@@ -16,8 +16,10 @@ jobs:
       - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
         with:
           fail-on-severity: high
-          # The wheel omits license metadata, but Microsoft's upstream Azure
-          # SDK repository licenses this package under MIT:
+          # These wheels omit license metadata, but Microsoft's upstream Azure
+          # SDK repository licenses both packages under MIT:
           # https://github.com/Azure/azure-sdk-for-python/blob/main/LICENSE
-          allow-dependencies-licenses: pkg:pypi/azure-mgmt-containerservice@41.3.0
+          allow-dependencies-licenses: >-
+            pkg:pypi/azure-mgmt-containerservice@41.3.0,
+            pkg:pypi/azure-mgmt-recoveryservices@4.1.0
           comment-summary-in-pr: always

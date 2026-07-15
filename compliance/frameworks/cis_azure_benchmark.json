@@ -257,6 +257,21 @@
       "control_id": "N/A-AKS-006",
       "control_name": "AKS node OS upgrade baseline (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends a managed node OS upgrade channel for timely security patches. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
-    }
+    },
+    "AZ-FUNC-001": {"control_id":"TBD-FUNC-001","control_name":"Function HTTPS baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-FUNC-002": {"control_id":"TBD-FUNC-002","control_name":"Function TLS baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-FUNC-003": {"control_id":"TBD-FUNC-003","control_name":"Function publishing baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-FUNC-004": {"control_id":"TBD-FUNC-004","control_name":"Function debugging baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-FUNC-005": {"control_id":"TBD-FUNC-005","control_name":"Function identity baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-PE-001": {"control_id":"TBD-PE-001","control_name":"Storage Private Link baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-PE-002": {"control_id":"TBD-PE-002","control_name":"SQL Private Link baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-PE-003": {"control_id":"TBD-PE-003","control_name":"PostgreSQL private networking placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-PE-004": {"control_id":"TBD-PE-004","control_name":"App Service Private Link baseline placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-PE-005": {"control_id":"TBD-PE-005","control_name":"Recovery Services Private Link placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-PE-006": {"control_id":"TBD-PE-006","control_name":"Private endpoint approval placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-BAK-001": {"control_id":"TBD-BAK-001","control_name":"Backup soft delete placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-BAK-002": {"control_id":"TBD-BAK-002","control_name":"Backup immutability placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-BAK-004": {"control_id":"TBD-BAK-004","control_name":"Backup MUA placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-BAK-006": {"control_id":"TBD-BAK-006","control_name":"Backup monitoring placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."}
   }
 }

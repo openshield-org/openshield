@@ -35,6 +35,9 @@ class AzureClient:
         self.subscription_id = subscription_id
         self.credential = credential or DefaultAzureCredential()
         self._managed_clusters_cache: Any = _UNSET
+        self._function_apps_cache: Any = _UNSET
+        self._private_endpoint_posture_cache: Any = _UNSET
+        self._recovery_vaults_cache: Any = _UNSET
 
     # ------------------------------------------------------------------ #
     # Static helpers                                                        #
@@ -348,6 +351,118 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_web_apps failed: %s", exc)
             return []
+
+    def get_function_app_security_posture(self) -> Optional[List[Dict[str, Any]]]:
+        """Return a cached, secret-free posture for Function Apps."""
+        if self._function_apps_cache is not _UNSET:
+            return self._function_apps_cache
+        try:
+            from azure.mgmt.web import WebSiteManagementClient
+            client = WebSiteManagementClient(self.credential, self.subscription_id)
+            result: List[Dict[str, Any]] = []
+            for app in client.web_apps.list():
+                if "functionapp" not in str(getattr(app, "kind", "")).lower():
+                    continue
+                parsed = self.parse_resource_id(getattr(app, "id", ""))
+                config = client.web_apps.get_configuration(parsed.get("resource_group", ""), app.name)
+                identity = getattr(app, "identity", None)
+                result.append({"id": app.id, "name": app.name, "kind": getattr(app, "kind", None),
+                    "https_only": getattr(app, "https_only", None),
+                    "min_tls_version": getattr(config, "min_tls_version", None),
+                    "ftps_state": getattr(config, "ftps_state", None),
+                    "remote_debugging_enabled": getattr(config, "remote_debugging_enabled", None),
+                    "identity_type": getattr(identity, "type", None) if identity is not None else "None"})
+            self._function_apps_cache = result
+        except Exception as exc:
+            logger.error("get_function_app_security_posture failed: %s", exc)
+            self._function_apps_cache = None
+        return self._function_apps_cache
+
+    def get_private_endpoint_posture(self) -> Optional[List[Dict[str, Any]]]:
+        """Return public-access and approved Private Link state for supported PaaS resources."""
+        if self._private_endpoint_posture_cache is not _UNSET:
+            return self._private_endpoint_posture_cache
+        try:
+            network = NetworkManagementClient(self.credential, self.subscription_id)
+            endpoints = list(network.private_endpoints.list_by_subscription())
+            approved: Dict[str, set[str]] = {}
+            records: List[Dict[str, Any]] = []
+            for endpoint in endpoints:
+                endpoint_connections = list(getattr(endpoint, "private_link_service_connections", None) or [])
+                endpoint_connections.extend(getattr(endpoint, "manual_private_link_service_connections", None) or [])
+                for connection in endpoint_connections:
+                    target = str(getattr(connection, "private_link_service_id", "") or "").lower()
+                    state = getattr(connection, "private_link_service_connection_state", None)
+                    status = str(getattr(state, "status", "") or "")
+                    groups = {str(value).lower() for value in (getattr(connection, "group_ids", None) or [])}
+                    if target and status.lower() == "approved":
+                        approved.setdefault(target, set()).update(groups)
+                    elif target and status.lower() in {"pending", "rejected", "disconnected"}:
+                        records.append({"id": endpoint.id, "name": endpoint.name, "service": "connection", "status": status})
+
+            def add(resource: Any, service: str, public: Any, required: set[str]) -> None:
+                rid = str(getattr(resource, "id", "") or "")
+                records.append({"id": rid, "name": getattr(resource, "name", ""), "service": service,
+                    "public_network_access": public, "approved_groups": sorted(approved.get(rid.lower(), set())),
+                    "required_groups": sorted(required)})
+
+            for item in StorageManagementClient(self.credential, self.subscription_id).storage_accounts.list():
+                add(item, "storage", getattr(item, "public_network_access", None), {"blob"})
+            for item in SqlManagementClient(self.credential, self.subscription_id).servers.list():
+                add(item, "sql", getattr(item, "public_network_access", None), {"sqlserver"})
+            try:
+                from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexiblePostgreSQLClient
+                for item in FlexiblePostgreSQLClient(self.credential, self.subscription_id).servers.list():
+                    add(item, "postgresql", getattr(getattr(item, "network", None), "public_network_access", None), {"postgresqlserver"})
+            except Exception as exc:
+                logger.warning("PostgreSQL Flexible Server posture unavailable: %s", exc)
+            from azure.mgmt.web import WebSiteManagementClient
+            web = WebSiteManagementClient(self.credential, self.subscription_id)
+            for item in web.web_apps.list():
+                parsed = self.parse_resource_id(getattr(item, "id", ""))
+                config = web.web_apps.get_configuration(parsed.get("resource_group", ""), item.name)
+                public = getattr(item, "public_network_access", None) or getattr(config, "public_network_access", None)
+                if str(getattr(config, "ip_security_restrictions_default_action", "")).lower() == "deny":
+                    public = "Disabled"
+                add(item, "web", public, {"sites"})
+            try:
+                from azure.mgmt.recoveryservices import RecoveryServicesClient
+                for item in RecoveryServicesClient(self.credential, self.subscription_id).vaults.list_by_subscription_id():
+                    add(item, "recovery", getattr(getattr(item, "properties", None), "public_network_access", None), {"azurebackup"})
+            except Exception as exc:
+                logger.warning("Recovery Services network posture unavailable: %s", exc)
+            self._private_endpoint_posture_cache = records
+        except Exception as exc:
+            logger.error("get_private_endpoint_posture failed: %s", exc)
+            self._private_endpoint_posture_cache = None
+        return self._private_endpoint_posture_cache
+
+    def get_recovery_vault_security_posture(self) -> Optional[List[Dict[str, Any]]]:
+        """Return cached Recovery Services security settings without backup contents."""
+        if self._recovery_vaults_cache is not _UNSET:
+            return self._recovery_vaults_cache
+        try:
+            from azure.mgmt.recoveryservices import RecoveryServicesClient
+            result: List[Dict[str, Any]] = []
+            for vault in RecoveryServicesClient(self.credential, self.subscription_id).vaults.list_by_subscription_id():
+                props = getattr(vault, "properties", None)
+                security = getattr(props, "security_settings", None)
+                soft = getattr(security, "soft_delete_settings", None)
+                immutable = getattr(security, "immutability_settings", None)
+                monitoring = getattr(props, "monitoring_settings", None)
+                monitor_alerts = getattr(monitoring, "azure_monitor_alert_settings", None)
+                result.append({"id": vault.id, "name": vault.name,
+                    "soft_delete_state": getattr(soft, "soft_delete_state", None),
+                    "soft_delete_retention_days": getattr(soft, "soft_delete_retention_period_in_days", None),
+                    "immutability_state": getattr(immutable, "state", None),
+                    "multi_user_authorization": getattr(security, "multi_user_authorization", None),
+                    "resource_guard_operations": getattr(props, "resource_guard_operation_requests", None),
+                    "monitoring_alerts_for_job_failures": getattr(monitor_alerts, "alerts_for_all_job_failures", None)})
+            self._recovery_vaults_cache = result
+        except Exception as exc:
+            logger.error("get_recovery_vault_security_posture failed: %s", exc)
+            self._recovery_vaults_cache = None
+        return self._recovery_vaults_cache
 
     def get_vm_extensions(self, resource_group: str, vm_name: str) -> Optional[List[Any]]:
         """List all extensions installed on a virtual machine."""
