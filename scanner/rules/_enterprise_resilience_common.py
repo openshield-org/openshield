@@ -13,11 +13,20 @@ def _value(module: Any, name: str) -> Any:
 
 
 def finding(item: Mapping[str, Any], module: Any, resource_type: str, metadata: Mapping[str, Any]) -> Dict[str, Any]:
-    return {"rule_id": _value(module, "RULE_ID"), "rule_name": _value(module, "RULE_NAME"),
-        "severity": _value(module, "SEVERITY"), "category": _value(module, "CATEGORY"),
-        "resource_id": item["id"], "resource_name": item["name"], "resource_type": resource_type,
-        "description": _value(module, "DESCRIPTION"), "remediation": _value(module, "REMEDIATION"),
-        "playbook": _value(module, "PLAYBOOK"), "frameworks": dict(_value(module, "FRAMEWORKS")), "metadata": dict(metadata)}
+    return {
+        "rule_id": _value(module, "RULE_ID"),
+        "rule_name": _value(module, "RULE_NAME"),
+        "severity": _value(module, "SEVERITY"),
+        "category": _value(module, "CATEGORY"),
+        "resource_id": item["id"],
+        "resource_name": item["name"],
+        "resource_type": resource_type,
+        "description": _value(module, "DESCRIPTION"),
+        "remediation": _value(module, "REMEDIATION"),
+        "playbook": _value(module, "PLAYBOOK"),
+        "frameworks": dict(_value(module, "FRAMEWORKS")),
+        "metadata": dict(metadata),
+    }
 
 
 def scan_functions(client: Any, module: Any, field: str, unsafe: Any) -> List[Dict[str, Any]]:
@@ -35,9 +44,14 @@ def scan_functions(client: Any, module: Any, field: str, unsafe: Any) -> List[Di
     return results
 
 
-RESOURCE_TYPES = {"storage": "Microsoft.Storage/storageAccounts", "sql": "Microsoft.Sql/servers",
-    "postgresql": "Microsoft.DBforPostgreSQL/flexibleServers", "web": "Microsoft.Web/sites",
-    "recovery": "Microsoft.RecoveryServices/vaults", "connection": "Microsoft.Network/privateEndpoints"}
+RESOURCE_TYPES = {
+    "storage": "Microsoft.Storage/storageAccounts",
+    "sql": "Microsoft.Sql/servers",
+    "postgresql": "Microsoft.DBforPostgreSQL/flexibleServers",
+    "web": "Microsoft.Web/sites",
+    "recovery": "Microsoft.RecoveryServices/vaults",
+    "connection": "Microsoft.Network/privateEndpoints",
+}
 
 
 def scan_private(client: Any, module: Any, service: str) -> List[Dict[str, Any]]:
@@ -58,8 +72,17 @@ def scan_private(client: Any, module: Any, service: str) -> List[Dict[str, Any]]
         required = set(item.get("required_groups") or [])
         approved = set(item.get("approved_groups") or [])
         if public == "enabled":
-            results.append(finding(item, module, RESOURCE_TYPES[service],
-                {"public_network_access": item.get("public_network_access"), "missing_private_link_groups": sorted(required - approved)}))
+            results.append(
+                finding(
+                    item,
+                    module,
+                    RESOURCE_TYPES[service],
+                    {
+                        "public_network_access": item.get("public_network_access"),
+                        "missing_private_link_groups": sorted(required - approved),
+                    },
+                )
+            )
     return results
 
 
@@ -73,6 +96,9 @@ def scan_backup(client: Any, module: Any, unsafe: Any, metadata_fields: List[str
         if verdict is None:
             logger.warning("%s: required state unknown for %s", _value(module, "RULE_ID"), vault.get("name"))
         elif verdict:
-            results.append(finding(vault, module, "Microsoft.RecoveryServices/vaults",
-                {key: vault.get(key) for key in metadata_fields}))
+            results.append(
+                finding(
+                    vault, module, "Microsoft.RecoveryServices/vaults", {key: vault.get(key) for key in metadata_fields}
+                )
+            )
     return results

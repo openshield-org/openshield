@@ -358,6 +358,7 @@ class AzureClient:
             return self._function_apps_cache
         try:
             from azure.mgmt.web import WebSiteManagementClient
+
             client = WebSiteManagementClient(self.credential, self.subscription_id)
             result: List[Dict[str, Any]] = []
             for app in client.web_apps.list():
@@ -366,12 +367,18 @@ class AzureClient:
                 parsed = self.parse_resource_id(getattr(app, "id", ""))
                 config = client.web_apps.get_configuration(parsed.get("resource_group", ""), app.name)
                 identity = getattr(app, "identity", None)
-                result.append({"id": app.id, "name": app.name, "kind": getattr(app, "kind", None),
-                    "https_only": getattr(app, "https_only", None),
-                    "min_tls_version": getattr(config, "min_tls_version", None),
-                    "ftps_state": getattr(config, "ftps_state", None),
-                    "remote_debugging_enabled": getattr(config, "remote_debugging_enabled", None),
-                    "identity_type": getattr(identity, "type", None) if identity is not None else "None"})
+                result.append(
+                    {
+                        "id": app.id,
+                        "name": app.name,
+                        "kind": getattr(app, "kind", None),
+                        "https_only": getattr(app, "https_only", None),
+                        "min_tls_version": getattr(config, "min_tls_version", None),
+                        "ftps_state": getattr(config, "ftps_state", None),
+                        "remote_debugging_enabled": getattr(config, "remote_debugging_enabled", None),
+                        "identity_type": getattr(identity, "type", None) if identity is not None else "None",
+                    }
+                )
             self._function_apps_cache = result
         except Exception as exc:
             logger.error("get_function_app_security_posture failed: %s", exc)
@@ -398,13 +405,22 @@ class AzureClient:
                     if target and status.lower() == "approved":
                         approved.setdefault(target, set()).update(groups)
                     elif target and status.lower() in {"pending", "rejected", "disconnected"}:
-                        records.append({"id": endpoint.id, "name": endpoint.name, "service": "connection", "status": status})
+                        records.append(
+                            {"id": endpoint.id, "name": endpoint.name, "service": "connection", "status": status}
+                        )
 
             def add(resource: Any, service: str, public: Any, required: set[str]) -> None:
                 rid = str(getattr(resource, "id", "") or "")
-                records.append({"id": rid, "name": getattr(resource, "name", ""), "service": service,
-                    "public_network_access": public, "approved_groups": sorted(approved.get(rid.lower(), set())),
-                    "required_groups": sorted(required)})
+                records.append(
+                    {
+                        "id": rid,
+                        "name": getattr(resource, "name", ""),
+                        "service": service,
+                        "public_network_access": public,
+                        "approved_groups": sorted(approved.get(rid.lower(), set())),
+                        "required_groups": sorted(required),
+                    }
+                )
 
             for item in StorageManagementClient(self.credential, self.subscription_id).storage_accounts.list():
                 add(item, "storage", getattr(item, "public_network_access", None), {"blob"})
@@ -412,11 +428,18 @@ class AzureClient:
                 add(item, "sql", getattr(item, "public_network_access", None), {"sqlserver"})
             try:
                 from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexiblePostgreSQLClient
+
                 for item in FlexiblePostgreSQLClient(self.credential, self.subscription_id).servers.list():
-                    add(item, "postgresql", getattr(getattr(item, "network", None), "public_network_access", None), {"postgresqlserver"})
+                    add(
+                        item,
+                        "postgresql",
+                        getattr(getattr(item, "network", None), "public_network_access", None),
+                        {"postgresqlserver"},
+                    )
             except Exception as exc:
                 logger.warning("PostgreSQL Flexible Server posture unavailable: %s", exc)
             from azure.mgmt.web import WebSiteManagementClient
+
             web = WebSiteManagementClient(self.credential, self.subscription_id)
             for item in web.web_apps.list():
                 parsed = self.parse_resource_id(getattr(item, "id", ""))
@@ -427,8 +450,16 @@ class AzureClient:
                 add(item, "web", public, {"sites"})
             try:
                 from azure.mgmt.recoveryservices import RecoveryServicesClient
-                for item in RecoveryServicesClient(self.credential, self.subscription_id).vaults.list_by_subscription_id():
-                    add(item, "recovery", getattr(getattr(item, "properties", None), "public_network_access", None), {"azurebackup"})
+
+                for item in RecoveryServicesClient(
+                    self.credential, self.subscription_id
+                ).vaults.list_by_subscription_id():
+                    add(
+                        item,
+                        "recovery",
+                        getattr(getattr(item, "properties", None), "public_network_access", None),
+                        {"azurebackup"},
+                    )
             except Exception as exc:
                 logger.warning("Recovery Services network posture unavailable: %s", exc)
             self._private_endpoint_posture_cache = records
@@ -443,6 +474,7 @@ class AzureClient:
             return self._recovery_vaults_cache
         try:
             from azure.mgmt.recoveryservices import RecoveryServicesClient
+
             result: List[Dict[str, Any]] = []
             for vault in RecoveryServicesClient(self.credential, self.subscription_id).vaults.list_by_subscription_id():
                 props = getattr(vault, "properties", None)
@@ -451,13 +483,20 @@ class AzureClient:
                 immutable = getattr(security, "immutability_settings", None)
                 monitoring = getattr(props, "monitoring_settings", None)
                 monitor_alerts = getattr(monitoring, "azure_monitor_alert_settings", None)
-                result.append({"id": vault.id, "name": vault.name,
-                    "soft_delete_state": getattr(soft, "soft_delete_state", None),
-                    "soft_delete_retention_days": getattr(soft, "soft_delete_retention_period_in_days", None),
-                    "immutability_state": getattr(immutable, "state", None),
-                    "multi_user_authorization": getattr(security, "multi_user_authorization", None),
-                    "resource_guard_operations": getattr(props, "resource_guard_operation_requests", None),
-                    "monitoring_alerts_for_job_failures": getattr(monitor_alerts, "alerts_for_all_job_failures", None)})
+                result.append(
+                    {
+                        "id": vault.id,
+                        "name": vault.name,
+                        "soft_delete_state": getattr(soft, "soft_delete_state", None),
+                        "soft_delete_retention_days": getattr(soft, "soft_delete_retention_period_in_days", None),
+                        "immutability_state": getattr(immutable, "state", None),
+                        "multi_user_authorization": getattr(security, "multi_user_authorization", None),
+                        "resource_guard_operations": getattr(props, "resource_guard_operation_requests", None),
+                        "monitoring_alerts_for_job_failures": getattr(
+                            monitor_alerts, "alerts_for_all_job_failures", None
+                        ),
+                    }
+                )
             self._recovery_vaults_cache = result
         except Exception as exc:
             logger.error("get_recovery_vault_security_posture failed: %s", exc)
