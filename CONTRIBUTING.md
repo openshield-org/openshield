@@ -1,6 +1,6 @@
 # Contributing to OpenShield
 
-Welcome! OpenShield is built by the community — students, developers, and security engineers at every level. This guide will get you contributing in under 30 minutes.
+Welcome! OpenShield is built by the community - students, developers, and security engineers at every level. This guide will get you contributing in under 30 minutes.
 
 ---
 
@@ -16,7 +16,7 @@ Welcome! OpenShield is built by the community — students, developers, and secu
 | KQL detection rule (Sentinel) | Advanced | 3–5 hrs |
 | Scanner engine feature | Advanced | 4–8 hrs |
 
-**Start with a scan rule — it's the most impactful and beginner-friendly contribution.**
+**Start with a scan rule - it is the most impactful and beginner-friendly contribution.**
 
 ---
 
@@ -24,13 +24,13 @@ Welcome! OpenShield is built by the community — students, developers, and secu
 
 Every misconfiguration rule is a self-contained Python file in `scanner/rules/`.
 
-### Step 1 — Pick an Issue
+### Step 1 - Pick an Issue
 
 Browse issues labelled [`good-first-issue`](https://github.com/openshield-org/openshield/issues?q=label%3Agood-first-issue) or [`help-wanted`](https://github.com/openshield-org/openshield/issues?q=label%3Ahelp-wanted).
 
-Comment on the issue: **"I'd like to work on this"** — we'll assign it to you.
+Comment on the issue: **"I'd like to work on this"** - we will assign it to you.
 
-### Step 2 — Fork & Clone
+### Step 2 - Fork & Clone
 
 ```bash
 # Fork the repo on GitHub, then:
@@ -39,7 +39,7 @@ cd openshield
 git checkout -b rule/your-rule-name
 ```
 
-### Step 3 — Write Your Rule
+### Step 3 - Write Your Rule
 
 Create a new file in `scanner/rules/`. Every rule follows this exact template:
 
@@ -92,7 +92,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
 That's it. One file, one rule.
 
-### Step 4 — Add a Remediation Playbook
+### Step 4 - Add a Remediation Playbook
 
 Create the matching fix in `playbooks/cli/`:
 
@@ -114,7 +114,7 @@ az storage account update \
 echo "Public blob access disabled for $STORAGE_ACCOUNT"
 ```
 
-### Step 5 — Test Your Rule
+### Step 5 - Test Your Rule
 
 ```bash
 # Set up test credentials (use a free Azure trial account)
@@ -135,7 +135,7 @@ print(f'Found {len(findings)} issue(s)')
 "
 ```
 
-### Step 6 — Submit Your PR
+### Step 6 - Submit Your PR
 
 ```bash
 git add .
@@ -147,7 +147,7 @@ Then open a Pull Request on GitHub. Use this PR template:
 
 ```
 ## What does this PR do?
-Adds scan rule AZ-STOR-001 — detects storage accounts with public blob access enabled.
+Adds scan rule AZ-STOR-001 - detects storage accounts with public blob access enabled.
 
 ## Rule details
 - Rule ID: AZ-STOR-001
@@ -238,13 +238,64 @@ does not use ORM metadata.
 
 ---
 
-## Code Standards
+## Coding Standards
 
-- Python: follow PEP8, use type hints where possible
-- Dashboard work: functional React components only, Tailwind for styling when the dashboard app lands
-- Every rule must have a RULE_ID, SEVERITY, FRAMEWORKS mapping, and a remediation playbook
-- Every PR must pass the seven GitHub Actions CI checks before merge
-- All PRs need at least one reviewer approval before merge
+All contributions must meet these standards before a pull request will be reviewed.
+
+**Python**
+
+- Follow PEP 8 as enforced by Ruff.
+- Run `ruff check .` and `ruff format .` before pushing.
+- Use `%s` style logging instead of f-strings in logger calls.
+- Add type hints to all new functions.
+- Use `getattr(obj, "field", default)` for optional SDK object fields instead of direct attribute access.
+
+**JavaScript**
+
+- ESLint must pass with zero errors.
+- Run `npm run lint` from `frontend/` before pushing frontend changes.
+
+**Shell scripts**
+
+- Scripts must pass `bash -n` syntax validation.
+- Scripts must start with `set -euo pipefail`.
+- Quote all variable expansions.
+
+**Commit messages**
+
+- Follow Conventional Commits using prefixes such as `feat:`, `fix:`, `docs:`, `chore:`, and `test:`.
+- Reference the related issue number where applicable.
+
+**Branch naming**
+
+- Use `feat/description` for new features.
+- Use `fix/description` for bug fixes.
+- Use `docs/description` for documentation.
+- Use `infra/description` for infrastructure changes.
+
+**Pull request requirements**
+
+- All CI checks must pass.
+- Do not commit credentials, tokens, or secrets.
+- Add automated tests for major new functionality and bug fixes. If tests are not applicable, explain why in the pull request.
+- New scanner rules require compliant and non-compliant test cases.
+- Update all four compliance framework JSON files for new scanner rules.
+- Add a CLI remediation playbook for each new scanner rule.
+- Follow `.github/PULL_REQUEST_TEMPLATE.md`.
+- Obtain at least one reviewer approval before merge.
+
+## OpenSSF Best Practices
+
+OpenShield is working toward the OpenSSF Best Practices Gold badge. The repository currently enforces or provides:
+
+- Automated testing on pull requests through GitHub Actions.
+- Static analysis through CodeQL, Bandit, and Ruff.
+- Dependency vulnerability checks through pip-audit, GitHub Dependency Review, Dependabot alerts, and Trivy.
+- SBOM generation for releases through Syft.
+- Pull request dependency review that rejects newly introduced high-severity vulnerabilities.
+- Private vulnerability reporting through the process in `.github/SECURITY.md`.
+
+Gold status must not be claimed until the project has completed the official OpenSSF assessment and satisfied every mandatory criterion.
 
 ---
 
@@ -261,7 +312,7 @@ If you contribute 3+ rules or a major feature, you get:
 
 ## Need Help?
 
-- **Discord:** Join `#openshield-dev` — ask anything, no question is too basic
+- **Discord:** Join `#openshield-dev` - ask anything, no question is too basic
 - **GitHub Discussions:** For longer technical questions
 - **Issues:** Tag `@core-team` if you're stuck on a PR
 
