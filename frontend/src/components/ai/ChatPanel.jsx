@@ -37,7 +37,7 @@ const ChatPanel = forwardRef(function ChatPanel({ initialMessages = [], contextF
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, msg]);
-  }, [contextFinding?.ruleId]);
+  }, [contextFinding]);
 
   async function handleSend(text) {
     if (!text?.trim()) return;

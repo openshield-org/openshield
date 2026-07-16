@@ -5,23 +5,19 @@ import {
   FiLoader, FiZap, FiCheckCircle, FiAlertCircle, FiClock,
 } from 'react-icons/fi';
 import { api } from '../../utils/api';
+import { useI18n } from '../../i18n/I18nState';
 
-const PAGE_TITLES = {
-  '/monitoring':     { title: 'Security Monitoring',  subtitle: 'Overall health score and trends' },
-  '/discovery':      { title: 'Resource Discovery',   subtitle: 'All resources across your Azure environment' },
-  '/prioritization': { title: 'Risk Prioritization',  subtitle: 'What to fix first based on risk and effort' },
-  '/scan':           { title: 'Detailed Scan',        subtitle: 'Findings with step-by-step remediation playbooks' },
-  '/compliance':     { title: 'Compliance',           subtitle: 'Framework tracking and control status' },
-  '/drift':          { title: 'Configuration Drift',  subtitle: 'Detect unexpected changes to your environment' },
-  '/ai':             { title: 'AI Assistant',         subtitle: 'Ask questions about your security posture' },
+const PAGE_KEYS = {
+  '/monitoring': 'monitoring', '/discovery': 'discovery', '/prioritization': 'prioritization',
+  '/scan': 'scan', '/compliance': 'compliance', '/drift': 'drift', '/ai': 'ai',
 };
 
 // ── Connection-error popup ─────────────────────────────────────────────────
 function ConnectionErrorPopup({ apiBase, onClose }) {
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-[90]" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-sm px-4">
+      <button type="button" aria-label="Close connection error" className="fixed inset-0 bg-black/30 z-[90]" onClick={onClose} />
+      <div role="dialog" aria-modal="true" aria-labelledby="connection-error-title" className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-full max-w-sm px-4">
         <div className="rounded-2xl border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-secondary shadow-soft-lg overflow-hidden">
           <div className="px-5 py-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-900/40 flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -29,11 +25,11 @@ function ConnectionErrorPopup({ apiBase, onClose }) {
                 <FiAlertTriangle size={18} className="text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="text-sm font-bold text-text-primary dark:text-text-dark-primary">Unable to connect</p>
+                <p id="connection-error-title" className="text-sm font-bold text-text-primary dark:text-text-dark-primary">Unable to connect</p>
                 <p className="text-xs text-text-secondary dark:text-text-dark-tertiary mt-0.5">Backend API unreachable</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+            <button aria-label="Close connection error" onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
               <FiX size={16} />
             </button>
           </div>
@@ -63,12 +59,12 @@ function ScanToast({ result, error, onClose }) {
   useEffect(() => {
     const t = setTimeout(onClose, 6000);
     return () => clearTimeout(t);
-  }, []);
+  }, [onClose]);
 
   const isSuccess = !!result;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] w-full max-w-xs">
+    <div role="status" aria-live="polite" className="fixed bottom-6 right-6 z-[100] w-full max-w-xs">
       <div className={`rounded-2xl border shadow-soft-lg overflow-hidden ${
         isSuccess
           ? 'bg-bg-primary dark:bg-bg-dark-secondary border-green-200 dark:border-green-900/50'
@@ -86,7 +82,7 @@ function ScanToast({ result, error, onClose }) {
               {isSuccess ? 'Scan complete' : 'Scan failed'}
             </p>
           </div>
-          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors">
+          <button aria-label="Dismiss scan status" onClick={onClose} className="text-text-tertiary hover:text-text-primary transition-colors">
             <FiX size={14} />
           </button>
         </div>
@@ -126,10 +122,10 @@ function ScanInputPopover({ onConfirm, onCancel }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[80]" onClick={onCancel} />
-      <div className="absolute top-full right-0 mt-2 z-[90] w-72 rounded-2xl border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-secondary shadow-soft-lg overflow-hidden">
+      <button type="button" aria-label="Cancel scan" className="fixed inset-0 z-[80]" onClick={onCancel} />
+      <div role="dialog" aria-modal="true" aria-labelledby="scan-dialog-title" className="absolute top-full right-0 mt-2 z-[90] w-72 rounded-2xl border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-secondary shadow-soft-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border-light dark:border-border-dark">
-          <p className="text-sm font-semibold text-text-primary dark:text-text-dark-primary">Run Azure Scan</p>
+          <p id="scan-dialog-title" className="text-sm font-semibold text-text-primary dark:text-text-dark-primary">Run Azure Scan</p>
           <p className="text-xs text-text-secondary dark:text-text-dark-tertiary mt-0.5">
             Leave blank to use the subscription configured on the backend.
           </p>
@@ -172,7 +168,11 @@ function ScanInputPopover({ onConfirm, onCancel }) {
 // ── Main Header ────────────────────────────────────────────────────────────
 export default function Header({ onMenuToggle }) {
   const { pathname } = useLocation();
-  const page = PAGE_TITLES[pathname] || { title: 'OpenShield', subtitle: '' };
+  const { locale, locales, setLocale, t, formatDate } = useI18n();
+  const pageKey = PAGE_KEYS[pathname];
+  const page = pageKey
+    ? { title: t(`page.${pageKey}.title`), subtitle: t(`page.${pageKey}.subtitle`) }
+    : { title: 'OpenShield', subtitle: '' };
 
   const [showConnErr, setConnErr]   = useState(false);
   const [scanning, setScanning]     = useState(false);
@@ -194,13 +194,13 @@ export default function Header({ onMenuToggle }) {
       const latest = data?.scans?.[0];
       const raw = latest?.started_at || latest?.startedAt;
       if (raw) {
-        setLastScanAt(new Date(raw).toLocaleString(undefined, {
+        setLastScanAt(formatDate(raw, {
           month: 'short', day: 'numeric', year: 'numeric',
           hour: 'numeric', minute: '2-digit',
         }));
       }
     }).catch(() => {});
-  }, [isLive]);
+  }, [formatDate, isLive]);
 
   const closeConnErr = () => setConnErr(false);
 
@@ -250,7 +250,7 @@ export default function Header({ onMenuToggle }) {
           <button
             onClick={onMenuToggle}
             className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary dark:text-text-dark-tertiary hover:bg-bg-secondary dark:hover:bg-bg-dark-tertiary transition-all flex-shrink-0"
-            aria-label="Open menu"
+            aria-label={t('menu.open')}
           >
             <FiMenu size={18} />
           </button>
@@ -268,6 +268,15 @@ export default function Header({ onMenuToggle }) {
 
         {/* Right: controls */}
         <div className="flex items-center gap-2 md:gap-2.5 flex-shrink-0">
+          <label className="sr-only" htmlFor="locale-select">{t('language.label')}</label>
+          <select
+            id="locale-select"
+            value={locale}
+            onChange={(event) => setLocale(event.target.value)}
+            className="rounded-lg border border-border-light dark:border-border-dark bg-bg-primary dark:bg-bg-dark-tertiary px-2 py-1.5 text-xs text-text-primary dark:text-text-dark-primary"
+          >
+            {locales.map((item) => <option key={item} value={item}>{t(`language.${item}`)}</option>)}
+          </select>
 
           {/* Run Scan button + popover wrapper */}
           <div className="relative" ref={scanBtnRef}>
@@ -282,7 +291,7 @@ export default function Header({ onMenuToggle }) {
                 : <FiZap size={12} />
               }
               <span className="hidden sm:inline">
-                {scanning ? `Scanning… ${elapsed}s` : 'Run Scan'}
+                {scanning ? t('scan.scanning', { seconds: elapsed }) : t('scan.run')}
               </span>
             </button>
 
@@ -298,12 +307,14 @@ export default function Header({ onMenuToggle }) {
           {lastScanAt && isLive && (
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-tertiary dark:text-text-dark-tertiary">
               <FiClock size={13} />
-              <span>Last scanned: {lastScanAt}</span>
+              <span>{t('scan.last', { date: lastScanAt })}</span>
             </div>
           )}
 
           {/* Live / Reconnecting status dot */}
           <div
+            role="status"
+            aria-live="polite"
             title={isLive ? 'Connected to live API' : 'Reconnecting to backend…'}
             className="hidden sm:flex items-center gap-1.5 cursor-default select-none"
           >
@@ -316,7 +327,7 @@ export default function Header({ onMenuToggle }) {
               <span className="h-2 w-2 rounded-full bg-amber-400" />
             )}
             <span className={`text-xs font-medium ${isLive ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-              {isLive ? 'Live' : 'Reconnecting'}
+              {isLive ? t('status.live') : t('status.reconnecting')}
             </span>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import { I18nProvider } from './contexts/I18nContext';
 import { api } from './utils/api';
 import Layout from './components/layout/Layout';
 import Discovery from './pages/Discovery';
@@ -25,8 +26,9 @@ export default function App() {
 
   return (
     <DarkModeProvider>
-      <BrowserRouter>
-        <Routes>
+      <I18nProvider>
+        <BrowserRouter>
+          <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/monitoring" replace />} />
             <Route path="monitoring"     element={<Monitoring />}     />
@@ -37,8 +39,9 @@ export default function App() {
             <Route path="drift"          element={<Drift />}          />
             <Route path="ai"             element={<AILayer />}        />
           </Route>
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </I18nProvider>
     </DarkModeProvider>
   );
 }
