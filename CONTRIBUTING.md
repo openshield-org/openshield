@@ -218,7 +218,7 @@ pip install -r requirements.txt
 # Installs Flask, Alembic, Azure SDK clients, requests, psycopg2, PyJWT, and PyYAML for CI workflow validation.
 
 # Frontend
-# The frontend directory is currently a scaffold. The React dashboard MVP is on the roadmap.
+# The React dashboard lives in frontend/ and uses the repository's npm scripts.
 
 # Database (Docker)
 docker run --name openshield-db \
@@ -268,6 +268,12 @@ All contributions must meet these standards before a pull request will be review
 - Follow Conventional Commits using prefixes such as `feat:`, `fix:`, `docs:`, `chore:`, and `test:`.
 - Reference the related issue number where applicable.
 
+**Developer Certificate of Origin**
+
+- By adding `Signed-off-by: Your Name <email>` to a commit, a contributor certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/).
+- Use `git commit -s` to add the sign-off.
+- The project lead must approve and enable DCO enforcement before this becomes a required merge check; until then, sign-off is requested but not represented as enforced.
+
 **Branch naming**
 
 - Use `feat/description` for new features.
@@ -285,6 +291,7 @@ All contributions must meet these standards before a pull request will be review
 - Add a CLI remediation playbook for each new scanner rule.
 - Follow `.github/PULL_REQUEST_TEMPLATE.md`.
 - Obtain at least one reviewer approval before merge.
+- Add regression tests for bug fixes whenever the behavior can be reproduced automatically. Major functionality must include automated tests.
 
 ## OpenSSF Best Practices
 

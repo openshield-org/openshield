@@ -48,10 +48,10 @@ Findings map to NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), and FIPS 205 (SLH-DSA
 
 | Feature | Description |
 |---|---|
-| **Misconfiguration Scanner** | Runs 39 Azure security rules across storage, network, identity, database, compute, Key Vault, and post-quantum cryptography |
+| **Misconfiguration Scanner** | Runs 51 Azure security rules across storage, network, identity, database, compute, Key Vault, AKS, and post-quantum cryptography |
 | **Compliance Mapper** | Maps findings to CIS Benchmarks, NIST CSF, ISO 27001, and SOC 2 framework JSON files |
 | **Scan History API** | Stores scans and findings in PostgreSQL and exposes findings, score, scan history, compliance posture, drift, and resource inventory over REST |
-| **Remediation Playbooks** | Every rule ships with a matching Azure CLI remediation script (36 playbooks) |
+| **Remediation Playbooks** | Every rule ships with a matching Azure CLI remediation script (51 playbooks) |
 | **Security Dashboard** | Full React dashboard deployed on Vercel - live monitoring, findings, compliance, drift, prioritization, and AI-layer views |
 | **Project Website** | Documentation and reference site at [openshield-website.vercel.app](https://openshield-website.vercel.app) - blog, rules gallery, docs, roadmap, releases, and interactive playground |
 | **Sentinel Integration** | Normalises findings and pushes them into Microsoft Sentinel via a Log Analytics custom table and KQL analytics rules |
@@ -76,6 +76,15 @@ The project's OpenSSF status is publicly verifiable through the official OpenSSF
 
 **[View OpenShield's verified OpenSSF Best Practices record](https://www.bestpractices.dev/projects/13618)**
 
+Project policies and assurance evidence:
+
+- [Governance](GOVERNANCE.md) and [maintainer responsibilities](MAINTAINERS.md)
+- [July 2026–June 2027 roadmap](ROADMAP.md)
+- [Support and upgrade policy](SUPPORT.md)
+- [Security requirements](docs/security-requirements.md) and [security assurance case](docs/security-assurance-case.md)
+- [Release security](docs/release-security.md) and [accessibility/i18n policy](docs/accessibility-and-i18n.md)
+- [OpenSSF Silver evidence register](docs/openssf-silver-evidence.md)
+
 ---
 
 ## Architecture
@@ -84,11 +93,11 @@ The project's OpenSSF status is publicly verifiable through the official OpenSSF
 flowchart TD
     A["React Dashboard\nVercel · Live"]
     B["Flask REST API\nJWT · CORS · Blueprints"]
-    C["Scanner Engine\n39 Python rules"]
+    C["Scanner Engine\n51 Python rules"]
     D["Azure Subscription\nScanned via Azure SDK + Graph"]
     E["Compliance Framework JSON\nCIS · NIST · ISO 27001 · SOC 2"]
     F["PostgreSQL Database\nFindings · Scans"]
-    G["Azure CLI Playbooks\n39 remediation scripts"]
+    G["Azure CLI Playbooks\n51 remediation scripts"]
     H["sentinel/ingest.py\nNormalise + HMAC upload"]
     I["Microsoft Sentinel\nOpenShieldFindings_CL · KQL rules"]
 
