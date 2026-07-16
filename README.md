@@ -6,6 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CHANGELOG](https://img.shields.io/badge/changelog-here-blue)](CHANGELOG.md)
 
+Release artifacts include SHA-256 checksums, an SBOM, and identity-bound
+provenance attestations. See [release verification](docs/release-verification.md).
+
 > **Open source Cloud Security Posture Management (CSPM) for Azure - detect misconfigurations, map to CIS/NIST/ISO27001/SOC2, fix them with one command, and identify cryptographic assets requiring quantum-safe migration.**
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/stargazers)
