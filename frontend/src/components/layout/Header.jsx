@@ -63,7 +63,7 @@ function ScanToast({ result, error, onClose }) {
   useEffect(() => {
     const t = setTimeout(onClose, 6000);
     return () => clearTimeout(t);
-  }, []);
+  }, [onClose]);
 
   const isSuccess = !!result;
 

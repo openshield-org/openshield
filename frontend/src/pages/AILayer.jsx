@@ -98,13 +98,13 @@ export default function AILayer() {
   const [cveData,         setCveData]         = useState(null);
   const [cveLoading,      setCveLoading]      = useState(true);
   const [settingsKey,     setSettingsKey]     = useState(0); // force re-render on settings save
+  const initialFinding = location.state?.finding;
 
   useEffect(() => {
     api.getFindings()
       .then((scans) => {
         setFindings(scans);
-        const fromScan = location.state?.finding;
-        if (fromScan) setSelectedFinding(fromScan);
+        if (initialFinding) setSelectedFinding(initialFinding);
         aiApi.getSummary(scans).then(setSummary).finally(() => setSummaryLoading(false));
       })
       .catch(() => {
@@ -112,7 +112,7 @@ export default function AILayer() {
         aiApi.getSummary([]).then(setSummary).finally(() => setSummaryLoading(false));
       });
     aiApi.getCVEAnalysis().then(setCveData).finally(() => setCveLoading(false));
-  }, []);
+  }, [initialFinding]);
 
   const handleFindingSelect = (f) =>
     setSelectedFinding((prev) => (prev?.id === f.id ? null : f));

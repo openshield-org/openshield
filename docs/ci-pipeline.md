@@ -19,7 +19,7 @@ This document explains each job, how to reproduce every check locally before ope
 | **SCA (pip-audit)** | `pip-audit -r requirements.txt` | A dependency with a known CVE (minus documented ignores) |
 | **SBOM (Syft)** | CycloneDX SBOM generated + uploaded as an artifact | SBOM generation error |
 | **Container Scan (Trivy)** | Dormant scaffold — skips until a `Dockerfile` exists (INFRA 1 / #154) | (nothing today) |
-| **Backend Tests (pytest + coverage)** | Full `tests/` suite against an ephemeral Postgres, `--cov-fail-under=25` | A failing test or coverage below the floor |
+| **Backend Tests (pytest + coverage)** | Full `tests/` suite against an ephemeral Postgres, `--cov-fail-under=80` | A failing test or coverage below the Silver-level floor |
 | **Frontend (lint + build)** | `npm ci` → `eslint` → `vite build` | An eslint error or a broken dashboard build |
 | **Enforce dev to main source** | `main` PRs must come from `dev` | A non-`dev` branch opening a PR into `main` |
 | **CI Summary** | Aggregates all job results into the run summary and fails if any required job failed | Any required job failing |
@@ -109,10 +109,10 @@ The three ignores are advisories in `transformers` (a transitive dependency of `
 
 ```bash
 DATABASE_URL="postgresql://ci:ci@localhost/ci_db" OPENSHIELD_ENV="testing" \
-  pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-fail-under=25
+  pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-fail-under=80
 ```
 
-Runs the **entire** `tests/` suite once (not just rule tests). Tests requiring a vector store or an AI API key skip cleanly. `--cov-fail-under=25` is a floor to prevent backsliding; raise it as coverage grows.
+Runs the **entire** `tests/` suite once (not just rule tests). Tests requiring a vector store or an AI API key skip cleanly. `--cov-fail-under=80` enforces the OpenSSF Silver statement-coverage requirement for the measured API and scanner packages.
 
 ### Frontend (lint + build)
 
@@ -181,7 +181,7 @@ The `ci-summary` job uses `needs: [...]` + `if: always()` so it runs after every
 | `ruff check` / `format` fails | `ruff format .` then `ruff check --fix .`; re-run both |
 | `bandit` medium+ finding | Fix it, or if a confirmed false positive add `# nosec <ID>` with a one-line reason |
 | `pip-audit` reports a CVE | Bump the pin to a fixed version; only add `--ignore-vuln` with a documented reason |
-| `pytest` coverage below 25% | Add tests, or investigate the regression that removed coverage |
+| `pytest` coverage below 80% | Add tests, or investigate the regression that removed coverage |
 | Frontend eslint error | Fix the reported rule (e.g. remove an unused import); warnings do not fail CI |
 | `Enforce dev to main source` fails | Open the PR from `dev`; merge feature work into `dev` first |
 | `missing field 'RULE_ID'` | Add `RULE_ID = "AZ-XXX-000"` at module level in the rule file |
