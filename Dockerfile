@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir --upgrade \
 
 COPY . .
 
+# Container hardening, addresses the non-root gap flagged in #185
 RUN groupadd --system openshield && \
     useradd --system --gid openshield --no-create-home openshield && \
     chown -R openshield:openshield /app

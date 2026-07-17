@@ -163,6 +163,7 @@ CI runs at **both** merge points (`on: pull_request` targets `dev` and `main`), 
 - **Least-privilege token:** `ci.yml` declares `permissions: contents: read`; CodeQL and Semgrep each scope their own `security-events: write`.
 - **`concurrency` cancels superseded runs** on the same PR to save runner minutes.
 - **Semgrep added as a second, open-source SAST layer**, run as a pure CLI invocation (`semgrep scan --config p/...`) with `--metrics=off`, no semgrep.dev account, login, or telemetry dependency. It complements CodeQL's deeper data-flow/taint analysis with fast, pattern-based rules (OWASP Top 10, general security-audit, Python/JS-specific), uploading SARIF to the same GitHub code scanning UI. Added per maintainer direction to reduce reliance on GitHub's proprietary, soon-to-be-paid "Code Quality" product in favor of open-source tooling.
+- **The `p/...` rulesets are pulled from the public Semgrep Registry at run time**, not vendored, so a registry outage fails the `SAST (Semgrep)` job. Accepted as a normal SAST-gate network dependency; a spurious red on that job is worth checking against Semgrep Registry status before assuming a real finding.
 
 ---
 
