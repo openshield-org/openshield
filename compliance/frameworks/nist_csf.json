@@ -279,14 +279,14 @@
       "description": "The Recovery Services vault does not enable built-in monitoring for backup job failures, so a failed or tampered backup could go undetected."
     },
     "AZ-FUNC-001": {
-      "control_id": "PR.AC-5",
-      "control_name": "Network integrity is protected",
-      "description": "The Function App accepts unencrypted HTTP traffic, allowing requests and responses to cross the network boundary without encryption in transit."
+      "control_id": "PR.DS-2",
+      "control_name": "Data-in-transit is protected",
+      "description": "The Function App accepts unencrypted HTTP traffic, so requests and responses can cross the network without encryption in transit."
     },
     "AZ-FUNC-002": {
-      "control_id": "PR.AC-5",
-      "control_name": "Network integrity is protected",
-      "description": "The Function App permits TLS older than 1.2, weakening the network controls that protect traffic crossing the network boundary."
+      "control_id": "PR.DS-2",
+      "control_name": "Data-in-transit is protected",
+      "description": "The Function App permits TLS older than 1.2, weakening the encryption protecting traffic in transit."
     },
     "AZ-FUNC-003": {
       "control_id": "PR.AC-5",

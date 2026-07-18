@@ -65,8 +65,8 @@ OpenShield currently ships 72 Azure scan rules. This table is generated from the
 | AZ-BAK-002 | Backup Vault Immutability Disabled | HIGH | Backup | TBD-BAK-002 | PR.IP-4 | A.12.3.1 |
 | AZ-BAK-004 | Backup Multiuser Authorization Missing | HIGH | Backup | TBD-BAK-004 | PR.AC-4 | A.9.2.3 |
 | AZ-BAK-006 | Backup Security Monitoring Disabled | MEDIUM | Backup | TBD-BAK-006 | DE.CM-1 | A.12.4.1 |
-| AZ-FUNC-001 | Function App HTTPS Only Disabled | HIGH | Serverless | TBD-FUNC-001 | PR.AC-5 | A.13.1.1 |
-| AZ-FUNC-002 | Function App Minimum TLS Below 1.2 | HIGH | Serverless | TBD-FUNC-002 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-001 | Function App HTTPS Only Disabled | HIGH | Serverless | TBD-FUNC-001 | PR.DS-2 | A.13.2.1 |
+| AZ-FUNC-002 | Function App Minimum TLS Below 1.2 | HIGH | Serverless | TBD-FUNC-002 | PR.DS-2 | A.13.2.1 |
 | AZ-FUNC-003 | Function App FTP Publishing Enabled | MEDIUM | Serverless | TBD-FUNC-003 | PR.AC-5 | A.13.1.1 |
 | AZ-FUNC-004 | Function App Remote Debugging Enabled | HIGH | Serverless | TBD-FUNC-004 | PR.AC-5 | A.13.1.1 |
 | AZ-FUNC-005 | Function App Managed Identity Missing | MEDIUM | Serverless | TBD-FUNC-005 | PR.AC-5 | A.13.1.1 |
