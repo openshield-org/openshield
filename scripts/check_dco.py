@@ -15,9 +15,15 @@ def has_signoff(message: str) -> bool:
 
 
 def commits_between(base: str, head: str) -> list[str]:
-    """Return commits introduced between the pull request base and head."""
+    """Return commits introduced between the pull request base and head.
+
+    Excludes merge commits: a `git merge origin/dev` inside a long-running PR
+    branch produces a commit with Git's default merge message and no
+    Signed-off-by trailer, through no fault of the author's own commits.
+    GitHub's own DCO app skips merge commits for the same reason.
+    """
     output = subprocess.check_output(
-        ["git", "rev-list", "--reverse", f"{base}..{head}"],
+        ["git", "rev-list", "--reverse", "--no-merges", f"{base}..{head}"],
         text=True,
     )
     return [item for item in output.splitlines() if item]

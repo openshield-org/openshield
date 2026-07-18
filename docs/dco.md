@@ -13,8 +13,14 @@ git commit -s -m "feat: describe the change"
 
 The name and email in the trailer should identify the contributor and should
 match the commit author unless a documented contribution workflow requires a
-different authorized signer. Every commit introduced by a pull request is
-checked; a sign-off only in the pull request description is insufficient.
+different authorized signer. Every non-merge commit introduced by a pull
+request is checked; a sign-off only in the pull request description is
+insufficient.
+
+Merge commits (e.g. from running `git merge origin/dev` to bring your branch
+up to date) are exempt — they carry Git's own default message, not your
+authorship, so there is nothing for you to sign off on. Only commits you
+authored yourself need the trailer.
 
 To repair the latest local commit before review:
 
