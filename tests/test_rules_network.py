@@ -1,4 +1,4 @@
-"""Rule regression tests for the network rules AZ-NET-001 .. AZ-NET-014.
+"""Rule regression tests for the network rules AZ-NET-001 .. AZ-NET-015.
 
 AZ-NET-007/009/010 construct a NetworkManagementClient inside scan(); those
 tests monkeypatch azure.mgmt.network.NetworkManagementClient. The rest read data
@@ -6,6 +6,8 @@ through MockAzureClient accessors. No real network calls are made.
 """
 
 from types import SimpleNamespace
+
+import pytest
 
 import scanner.rules.az_net_001 as az_net_001
 import scanner.rules.az_net_002 as az_net_002
@@ -23,6 +25,13 @@ import scanner.rules.az_net_013 as az_net_013
 import scanner.rules.az_net_014 as az_net_014
 import scanner.rules.az_net_015 as az_net_015
 from tests.helpers.mock_azure import make_resource
+
+try:
+    from azure.mgmt.network.models import SecurityRule, SecurityRuleAccess, SecurityRuleDirection
+
+    _AZURE_SDK_AVAILABLE = True
+except ImportError:  # pragma: no cover - exercised only when SDK isn't installed
+    _AZURE_SDK_AVAILABLE = False
 
 
 def _install_network_client(monkeypatch, **collections):
@@ -149,6 +158,17 @@ def _vnet_id(name):
     return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Network/virtualNetworks/{name}"
 
 
+def _net_003_rule(name, direction="Inbound", access="Allow", source="0.0.0.0/0", source_list=None, port="443"):
+    return make_resource(
+        name=name,
+        direction=direction,
+        access=access,
+        source_address_prefix=source,
+        source_address_prefixes=source_list or [],
+        destination_port_range=port,
+    )
+
+
 # ── AZ-NET-003: unrestricted inbound on 443 ─────────────────────────────────
 
 
@@ -173,6 +193,105 @@ def test_net_003_noncompliant_returns_one_finding(mock_azure, subscription_id):
     assert len(findings) == 1
     assert findings[0]["rule_id"] == "AZ-NET-003"
     assert findings[0]["severity"] == "HIGH"
+
+
+def test_net_003_direction_is_case_insensitive(mock_azure, subscription_id):
+    """COR-001: lowercase/mixed-case direction values must still be detected."""
+    nsg = make_resource(
+        id=_nsg_id("nsg-lowercase-direction"),
+        name="nsg-lowercase-direction",
+        security_rules=[_net_003_rule("AllowHTTPSLower", direction="inbound")],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+
+
+def test_net_003_detects_plural_source_prefixes(mock_azure, subscription_id):
+    """COR-002: an open source listed only in source_address_prefixes must be detected."""
+    nsg = make_resource(
+        id=_nsg_id("nsg-plural-prefix"),
+        name="nsg-plural-prefix",
+        security_rules=[
+            _net_003_rule(
+                "AllowHTTPSPluralOpen",
+                source="",
+                source_list=["0.0.0.0/0"],
+            )
+        ],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+
+
+@pytest.mark.skipif(not _AZURE_SDK_AVAILABLE, reason="azure-mgmt-network not installed")
+def test_net_003_detects_finding_with_real_sdk_enum_direction_and_access(mock_azure, subscription_id):
+    """COR-001 (SDK model): real SecurityRuleDirection/Access enums, not plain strings,
+    must still be detected. str(enum) yields e.g. "SecurityRuleDirection.INBOUND" rather
+    than "Inbound", so the rule must normalise via .value instead of naive str()."""
+    rule = SecurityRule(
+        name="AllowHTTPSFromInternetEnum",
+        direction=SecurityRuleDirection.INBOUND,
+        access=SecurityRuleAccess.ALLOW,
+        source_address_prefix="0.0.0.0/0",
+        source_address_prefixes=[],
+        destination_port_range="443",
+    )
+    nsg = make_resource(
+        id=_nsg_id("nsg-443-open-enum"),
+        name="nsg-443-open-enum",
+        security_rules=[rule],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-NET-003"
+
+
+@pytest.mark.skipif(not _AZURE_SDK_AVAILABLE, reason="azure-mgmt-network not installed")
+def test_net_003_compliant_with_real_sdk_enum_returns_no_findings(mock_azure, subscription_id):
+    """COR-001 (SDK model): real SDK enums on a restricted rule must produce no findings."""
+    rule = SecurityRule(
+        name="AllowHTTPSFromTrustedEnum",
+        direction=SecurityRuleDirection.INBOUND,
+        access=SecurityRuleAccess.ALLOW,
+        source_address_prefix="10.0.0.0/24",
+        source_address_prefixes=[],
+        destination_port_range="443",
+    )
+    nsg = make_resource(
+        id=_nsg_id("nsg-443-restricted-enum"),
+        name="nsg-443-restricted-enum",
+        security_rules=[rule],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+@pytest.mark.skipif(not _AZURE_SDK_AVAILABLE, reason="azure-mgmt-network not installed")
+def test_net_003_detects_plural_source_prefixes_with_real_sdk_model(mock_azure, subscription_id):
+    """COR-002 (SDK model): an open source only in source_address_prefixes, using a real
+    SecurityRule instance with SDK enum fields, must still be detected and reported in
+    finding metadata."""
+    rule = SecurityRule(
+        name="AllowHTTPSPluralOpenEnum",
+        direction=SecurityRuleDirection.INBOUND,
+        access=SecurityRuleAccess.ALLOW,
+        source_address_prefix=None,
+        source_address_prefixes=["0.0.0.0/0"],
+        destination_port_range="443",
+    )
+    nsg = make_resource(
+        id=_nsg_id("nsg-plural-prefix-enum"),
+        name="nsg-plural-prefix-enum",
+        security_rules=[rule],
+    )
+    mock_azure.set_network_security_groups([nsg])
+    findings = az_net_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["matched_source_address_prefix"] == "0.0.0.0/0"
 
 
 # ── AZ-NET-004: NSG with no rules ───────────────────────────────────────────

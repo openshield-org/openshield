@@ -257,6 +257,36 @@
       "control_id": "CC7.1",
       "control_name": "Detects and Monitors Configuration Changes",
       "description": "Managed node OS upgrade channels maintain worker-node security patches through an observable Azure-controlled process."
+    },
+    "AZ-IDN-010": {
+      "control_id": "CC6.2",
+      "control_name": "Registers and Authorizes Users",
+      "description": "Assigned application owners establish responsibility for authorization and lifecycle review."
+    },
+    "AZ-IDN-011": {
+      "control_id": "CC6.7",
+      "control_name": "Protects Data in Transit",
+      "description": "HTTPS redirect URIs protect authorization responses transmitted between identity and application endpoints."
+    },
+    "AZ-IDN-012": {
+      "control_id": "CC6.1",
+      "control_name": "Logical and Physical Access Controls",
+      "description": "Disabling implicit grant reduces exposure of browser-delivered access and identity tokens."
+    },
+    "AZ-IDN-013": {
+      "control_id": "CC6.1",
+      "control_name": "Logical and Physical Access Controls",
+      "description": "Secretless or certificate authentication reduces compromise of application access credentials."
+    },
+    "AZ-IDN-014": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access to Information Assets",
+      "description": "Property lock prevents tenant service-principal instances from changing sensitive credentials and encryption settings."
+    },
+    "AZ-IDN-015": {
+      "control_id": "CC6.3",
+      "control_name": "Role-Based Access",
+      "description": "Managed identities should not receive broad subscription roles beyond workload requirements."
     }
   }
 }

@@ -258,7 +258,7 @@ def test_idn_006_compliant_fresh_secret_returns_no_findings(mock_azure, subscrip
             }
         ]
     }
-    _install_router(monkeypatch, [("/applications", _Resp(apps))])
+    mock_azure.set_applications(apps["value"])
     assert az_idn_006.scan(mock_azure, subscription_id) == []
 
 
@@ -280,7 +280,7 @@ def test_idn_006_noncompliant_secret_no_expiry_returns_finding(mock_azure, subsc
             }
         ]
     }
-    _install_router(monkeypatch, [("/applications", _Resp(apps))])
+    mock_azure.set_applications(apps["value"])
     findings = az_idn_006.scan(mock_azure, subscription_id)
     assert len(findings) == 1
     assert findings[0]["rule_id"] == "AZ-IDN-006"
@@ -311,7 +311,7 @@ def test_idn_006_malformed_end_date_time_does_not_log_key_id(mock_azure, subscri
             }
         ]
     }
-    _install_router(monkeypatch, [("/applications", _Resp(apps))])
+    mock_azure.set_applications(apps["value"])
     with caplog.at_level("DEBUG", logger="scanner.rules.az_idn_006"):
         findings = az_idn_006.scan(mock_azure, subscription_id)
 

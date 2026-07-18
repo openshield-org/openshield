@@ -16,7 +16,7 @@ def client():
 def test_parse_resource_id_handles_full_and_short_ids():
     full = "/subscriptions/s/resourceGroups/RG/providers/Microsoft.Web/sites/app"
     assert AzureClient.parse_resource_id(full) == {"resource_group": "RG", "name": "app"}
-    assert AzureClient.parse_resource_id("app") == {"name": "app"}
+    assert AzureClient.parse_resource_id("app") == {"name": "app", "resource_group": ""}
 
 
 @pytest.mark.parametrize(

@@ -203,6 +203,9 @@ Use the existing wrapper methods in `scanner/azure_client.py` rather than constr
 | `azure_client.get_sql_server_auditing_policy(resource_group, server_name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Key Vault objects |
 | `azure_client.get_managed_clusters()` | List of AKS ManagedCluster objects, or `None` on API failure |
+| `azure_client.get_applications()` | Paginated App Registration dictionaries, or `None` on Graph failure |
+| `azure_client.get_managed_identity_service_principals()` | Managed Identity service principals, or `None` on Graph failure |
+| `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of role assignments for service principals |
 | `azure_client.get_conditional_access_policies()` | List of Conditional Access policy dicts from Microsoft Graph |
 

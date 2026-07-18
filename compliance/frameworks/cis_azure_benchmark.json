@@ -257,6 +257,36 @@
       "control_id": "N/A-AKS-006",
       "control_name": "AKS node OS upgrade baseline (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends a managed node OS upgrade channel for timely security patches. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-IDN-010": {
+      "control_id": "TBD-IDN-010",
+      "control_name": "App Registration ownership (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends accountable App Registration ownership. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-IDN-011": {
+      "control_id": "TBD-IDN-011",
+      "control_name": "App Registration redirect URI security (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft requires secure redirect URI handling. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-IDN-012": {
+      "control_id": "TBD-IDN-012",
+      "control_name": "OAuth implicit grant security (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends authorization code flow instead of implicit grant. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-IDN-013": {
+      "control_id": "TBD-IDN-013",
+      "control_name": "App Registration password credentials (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends managed identity, federation, or certificates instead of client secrets. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-IDN-014": {
+      "control_id": "TBD-IDN-014",
+      "control_name": "Application-instance property lock (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends locking sensitive service-principal instance properties. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-IDN-015": {
+      "control_id": "TBD-IDN-015",
+      "control_name": "Managed Identity least privilege (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends least-privilege roles and scopes for managed identities. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     }
   }
 }
