@@ -9,6 +9,7 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Semgrep SAST integrated into GitHub Actions CI as an open-source, account-free complement to CodeQL
 - OpenSSF Best Practices Passing Badge achieved with 100% of applicable Passing-level criteria completed
 - Official live OpenSSF badge and verified project record added to project documentation
 - CBOM endpoints with per-asset quantum risk scoring and migration guidance

@@ -125,8 +125,14 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `azure_client.get_sql_server_auditing_policy(rg, name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Vault objects (with full properties) |
 | `azure_client.get_managed_clusters()` | List of AKS ManagedCluster objects, or `None` on API failure |
+| `azure_client.get_applications()` | Paginated App Registration dictionaries, or `None` on Graph failure |
+| `azure_client.get_managed_identity_service_principals()` | Managed Identity service principals, or `None` on Graph failure |
+| `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of RoleAssignment objects for service principals |
 | `azure_client.get_conditional_access_policies()` | List of CA policy dicts from MS Graph |
+| `azure_client.get_function_app_security_posture()` | Cached, secret-free Function App posture dicts, or `None` on API failure |
+| `azure_client.get_private_endpoint_posture()` | Public-access and approved Private Link state for supported PaaS resources, or `None` on API failure |
+| `azure_client.get_recovery_vault_security_posture()` | Cached Recovery Services vault security settings, or `None` on API failure |
 | `azure_client.parse_resource_id(id)` | Dict with `resource_group` and `name` |
 
 List methods return an empty list on failure. Single-resource methods return `None` when the resource cannot be fetched. Three-state checks, such as `get_storage_lifecycle_policy()`, return `True` for compliant, `False` for non-compliant, and `None` when the scanner cannot determine the state.

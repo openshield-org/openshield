@@ -3,6 +3,8 @@
 import logging
 from typing import Any, Dict, List
 
+from scanner.azure_client import enum_str
+
 RULE_ID = "AZ-NET-003"
 RULE_NAME = "NSG allows unrestricted inbound on port 443"
 SEVERITY = "HIGH"
@@ -33,10 +35,21 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for nsg in azure_client.get_network_security_groups():
         for rule in getattr(nsg, "security_rules", []) or []:
+            direction = enum_str(getattr(rule, "direction", None))
+            access = enum_str(getattr(rule, "access", None))
+            allowed_sources = {"*", "0.0.0.0/0", "internet", "any"}
+            single_prefix = enum_str(getattr(rule, "source_address_prefix", None))
+            plural_prefixes = getattr(rule, "source_address_prefixes", None) or []
+            matched_plural_prefix = next(
+                (prefix for prefix in plural_prefixes if enum_str(prefix).lower() in allowed_sources),
+                None,
+            )
+            source_matches = single_prefix.lower() in allowed_sources or matched_plural_prefix is not None
+
             if (
-                getattr(rule, "direction", "") == "Inbound"
-                and getattr(rule, "access", "") == "Allow"
-                and getattr(rule, "source_address_prefix", "") in ("*", "0.0.0.0/0", "Internet", "Any")
+                direction.lower() == "inbound"
+                and access.lower() == "allow"
+                and source_matches
                 and getattr(rule, "destination_port_range", "") in ("443", "*")
             ):
                 findings.append(
@@ -54,7 +67,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "frameworks": FRAMEWORKS,
                         "metadata": {
                             "rule_name": getattr(rule, "name", ""),
-                            "source_prefix": getattr(rule, "source_address_prefix", ""),
+                            "source_prefix": single_prefix if single_prefix.lower() in allowed_sources else "",
+                            "matched_source_address_prefix": matched_plural_prefix,
                         },
                     }
                 )

@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 36 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API consumed by a live React dashboard.
+OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 72 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API consumed by a live React dashboard.
 
 ---
 
@@ -43,8 +43,9 @@ OpenShield is a modular, open source Cloud Security Posture Management (CSPM) pl
 ┌───────────▼──────────────────────────────────────────────────────┐
 │                   Rule Modules (scanner/rules/)                   │
 │                                                                   │
-│  20 rule files across Storage, Network, Identity, Database,       │
-│  Compute, and Key Vault                                           │
+│  72 rule files across Storage, Network, Identity, Database,       │
+│  Compute, Key Vault, AKS, post-quantum cryptography, Backup,      │
+│  Serverless, and Private Endpoint posture                         │
 └───────────┬───────────────────────────────────────────────────────┘
             │ calls
 ┌───────────▼──────────────────────────────────────────────────────┐
@@ -110,16 +111,21 @@ result = engine.run_scan()
 
 ### 4. Current Rule Modules
 
-There are 36 rule files in `scanner/rules/`. See `docs/rules-reference.md` for the full table.
+There are 72 rule files in `scanner/rules/`. See `docs/rules-reference.md` for the full table.
 
 | Category | Count | Rules |
 |---|---|---|
 | Storage | 5 | AZ-STOR-001 to 005 |
-| Network | 14 | AZ-NET-001 to 014 |
-| Identity | 4 | AZ-IDN-001 to 004 |
+| Network | 15 | AZ-NET-001 to 015 |
+| Identity | 15 | AZ-IDN-001 to 015 |
 | Database | 4 | AZ-DB-001 to 004 |
 | Compute | 4 | AZ-CMP-001 to 004 |
 | Key Vault | 5 | AZ-KV-001 to 005 |
+| Kubernetes | 6 | AZ-AKS-001 to 006 |
+| Post-quantum | 3 | AZ-PQC-001 to 003 |
+| Backup | 4 | AZ-BAK-001, 002, 004, 006 |
+| Serverless | 5 | AZ-FUNC-001 to 005 |
+| Private Endpoint | 6 | AZ-PE-001 to 006 |
 
 Every rule has a matching Azure CLI playbook in `playbooks/cli/`.
 

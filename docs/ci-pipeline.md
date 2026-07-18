@@ -16,10 +16,11 @@ This document explains each job, how to reproduce every check locally before ope
 | **Rule & Compliance Validation** | 7 static checks (below) | Rule/playbook/compliance-JSON problems |
 | **Secret Scan (Gitleaks)** | `gitleaks detect` | A hardcoded secret in the working tree |
 | **SAST (Bandit)** | `bandit -r api/ scanner/ ai/ -ll` | A medium+ severity insecure-code pattern |
+| **SAST (Semgrep)** | `semgrep scan --config p/security-audit --config p/owasp-top-ten --config p/python --config p/javascript --error` | A finding from the security-audit / OWASP Top 10 / Python / JS rulesets |
 | **SCA (pip-audit)** | `pip-audit -r requirements.txt` | A dependency with a known CVE (minus documented ignores) |
 | **SBOM (Syft)** | CycloneDX SBOM generated + uploaded as an artifact | SBOM generation error |
 | **Container Scan (Trivy)** | Dormant scaffold — skips until a `Dockerfile` exists (INFRA 1 / #154) | (nothing today) |
-| **Backend Tests (pytest + coverage)** | Full `tests/` suite against an ephemeral Postgres, `--cov-fail-under=25` | A failing test or coverage below the floor |
+| **Backend Tests (pytest + coverage)** | Full `tests/` suite against an ephemeral Postgres, `--cov-fail-under=80` | A failing test or coverage below the Silver-level floor |
 | **Frontend (lint + build)** | `npm ci` → `eslint` → `vite build` | An eslint error or a broken dashboard build |
 | **Enforce dev to main source** | `main` PRs must come from `dev` | A non-`dev` branch opening a PR into `main` |
 | **CI Summary** | Aggregates all job results into the run summary and fails if any required job failed | Any required job failing |
@@ -37,7 +38,7 @@ The **Container Scan** job is intentionally **not** a required check yet: no `Do
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pip install ruff bandit pip-audit          # lint / SAST / SCA tools
+pip install ruff bandit pip-audit semgrep  # lint / SAST / SCA tools
 ```
 
 A local PostgreSQL is needed for the backend tests. Any Postgres 14+ works; create the CI-matching role/db once:
@@ -96,6 +97,21 @@ bandit -r api/ scanner/ ai/ -ll
 
 `-ll` reports medium severity and above. Confirmed false positives are annotated inline with `# nosec <ID>` and a one-line justification (e.g. binding `0.0.0.0` inside a container, a parameterized SQL string).
 
+### SAST (Semgrep)
+
+```bash
+semgrep scan \
+  --config p/security-audit \
+  --config p/owasp-top-ten \
+  --config p/python \
+  --config p/javascript \
+  --exclude venv --exclude frontend/node_modules --exclude frontend/dist \
+  --metrics=off \
+  --error .
+```
+
+Uses the public Semgrep Registry rulesets (`p/...`) directly, not `--config auto`, since `auto` nudges toward a semgrep.dev account/login, which this project deliberately avoids. `--metrics=off` disables Semgrep's anonymous telemetry. `venv/`, `node_modules/`, and `dist/` are already excluded by Semgrep's built-in default ignores and this repo's `.gitignore`, so no `.semgrepignore` is needed; the `--exclude` flags above just make that exclusion visible in the command itself. In CI, findings are also written to SARIF and uploaded to the GitHub Security → Code scanning tab alongside CodeQL's results.
+
 ### SCA (pip-audit)
 
 ```bash
@@ -109,10 +125,10 @@ The three ignores are advisories in `transformers` (a transitive dependency of `
 
 ```bash
 DATABASE_URL="postgresql://ci:ci@localhost/ci_db" OPENSHIELD_ENV="testing" \
-  pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-fail-under=25
+  pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-fail-under=80
 ```
 
-Runs the **entire** `tests/` suite once (not just rule tests). Tests requiring a vector store or an AI API key skip cleanly. `--cov-fail-under=25` is a floor to prevent backsliding; raise it as coverage grows.
+Runs the **entire** `tests/` suite once (not just rule tests). Tests requiring a vector store or an AI API key skip cleanly. `--cov-fail-under=80` enforces the OpenSSF Silver statement-coverage requirement for the measured API and scanner packages.
 
 ### Frontend (lint + build)
 
@@ -144,8 +160,10 @@ CI runs at **both** merge points (`on: pull_request` targets `dev` and `main`), 
 - **Gitleaks via the release binary, not `gitleaks-action`.** The Action requires a (free) `GITLEAKS_LICENSE` for **organization**-owned repos; the CLI binary is Apache-2.0 with no key, so it runs with zero license friction.
 - **All third-party actions are pinned to a full commit SHA** with a `# vX.Y.Z` comment (GitHub's supply-chain hardening standard). `aquasecurity/trivy-action` is SHA-pinned specifically because its mutable tags were compromised in 2026.
 - **Dependabot is notify-only** (`open-pull-requests-limit: 0` for pip / github-actions / npm): it still raises alerts but does not auto-open version-bump PRs.
-- **Least-privilege token:** `ci.yml` declares `permissions: contents: read`; CodeQL scopes its own `security-events: write`.
+- **Least-privilege token:** `ci.yml` declares `permissions: contents: read`; CodeQL and Semgrep each scope their own `security-events: write`.
 - **`concurrency` cancels superseded runs** on the same PR to save runner minutes.
+- **Semgrep added as a second, open-source SAST layer**, run as a pure CLI invocation (`semgrep scan --config p/...`) with `--metrics=off`, no semgrep.dev account, login, or telemetry dependency. It complements CodeQL's deeper data-flow/taint analysis with fast, pattern-based rules (OWASP Top 10, general security-audit, Python/JS-specific), uploading SARIF to the same GitHub code scanning UI. Added per maintainer direction to reduce reliance on GitHub's proprietary, soon-to-be-paid "Code Quality" product in favor of open-source tooling.
+- **The `p/...` rulesets are pulled from the public Semgrep Registry at run time**, not vendored, so a registry outage fails the `SAST (Semgrep)` job. Accepted as a normal SAST-gate network dependency; a spurious red on that job is worth checking against Semgrep Registry status before assuming a real finding.
 
 ---
 
@@ -180,8 +198,9 @@ The `ci-summary` job uses `needs: [...]` + `if: always()` so it runs after every
 |---|---|
 | `ruff check` / `format` fails | `ruff format .` then `ruff check --fix .`; re-run both |
 | `bandit` medium+ finding | Fix it, or if a confirmed false positive add `# nosec <ID>` with a one-line reason |
+| `semgrep` finding | Fix the flagged pattern, or if a confirmed false positive add a `# nosemgrep: <rule-id>` (Python) / `// nosemgrep: <rule-id>` (JS) comment with a one-line justification on the flagged line |
 | `pip-audit` reports a CVE | Bump the pin to a fixed version; only add `--ignore-vuln` with a documented reason |
-| `pytest` coverage below 25% | Add tests, or investigate the regression that removed coverage |
+| `pytest` coverage below 80% | Add tests, or investigate the regression that removed coverage |
 | Frontend eslint error | Fix the reported rule (e.g. remove an unused import); warnings do not fail CI |
 | `Enforce dev to main source` fails | Open the PR from `dev`; merge feature work into `dev` first |
 | `missing field 'RULE_ID'` | Add `RULE_ID = "AZ-XXX-000"` at module level in the rule file |

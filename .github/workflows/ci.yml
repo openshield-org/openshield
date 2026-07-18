@@ -397,6 +397,54 @@ jobs:
       - name: Run bandit
         run: bandit -r api/ scanner/ ai/ -ll
 
+  # ── SAST (Semgrep) ──────────────────────────────────────────────────────────
+  sast-semgrep:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install semgrep
+        run: pip install semgrep
+
+      - name: Run semgrep
+        id: semgrep
+        continue-on-error: true
+        run: |
+          semgrep scan \
+            --config p/security-audit \
+            --config p/owasp-top-ten \
+            --config p/python \
+            --config p/javascript \
+            --exclude venv \
+            --exclude frontend/node_modules \
+            --exclude frontend/dist \
+            --metrics=off \
+            --sarif --output semgrep.sarif \
+            --error \
+            .
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3.36.3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Fail job if Semgrep found issues
+        if: steps.semgrep.outcome == 'failure'
+        run: exit 1
+
   # ── SCA / dependency scanning (pip-audit) ─────────────────────────────────
   sca-pip-audit:
     name: SCA (pip-audit)
@@ -531,7 +579,7 @@ jobs:
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
         run: |
-          pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-report=xml --cov-fail-under=25
+          pytest tests/ -v --tb=short --cov=api --cov=scanner --cov-report=term --cov-report=xml --cov-fail-under=80
 
   # ── Frontend lint + build ────────────────────────────────────────────────
   frontend:
@@ -602,7 +650,7 @@ jobs:
     name: CI Summary
     runs-on: ubuntu-latest
     needs:
-      [lint, rule-validation, secret-scan, sast-bandit, sca-pip-audit, sbom, container-scan, backend-tests, frontend, website, enforce-source-branch]
+      [lint, rule-validation, secret-scan, sast-bandit, sast-semgrep, sca-pip-audit, sbom, container-scan, backend-tests, frontend, website, enforce-source-branch]
     if: always()
     steps:
       - name: Build summary
@@ -611,6 +659,7 @@ jobs:
           RULE_VALIDATION: ${{ needs.rule-validation.result }}
           SECRET_SCAN: ${{ needs.secret-scan.result }}
           SAST_BANDIT: ${{ needs.sast-bandit.result }}
+          SAST_SEMGREP: ${{ needs.sast-semgrep.result }}
           SCA_PIP_AUDIT: ${{ needs.sca-pip-audit.result }}
           SBOM: ${{ needs.sbom.result }}
           CONTAINER_SCAN: ${{ needs.container-scan.result }}
@@ -627,6 +676,7 @@ jobs:
               ("Rule & Compliance Validation",       os.environ["RULE_VALIDATION"]),
               ("Secret Scan (Gitleaks)",             os.environ["SECRET_SCAN"]),
               ("SAST (Bandit)",                      os.environ["SAST_BANDIT"]),
+              ("SAST (Semgrep)",                     os.environ["SAST_SEMGREP"]),
               ("SCA (pip-audit)",                    os.environ["SCA_PIP_AUDIT"]),
               ("SBOM (Syft)",                        os.environ["SBOM"]),
               ("Container Scan (Trivy, INFRA 1 pending)", os.environ["CONTAINER_SCAN"]),
@@ -679,6 +729,7 @@ jobs:
           needs.rule-validation.result != 'success' ||
           needs.secret-scan.result != 'success' ||
           needs.sast-bandit.result != 'success' ||
+          needs.sast-semgrep.result != 'success' ||
           needs.sca-pip-audit.result != 'success' ||
           needs.sbom.result != 'success' ||
           needs.backend-tests.result != 'success' ||

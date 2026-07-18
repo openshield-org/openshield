@@ -82,6 +82,9 @@ class MockAzureClient:
         self._dns_record_sets: Dict[Tuple[str, str], List[Any]] = {}
         self._web_apps: List[Any] = []
         self._managed_clusters: Optional[List[Any]] = []
+        self._applications: Optional[List[Dict[str, Any]]] = []
+        self._managed_identity_principals: Optional[List[Dict[str, Any]]] = []
+        self._subscription_role_assignments: Optional[List[Any]] = []
         # Some rules read azure_client.subscription_id when constructing an
         # SDK management client inside scan() (e.g. AZ-NET-007..010).
         self.subscription_id = "00000000-0000-0000-0000-000000000001"
@@ -97,6 +100,27 @@ class MockAzureClient:
 
     def get_managed_clusters(self) -> Optional[List[Any]]:
         return self._managed_clusters
+
+    def set_applications(self, applications: Optional[List[Dict[str, Any]]]) -> "MockAzureClient":
+        self._applications = applications
+        return self
+
+    def get_applications(self) -> Optional[List[Dict[str, Any]]]:
+        return self._applications
+
+    def set_managed_identity_service_principals(self, principals: Optional[List[Dict[str, Any]]]) -> "MockAzureClient":
+        self._managed_identity_principals = principals
+        return self
+
+    def get_managed_identity_service_principals(self) -> Optional[List[Dict[str, Any]]]:
+        return self._managed_identity_principals
+
+    def set_subscription_role_assignments(self, assignments: Optional[List[Any]]) -> "MockAzureClient":
+        self._subscription_role_assignments = assignments
+        return self
+
+    def get_subscription_role_assignments(self) -> Optional[List[Any]]:
+        return self._subscription_role_assignments
 
     def set_network_security_groups(self, nsgs: List[Any]) -> "MockAzureClient":
         self._network_security_groups = nsgs
@@ -346,9 +370,17 @@ class MockAzureClient:
 
     @staticmethod
     def parse_resource_id(resource_id: str) -> Dict[str, str]:
-        """Parse an Azure resource ID into a dict with name and resource_group."""
-        parts = resource_id.split("/")
-        result: Dict[str, str] = {"name": parts[-1] if parts else ""}
+        """Parse an Azure resource ID into a dict with name and resource_group.
+
+        Always returns both keys, even for malformed or empty IDs, so
+        callers can safely use parsed["resource_group"] without risking
+        a KeyError.
+        """
+        parts = (resource_id or "").split("/")
+        result: Dict[str, str] = {
+            "name": parts[-1] if parts else "",
+            "resource_group": "",
+        }
         for idx, segment in enumerate(parts):
             if segment.lower() == "resourcegroups" and idx + 1 < len(parts):
                 result["resource_group"] = parts[idx + 1]

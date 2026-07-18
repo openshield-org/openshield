@@ -23,6 +23,22 @@ OWNER_ROLE_ID = "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
 _UNSET = object()
 
 
+def enum_str(value: Any, default: str = "") -> str:
+    """Safely coerce an Azure SDK field to its plain string form.
+
+    Azure SDK models often return fields typed as enums (e.g.
+    SecurityRuleDirection, BlobAuditingPolicyState) rather than plain
+    strings. ``str(enum_member)`` yields something like
+    "SecurityRuleDirection.INBOUND", not the underlying value "Inbound",
+    which breaks naive string comparisons. This prefers ``.value`` when
+    present (covers real SDK enums and enum-like objects) and falls back
+    to ``str()`` for plain strings, None, or anything else.
+    """
+    if value is None:
+        return default
+    return str(getattr(value, "value", value))
+
+
 class AzureClient:
     """Wraps Azure SDK management clients for all CSPM scan operations.
 
@@ -38,6 +54,9 @@ class AzureClient:
         self._function_apps_cache: Any = _UNSET
         self._private_endpoint_posture_cache: Any = _UNSET
         self._recovery_vaults_cache: Any = _UNSET
+        self._applications_cache: Any = _UNSET
+        self._managed_identity_principals_cache: Any = _UNSET
+        self._subscription_role_assignments_cache: Any = _UNSET
 
     # ------------------------------------------------------------------ #
     # Static helpers                                                        #
@@ -45,9 +64,17 @@ class AzureClient:
 
     @staticmethod
     def parse_resource_id(resource_id: str) -> Dict[str, str]:
-        """Return resource_group and name parsed from an Azure resource ID."""
-        parts = resource_id.split("/")
-        result: Dict[str, str] = {"name": parts[-1] if parts else ""}
+        """Return resource_group and name parsed from an Azure resource ID.
+
+        Always returns both keys, even for malformed or empty IDs, so
+        callers can safely use parsed["resource_group"] without risking
+        a KeyError.
+        """
+        parts = (resource_id or "").split("/")
+        result: Dict[str, str] = {
+            "name": parts[-1] if parts else "",
+            "resource_group": "",
+        }
         for idx, segment in enumerate(parts):
             if segment.lower() == "resourcegroups" and idx + 1 < len(parts):
                 result["resource_group"] = parts[idx + 1]
@@ -364,21 +391,24 @@ class AzureClient:
             for app in client.web_apps.list():
                 if "functionapp" not in str(getattr(app, "kind", "")).lower():
                     continue
-                parsed = self.parse_resource_id(getattr(app, "id", ""))
-                config = client.web_apps.get_configuration(parsed.get("resource_group", ""), app.name)
-                identity = getattr(app, "identity", None)
-                result.append(
-                    {
-                        "id": app.id,
-                        "name": app.name,
-                        "kind": getattr(app, "kind", None),
-                        "https_only": getattr(app, "https_only", None),
-                        "min_tls_version": getattr(config, "min_tls_version", None),
-                        "ftps_state": getattr(config, "ftps_state", None),
-                        "remote_debugging_enabled": getattr(config, "remote_debugging_enabled", None),
-                        "identity_type": getattr(identity, "type", None) if identity is not None else "None",
-                    }
-                )
+                try:
+                    parsed = self.parse_resource_id(getattr(app, "id", ""))
+                    config = client.web_apps.get_configuration(parsed.get("resource_group", ""), app.name)
+                    identity = getattr(app, "identity", None)
+                    result.append(
+                        {
+                            "id": app.id,
+                            "name": app.name,
+                            "kind": getattr(app, "kind", None),
+                            "https_only": getattr(app, "https_only", None),
+                            "min_tls_version": getattr(config, "min_tls_version", None),
+                            "ftps_state": getattr(config, "ftps_state", None),
+                            "remote_debugging_enabled": getattr(config, "remote_debugging_enabled", None),
+                            "identity_type": getattr(identity, "type", None) if identity is not None else "None",
+                        }
+                    )
+                except Exception as exc:
+                    logger.warning("get_function_app_security_posture: skipping %s: %s", getattr(app, "name", "?"), exc)
             self._function_apps_cache = result
         except Exception as exc:
             logger.error("get_function_app_security_posture failed: %s", exc)
@@ -422,10 +452,16 @@ class AzureClient:
                     }
                 )
 
-            for item in StorageManagementClient(self.credential, self.subscription_id).storage_accounts.list():
-                add(item, "storage", getattr(item, "public_network_access", None), {"blob"})
-            for item in SqlManagementClient(self.credential, self.subscription_id).servers.list():
-                add(item, "sql", getattr(item, "public_network_access", None), {"sqlserver"})
+            try:
+                for item in StorageManagementClient(self.credential, self.subscription_id).storage_accounts.list():
+                    add(item, "storage", getattr(item, "public_network_access", None), {"blob"})
+            except Exception as exc:
+                logger.warning("Storage account network posture unavailable: %s", exc)
+            try:
+                for item in SqlManagementClient(self.credential, self.subscription_id).servers.list():
+                    add(item, "sql", getattr(item, "public_network_access", None), {"sqlserver"})
+            except Exception as exc:
+                logger.warning("Azure SQL network posture unavailable: %s", exc)
             try:
                 from azure.mgmt.postgresqlflexibleservers import PostgreSQLManagementClient as FlexiblePostgreSQLClient
 
@@ -438,16 +474,21 @@ class AzureClient:
                     )
             except Exception as exc:
                 logger.warning("PostgreSQL Flexible Server posture unavailable: %s", exc)
-            from azure.mgmt.web import WebSiteManagementClient
+            try:
+                from azure.mgmt.web import WebSiteManagementClient
 
-            web = WebSiteManagementClient(self.credential, self.subscription_id)
-            for item in web.web_apps.list():
-                parsed = self.parse_resource_id(getattr(item, "id", ""))
-                config = web.web_apps.get_configuration(parsed.get("resource_group", ""), item.name)
-                public = getattr(item, "public_network_access", None) or getattr(config, "public_network_access", None)
-                if str(getattr(config, "ip_security_restrictions_default_action", "")).lower() == "deny":
-                    public = "Disabled"
-                add(item, "web", public, {"sites"})
+                web = WebSiteManagementClient(self.credential, self.subscription_id)
+                for item in web.web_apps.list():
+                    parsed = self.parse_resource_id(getattr(item, "id", ""))
+                    config = web.web_apps.get_configuration(parsed.get("resource_group", ""), item.name)
+                    public = getattr(item, "public_network_access", None) or getattr(
+                        config, "public_network_access", None
+                    )
+                    if str(getattr(config, "ip_security_restrictions_default_action", "")).lower() == "deny":
+                        public = "Disabled"
+                    add(item, "web", public, {"sites"})
+            except Exception as exc:
+                logger.warning("Web/Function App network posture unavailable: %s", exc)
             try:
                 from azure.mgmt.recoveryservices import RecoveryServicesClient
 
@@ -645,16 +686,72 @@ class AzureClient:
     # Identity / Authorization                                              #
     # ------------------------------------------------------------------ #
 
-    def get_service_principals(self) -> List[Any]:
-        """Return role assignments whose principal type is ServicePrincipal."""
+    def _get_graph_collection(self, url: str, operation: str) -> Optional[List[Dict[str, Any]]]:
+        """Fetch a paginated Microsoft Graph collection or return ``None`` on failure."""
+        import requests
+
+        items: List[Dict[str, Any]] = []
+        try:
+            token = self.credential.get_token("https://graph.microsoft.com/.default")
+            headers = {
+                "Authorization": f"Bearer {token.token}",
+                "ConsistencyLevel": "eventual",
+            }
+            while url:
+                response = requests.get(url, headers=headers, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+                items.extend(data.get("value", []))
+                url = data.get("@odata.nextLink", "")
+            return items
+        except Exception as exc:
+            logger.error("%s failed: %s", operation, exc)
+            return None
+
+    def get_applications(self) -> Optional[List[Dict[str, Any]]]:
+        """Return cached App Registrations with security-relevant properties and owner IDs."""
+        if self._applications_cache is _UNSET:
+            select = (
+                "id,displayName,appId,signInAudience,passwordCredentials,keyCredentials,"
+                "web,spa,publicClient,servicePrincipalLockConfiguration"
+            )
+            url = f"https://graph.microsoft.com/v1.0/applications?$select={select}&$expand=owners($select=id)&$top=100"
+            self._applications_cache = self._get_graph_collection(url, "get_applications")
+        return self._applications_cache
+
+    def get_managed_identity_service_principals(self) -> Optional[List[Dict[str, Any]]]:
+        """Return cached Microsoft Entra service principals representing managed identities."""
+        if self._managed_identity_principals_cache is _UNSET:
+            url = (
+                "https://graph.microsoft.com/v1.0/servicePrincipals"
+                "?$filter=servicePrincipalType eq 'ManagedIdentity'"
+                "&$select=id,displayName,servicePrincipalType&$count=true&$top=100"
+            )
+            self._managed_identity_principals_cache = self._get_graph_collection(
+                url,
+                "get_managed_identity_service_principals",
+            )
+        return self._managed_identity_principals_cache
+
+    def get_subscription_role_assignments(self) -> Optional[List[Any]]:
+        """Return cached subscription-scope RBAC assignments, preserving API failure as ``None``."""
+        if self._subscription_role_assignments_cache is not _UNSET:
+            return self._subscription_role_assignments_cache
         try:
             client = AuthorizationManagementClient(self.credential, self.subscription_id)
             scope = f"/subscriptions/{self.subscription_id}"
-            assignments = list(client.role_assignments.list_for_scope(scope))
-            return [a for a in assignments if getattr(a, "principal_type", "") == "ServicePrincipal"]
+            self._subscription_role_assignments_cache = list(client.role_assignments.list_for_scope(scope))
         except Exception as exc:
-            logger.error("get_service_principals failed: %s", exc)
+            logger.error("get_subscription_role_assignments failed: %s", exc)
+            self._subscription_role_assignments_cache = None
+        return self._subscription_role_assignments_cache
+
+    def get_service_principals(self) -> List[Any]:
+        """Return role assignments whose principal type is ServicePrincipal."""
+        assignments = self.get_subscription_role_assignments()
+        if assignments is None:
             return []
+        return [a for a in assignments if getattr(a, "principal_type", "") == "ServicePrincipal"]
 
     def get_postgresql_flexible_servers(self) -> List[Any]:
         """List all PostgreSQL Flexible Server instances in the subscription."""

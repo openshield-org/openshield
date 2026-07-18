@@ -1,6 +1,9 @@
 """AZ-DB-002: Azure SQL server has no auditing configured."""
 
+import logging
 from typing import Any, Dict, List
+
+from scanner.azure_client import enum_str
 
 RULE_ID = "AZ-DB-002"
 RULE_NAME = "Azure SQL Server Has No Auditing Configured"
@@ -19,6 +22,8 @@ REMEDIATION = (
 )
 PLAYBOOK = "playbooks/cli/fix_az_db_002.sh"
 
+logger = logging.getLogger(__name__)
+
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Detect SQL servers where server-level blob auditing is disabled."""
@@ -28,15 +33,27 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         parsed = azure_client.parse_resource_id(server.id)
         resource_group = parsed.get("resource_group", "")
         if not resource_group:
+            logger.warning(
+                "Skipping AZ-DB-002 check for %s: could not parse resource group from malformed ARM ID %r",
+                getattr(server, "name", "<unknown>"),
+                getattr(server, "id", ""),
+            )
             continue
 
         policy = azure_client.get_sql_server_auditing_policy(resource_group, server.name)
         if policy is None:
-            # Could not retrieve policy — treat as unaudited
-            is_disabled = True
-        else:
-            state = str(getattr(policy, "state", "Disabled"))
-            is_disabled = state.lower() != "enabled"
+            # Could not retrieve the policy (API/auth failure, throttling, etc).
+            # Skip this resource rather than flagging it — we don't actually
+            # know its auditing state, so treating a failed call as
+            # "disabled" produces a false positive.
+            logger.warning(
+                "Skipping AZ-DB-002 check for %s: could not retrieve auditing policy",
+                server.name,
+            )
+            continue
+
+        state = enum_str(getattr(policy, "state", None), default="Disabled")
+        is_disabled = state.lower() != "enabled"
 
         if is_disabled:
             findings.append(
@@ -54,7 +71,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "frameworks": FRAMEWORKS,
                     "metadata": {
                         "resource_group": resource_group,
-                        "auditing_state": getattr(policy, "state", "Unknown") if policy else "Unknown",
+                        "auditing_state": state,
                     },
                 }
             )

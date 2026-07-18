@@ -257,6 +257,81 @@
       "control_id": "A.12.6.1",
       "control_name": "Management of technical vulnerabilities",
       "description": "Automatic AKS node OS upgrades help deploy tested security patches within a managed maintenance process."
+    },
+    "AZ-BAK-001": {
+      "control_id": "A.12.3.1",
+      "control_name": "Information backup",
+      "description": "The Recovery Services vault lacks the approved soft-delete recovery window, risking permanent loss of backup data before it can be restored."
+    },
+    "AZ-BAK-002": {
+      "control_id": "A.12.3.1",
+      "control_name": "Information backup",
+      "description": "Vault immutability is disabled, allowing destructive changes to protected recovery points and undermining the integrity of backup copies."
+    },
+    "AZ-BAK-004": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "The vault does not enable Resource Guard multiuser authorization, allowing a single compromised or malicious identity to disable backup protections unilaterally."
+    },
+    "AZ-BAK-006": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "The Recovery Services vault does not enable built-in monitoring for backup job failures, so a failed or tampered backup could go undetected."
+    },
+    "AZ-FUNC-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "The Function App accepts unencrypted HTTP traffic, allowing requests and responses to cross the network boundary without encryption in transit."
+    },
+    "AZ-FUNC-002": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "The Function App permits TLS older than 1.2, weakening the network controls that protect traffic crossing the network boundary."
+    },
+    "AZ-FUNC-003": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "The Function App exposes an FTP or FTPS deployment channel, widening the network attack surface beyond the primary HTTPS endpoint."
+    },
+    "AZ-FUNC-004": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Remote debugging expands the Function App management attack surface by opening an additional network-reachable control channel."
+    },
+    "AZ-FUNC-005": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "The Function App has no Azure managed identity for secretless resource access, pushing workloads toward long-lived credentials that cross network and service boundaries."
+    },
+    "AZ-PE-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A Storage Account remains publicly reachable; an approved private endpoint alone does not disable its public endpoint, leaving the network boundary uncontrolled."
+    },
+    "AZ-PE-002": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "An Azure SQL logical server remains publicly reachable, regardless of whether a private endpoint also exists, leaving the network boundary uncontrolled."
+    },
+    "AZ-PE-003": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A PostgreSQL Flexible Server remains publicly reachable instead of using private networking only, leaving the network boundary uncontrolled."
+    },
+    "AZ-PE-004": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "An App Service workload remains publicly reachable without a default-deny access policy, leaving the network boundary uncontrolled."
+    },
+    "AZ-PE-005": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A Recovery Services vault permits public access, even if a private endpoint also exists, leaving the network boundary uncontrolled."
+    },
+    "AZ-PE-006": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A private endpoint connection is pending, rejected, or disconnected and does not provide an active private path, leaving traffic to traverse the public network boundary instead."
     }
   }
 }

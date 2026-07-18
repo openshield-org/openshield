@@ -203,8 +203,14 @@ Use the existing wrapper methods in `scanner/azure_client.py` rather than constr
 | `azure_client.get_sql_server_auditing_policy(resource_group, server_name)` | ServerBlobAuditingPolicy or None |
 | `azure_client.get_key_vaults()` | List of Key Vault objects |
 | `azure_client.get_managed_clusters()` | List of AKS ManagedCluster objects, or `None` on API failure |
+| `azure_client.get_applications()` | Paginated App Registration dictionaries, or `None` on Graph failure |
+| `azure_client.get_managed_identity_service_principals()` | Managed Identity service principals, or `None` on Graph failure |
+| `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of role assignments for service principals |
 | `azure_client.get_conditional_access_policies()` | List of Conditional Access policy dicts from Microsoft Graph |
+| `azure_client.get_function_app_security_posture()` | Cached, secret-free Function App posture dicts, or `None` on API failure |
+| `azure_client.get_private_endpoint_posture()` | Public-access and approved Private Link state for supported PaaS resources, or `None` on API failure |
+| `azure_client.get_recovery_vault_security_posture()` | Cached Recovery Services vault security settings, or `None` on API failure |
 
 Most list methods return an empty list on failure. Methods that fetch one resource or one policy return `None` when the result cannot be determined.
 
@@ -218,7 +224,7 @@ pip install -r requirements.txt
 # Installs Flask, Alembic, Azure SDK clients, requests, psycopg2, PyJWT, and PyYAML for CI workflow validation.
 
 # Frontend
-# The frontend directory is currently a scaffold. The React dashboard MVP is on the roadmap.
+# The React dashboard lives in frontend/ and uses the repository's npm scripts.
 
 # Database (Docker)
 docker run --name openshield-db \
@@ -268,6 +274,12 @@ All contributions must meet these standards before a pull request will be review
 - Follow Conventional Commits using prefixes such as `feat:`, `fix:`, `docs:`, `chore:`, and `test:`.
 - Reference the related issue number where applicable.
 
+**Developer Certificate of Origin**
+
+- By adding `Signed-off-by: Your Name <email>` to a commit, a contributor certifies the [Developer Certificate of Origin 1.1](https://developercertificate.org/).
+- Use `git commit -s` to add the sign-off.
+- The project lead must approve and enable DCO enforcement before this becomes a required merge check; until then, sign-off is requested but not represented as enforced.
+
 **Branch naming**
 
 - Use `feat/description` for new features.
@@ -285,6 +297,7 @@ All contributions must meet these standards before a pull request will be review
 - Add a CLI remediation playbook for each new scanner rule.
 - Follow `.github/PULL_REQUEST_TEMPLATE.md`.
 - Obtain at least one reviewer approval before merge.
+- Add regression tests for bug fixes whenever the behavior can be reproduced automatically. Major functionality must include automated tests.
 
 ## OpenSSF Best Practices
 

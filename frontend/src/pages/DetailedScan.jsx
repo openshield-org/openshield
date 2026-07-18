@@ -81,18 +81,18 @@ export default function DetailedScan() {
   const [selected, setSelected]     = useState(null);
   const [playbook, setPlaybook]     = useState(null);
   const [showBanner, setShowBanner] = useState(!!location.state?.fromPrioritization);
+  const preSelectRuleId = location.state?.ruleId;
 
   // Load findings on mount
   useEffect(() => {
     api.getFindings().then((data) => {
       setFindings(data);
-      const preSelectRuleId = location.state?.ruleId;
       const initial = preSelectRuleId
         ? (data.find((f) => f.ruleId === preSelectRuleId) ?? data[0])
         : data[0];
       selectFinding(initial);
     });
-  }, []);
+  }, [preSelectRuleId]);
 
   // Fetch playbook whenever selected finding changes
   async function selectFinding(f) {

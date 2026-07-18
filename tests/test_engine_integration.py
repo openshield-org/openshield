@@ -43,11 +43,11 @@ def _nsg_id(name):
     return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Network/networkSecurityGroups/{name}"
 
 
-def test_engine_loads_all_51_rules(monkeypatch):
+def test_engine_loads_all_57_rules(monkeypatch):
     """The engine must dynamically load the complete rule set."""
     _patch_engine_client(monkeypatch, _offline_mock())
     eng = ScanEngine(_SUB)
-    assert len(eng.rules) >= 51
+    assert len(eng.rules) >= 57
     # Every loaded rule must expose a callable scan() and a RULE_ID.
     for rule in eng.rules:
         assert callable(getattr(rule, "scan", None))

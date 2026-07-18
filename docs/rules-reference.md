@@ -1,6 +1,6 @@
 # Rules Reference
 
-OpenShield currently ships 44 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
+OpenShield currently ships 72 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
 
 | Rule ID | Name | Severity | Category | CIS | NIST | ISO 27001 |
 |---|---|---|---|---|---|---|
@@ -21,6 +21,12 @@ OpenShield currently ships 44 Azure scan rules. This table is generated from the
 | AZ-IDN-007 | Active User with No MFA Registered in Entra ID | HIGH | Identity | 1.1 | PR.AC-7 | A.9.4.2 |
 | AZ-IDN-008 | Custom RBAC Role with Wildcard Permissions at Subscription Scope | HIGH | Identity | 1.23 | PR.AC-4 | A.9.2.3 |
 | AZ-IDN-009 | No Activity Log Alert for Role Assignment Changes | MEDIUM | Identity | 5.2.1 | DE.CM-3 | A.12.4.1 |
+| AZ-IDN-010 | App Registration Has No Owner | MEDIUM | Identity | TBD-IDN-010 | PR.AC-4 | A.9.2.1 |
+| AZ-IDN-011 | App Registration Uses Insecure Redirect URI | HIGH | Identity | TBD-IDN-011 | PR.DS-2 | A.14.1.2 |
+| AZ-IDN-012 | App Registration Enables OAuth Implicit Grant | MEDIUM | Identity | TBD-IDN-012 | PR.AC-3 | A.9.4.2 |
+| AZ-IDN-013 | App Registration Uses Password Credentials | MEDIUM | Identity | TBD-IDN-013 | PR.AC-1 | A.9.4.3 |
+| AZ-IDN-014 | Multi-Tenant App Registration Lacks Property Lock | HIGH | Identity | TBD-IDN-014 | PR.IP-1 | A.12.1.2 |
+| AZ-IDN-015 | Managed Identity Has Privileged Subscription Role | HIGH | Identity | TBD-IDN-015 | PR.AC-4 | A.9.2.3 |
 | AZ-KV-001 | Key Vault with Soft Delete Disabled | MEDIUM | KeyVault | 8.8 | PR.IP-4 | A.17.2.1 |
 | AZ-KV-002 | Key Vault Allows Public Network Access Without Private Endpoint | HIGH | Key Vault | 8.7 | AC-17 | A.13.1.1 |
 | AZ-KV-003 | Key Vault Without Diagnostic Logging Enabled | MEDIUM | Key Vault | 8.4 | DE.CM-7 | A.12.4.1 |
@@ -40,6 +46,7 @@ OpenShield currently ships 44 Azure scan rules. This table is generated from the
 | AZ-NET-012 | NSG Flow Logs Not Enabled | MEDIUM | Network | 6.7 | DE.CM-1 | A.12.4.1 |
 | AZ-NET-013 | Azure Firewall Not Enabled on Virtual Network | HIGH | Network | 6.4 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-014 | VNet Peering Configured Without Gateway Transit Restrictions | MEDIUM | Network | 6.6 | PR.AC-5 | A.13.1.1 |
+| AZ-NET-015 | Public DNS Zone Exposes Internal Infrastructure Details | MEDIUM | Network | 9.8 | PR.AC-5 | A.13.1.1 |
 | AZ-PQC-001 | TLS Using Classical Key Exchange Algorithm | HIGH | PostQuantum | 9.9 | PR.DS-2 | A.10.1.1 |
 | AZ-PQC-002 | Key Vault Key Using Non-Quantum-Safe Algorithm | HIGH | PostQuantum | 8.1 | PR.DS-2 | A.10.1.1 |
 | AZ-PQC-003 | Key Vault Certificate Using Non-Quantum-Safe Signature Algorithm | MEDIUM | PostQuantum | 8.9 | PR.DS-2 | A.10.1.1 |
@@ -54,6 +61,21 @@ OpenShield currently ships 44 Azure scan rules. This table is generated from the
 | AZ-AKS-004 | AKS Workload Identity Not Fully Enabled | MEDIUM | Kubernetes | N/A-AKS-004 | PR.AC-4 | A.9.2.3 |
 | AZ-AKS-005 | AKS Azure Policy Add-on Not Enabled | MEDIUM | Kubernetes | N/A-AKS-005 | PR.IP-1 | A.12.1.2 |
 | AZ-AKS-006 | AKS Node OS Automatic Upgrades Disabled | HIGH | Kubernetes | N/A-AKS-006 | PR.IP-12 | A.12.6.1 |
+| AZ-BAK-001 | Backup Soft Delete Disabled or Below 35 Days | CRITICAL | Backup | TBD-BAK-001 | PR.IP-4 | A.12.3.1 |
+| AZ-BAK-002 | Backup Vault Immutability Disabled | HIGH | Backup | TBD-BAK-002 | PR.IP-4 | A.12.3.1 |
+| AZ-BAK-004 | Backup Multiuser Authorization Missing | HIGH | Backup | TBD-BAK-004 | PR.AC-4 | A.9.2.3 |
+| AZ-BAK-006 | Backup Security Monitoring Disabled | MEDIUM | Backup | TBD-BAK-006 | DE.CM-1 | A.12.4.1 |
+| AZ-FUNC-001 | Function App HTTPS Only Disabled | HIGH | Serverless | TBD-FUNC-001 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-002 | Function App Minimum TLS Below 1.2 | HIGH | Serverless | TBD-FUNC-002 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-003 | Function App FTP Publishing Enabled | MEDIUM | Serverless | TBD-FUNC-003 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-004 | Function App Remote Debugging Enabled | HIGH | Serverless | TBD-FUNC-004 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-005 | Function App Managed Identity Missing | MEDIUM | Serverless | TBD-FUNC-005 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-001 | Storage Public Network Access Enabled | HIGH | Network | TBD-PE-001 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-002 | Azure SQL Public Network Access Enabled | HIGH | Network | TBD-PE-002 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-003 | PostgreSQL Public Network Access Enabled | HIGH | Network | TBD-PE-003 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-004 | Web or Function App Public Network Access Enabled | HIGH | Network | TBD-PE-004 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-005 | Recovery Vault Public Network Access Enabled | HIGH | Network | TBD-PE-005 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-006 | Private Endpoint Connection Not Approved | MEDIUM | Network | TBD-PE-006 | PR.AC-5 | A.13.1.1 |
 
 SOC 2 mappings are maintained in `compliance/frameworks/soc2.json`.
 

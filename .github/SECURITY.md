@@ -26,9 +26,10 @@ The more detail you provide, the faster we can respond.
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | Yes       |
+| 0.3.x   | Yes       |
+| 0.1.x   | No        |
 
-Older versions are not patched. If you are running a version below 0.1.x, upgrade to the latest release before filing a report.
+Older versions are not patched unless a GitHub Security Advisory explicitly says otherwise. Upgrade to the latest release before filing a report.
 
 ---
 
@@ -71,7 +72,7 @@ We ask that you do not publicly disclose the vulnerability until step 6 is compl
 We value responsible disclosure. Researchers who report valid vulnerabilities will be:
 
 - Acknowledged by name (or pseudonym if preferred) in the release notes for the fix
-- Listed in a `SECURITY_ACKNOWLEDGEMENTS.md` file we maintain in this repository
+- Listed in [`SECURITY_ACKNOWLEDGEMENTS.md`](../SECURITY_ACKNOWLEDGEMENTS.md)
 
 We do not currently offer a bug bounty programme, but we are grateful for every report.
 
