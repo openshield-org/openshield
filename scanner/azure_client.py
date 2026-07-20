@@ -479,14 +479,19 @@ class AzureClient:
 
                 web = WebSiteManagementClient(self.credential, self.subscription_id)
                 for item in web.web_apps.list():
-                    parsed = self.parse_resource_id(getattr(item, "id", ""))
-                    config = web.web_apps.get_configuration(parsed.get("resource_group", ""), item.name)
-                    public = getattr(item, "public_network_access", None) or getattr(
-                        config, "public_network_access", None
-                    )
-                    if str(getattr(config, "ip_security_restrictions_default_action", "")).lower() == "deny":
-                        public = "Disabled"
-                    add(item, "web", public, {"sites"})
+                    try:
+                        parsed = self.parse_resource_id(getattr(item, "id", ""))
+                        config = web.web_apps.get_configuration(parsed.get("resource_group", ""), item.name)
+                        public = getattr(item, "public_network_access", None) or getattr(
+                            config, "public_network_access", None
+                        )
+                        if str(getattr(config, "ip_security_restrictions_default_action", "")).lower() == "deny":
+                            public = "Disabled"
+                        add(item, "web", public, {"sites"})
+                    except Exception as exc:
+                        logger.warning(
+                            "Web/Function App posture unavailable for %s: %s", getattr(item, "name", "?"), exc
+                        )
             except Exception as exc:
                 logger.warning("Web/Function App network posture unavailable: %s", exc)
             try:

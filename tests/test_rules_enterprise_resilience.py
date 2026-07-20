@@ -1,5 +1,7 @@
 """Tests for Functions, Private Endpoint, and Backup enterprise resilience rules."""
 
+import json
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -26,6 +28,19 @@ from scanner.rules import (
 FUNCTION_RULES = [az_func_001, az_func_002, az_func_003, az_func_004, az_func_005]
 PRIVATE_RULES = [az_pe_001, az_pe_002, az_pe_003, az_pe_004, az_pe_005]
 BACKUP_RULES = [az_bak_001, az_bak_002, az_bak_004, az_bak_006]
+FRAMEWORK_DIR = Path(__file__).parent.parent / "compliance" / "frameworks"
+
+
+def test_principle_frameworks_keep_identity_and_enterprise_rule_mappings():
+    """Adding this pack must not replace the identity mappings already on dev."""
+    expected_ids = {
+        *(f"AZ-IDN-{number:03d}" for number in range(10, 16)),
+        *(rule.RULE_ID for rule in FUNCTION_RULES + PRIVATE_RULES + [az_pe_006] + BACKUP_RULES),
+    }
+    for filename in ("nist_csf.json", "iso27001.json", "soc2.json"):
+        with (FRAMEWORK_DIR / filename).open(encoding="utf-8") as framework_file:
+            controls = json.load(framework_file)["controls"]
+        assert expected_ids <= controls.keys(), f"{filename} is missing {sorted(expected_ids - controls.keys())}"
 
 
 def function_app(**changes):
