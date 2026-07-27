@@ -1,26 +1,25 @@
-"""AZ-SC-007: Pipeline service connection scoped to subscription and shared across pipelines."""
+"""AZ-SC-007: Pipeline service connection scoped to the whole subscription."""
 
 import logging
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-SC-007"
-RULE_NAME = "Pipeline Service Connection Scoped to Subscription and Shared"
+RULE_NAME = "Pipeline Service Connection Scoped to Subscription"
 SEVERITY = "HIGH"
 CATEGORY = "Supply Chain"
 FRAMEWORKS = {"CIS": "TBD-SC-007", "NIST": "PR.AC-4", "ISO27001": "A.9.2.3", "SOC2": "CC6.1"}
 
 DESCRIPTION = (
     "An Azure DevOps service connection is scoped to the entire subscription rather than a "
-    "single resource group, and is shared across every pipeline in the project. A service "
-    "principal deploying a single App Service does not need Contributor on the whole "
-    "subscription; sharing that scope across every pipeline means any pipeline, including ones "
-    "with lower review standards, inherits subscription-wide access."
+    "single resource group. A service principal deploying a single App Service does not need "
+    "Contributor on the whole subscription; every pipeline that uses this connection inherits "
+    "subscription-wide access, including pipelines that only need to touch one resource group."
 )
 
 REMEDIATION = (
-    "Re-create the service connection scoped to the resource group each pipeline actually needs, "
-    "and unshare it from pipelines that do not require subscription-wide access. See Azure "
-    "DevOps: Project Settings > Service connections."
+    "Re-create the service connection scoped to the resource group each pipeline actually needs "
+    "instead of the whole subscription. See Azure DevOps: Project Settings > Service connections > "
+    "New service connection > Azure Resource Manager > Resource Group."
 )
 
 PLAYBOOK = "playbooks/cli/fix_az_sc_007.sh"
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
-    """Detect Azure DevOps service connections scoped to the subscription and shared."""
+    """Detect Azure DevOps service connections scoped to the whole subscription."""
     findings: List[Dict[str, Any]] = []
 
     devops_client = getattr(azure_client, "devops_client", None)
@@ -48,9 +47,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
         data = getattr(endpoint, "data", None) or {}
         scope_level = str(data.get("scopeLevel", "")).lower()
-        is_shared = bool(getattr(endpoint, "is_shared", False))
 
-        if scope_level == "subscription" and is_shared:
+        if scope_level == "subscription":
             endpoint_id = getattr(endpoint, "id", "")
             endpoint_name = getattr(endpoint, "name", "")
             findings.append(
@@ -68,7 +66,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "frameworks": FRAMEWORKS,
                     "metadata": {
                         "scope_level": scope_level,
-                        "is_shared": is_shared,
+                        "is_shared_with_other_projects": bool(getattr(endpoint, "is_shared", False)),
                         "subscription_id": data.get("subscriptionId", ""),
                     },
                 }

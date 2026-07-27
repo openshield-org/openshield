@@ -24,14 +24,17 @@ def _sa_id(name):
     return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Storage/storageAccounts/{name}"
 
 
-def _make_registry(name, admin_enabled=False, public_access="Disabled", anonymous_pull=False, policies=None):
+def _make_registry(
+    name, admin_enabled=False, public_access="Disabled", anonymous_pull=False, policies=None, sku_tier=None
+):
     props = make_resource(
         admin_user_enabled=admin_enabled,
         public_network_access=public_access,
         anonymous_pull_enabled=anonymous_pull,
         policies=policies,
     )
-    return make_resource(id=_acr_id(name), name=name, properties=props)
+    sku = make_resource(tier=sku_tier) if sku_tier is not None else None
+    return make_resource(id=_acr_id(name), name=name, properties=props, sku=sku)
 
 
 def _make_policies(retention_status="enabled", quarantine_status="enabled"):
@@ -100,7 +103,7 @@ def test_sc_003_anonymous_pull_disabled_returns_no_findings(mock_azure, subscrip
 # ── AZ-SC-004: ACR missing retention/quarantine policy ──────────────────────
 
 
-def test_sc_004_missing_policies_returns_finding(mock_azure, subscription_id):
+def test_sc_004_missing_retention_returns_finding(mock_azure, subscription_id):
     registry = _make_registry("acr1", policies=_make_policies(retention_status="disabled"))
     mock_azure.set_container_registries([registry])
     findings = az_sc_004.scan(mock_azure, subscription_id)
@@ -108,14 +111,37 @@ def test_sc_004_missing_policies_returns_finding(mock_azure, subscription_id):
     assert findings[0]["rule_id"] == "AZ-SC-004"
 
 
-def test_sc_004_both_policies_enabled_returns_no_findings(mock_azure, subscription_id):
-    registry = _make_registry("acr1", policies=_make_policies())
+def test_sc_004_basic_tier_missing_quarantine_is_compliant(mock_azure, subscription_id):
+    """Quarantine is Premium-only; a Basic-tier registry must not be flagged for
+    lacking a feature it cannot enable, as long as retention is configured."""
+    registry = _make_registry(
+        "acr1", sku_tier="Basic", policies=_make_policies(retention_status="enabled", quarantine_status="disabled")
+    )
+    mock_azure.set_container_registries([registry])
+    assert az_sc_004.scan(mock_azure, subscription_id) == []
+
+
+def test_sc_004_premium_tier_missing_quarantine_returns_finding(mock_azure, subscription_id):
+    """On a Premium registry, quarantine is available, so lacking it must be flagged."""
+    registry = _make_registry(
+        "acr1",
+        sku_tier="Premium",
+        policies=_make_policies(retention_status="enabled", quarantine_status="disabled"),
+    )
+    mock_azure.set_container_registries([registry])
+    findings = az_sc_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["quarantine_policy_enabled"] is False
+
+
+def test_sc_004_premium_tier_both_policies_enabled_returns_no_findings(mock_azure, subscription_id):
+    registry = _make_registry("acr1", sku_tier="Premium", policies=_make_policies())
     mock_azure.set_container_registries([registry])
     assert az_sc_004.scan(mock_azure, subscription_id) == []
 
 
 def test_sc_004_missing_policies_object_returns_finding(mock_azure, subscription_id):
-    """A registry with no `policies` block at all must be treated as non-compliant."""
+    """A registry with no `policies` block at all has no retention policy and must be flagged."""
     registry = _make_registry("acr1", policies=None)
     mock_azure.set_container_registries([registry])
     findings = az_sc_004.scan(mock_azure, subscription_id)
@@ -214,20 +240,23 @@ def _make_endpoint(name, scope_level="ResourceGroup", is_shared=False, scheme="W
     )
 
 
-def test_sc_007_subscription_scoped_and_shared_returns_finding(mock_azure, subscription_id):
-    mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scope_level="Subscription", is_shared=True)])
+def test_sc_007_subscription_scoped_returns_finding(mock_azure, subscription_id):
+    mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scope_level="Subscription")])
     findings = az_sc_007.scan(mock_azure, subscription_id)
     assert len(findings) == 1
     assert findings[0]["rule_id"] == "AZ-SC-007"
 
 
-def test_sc_007_resource_group_scoped_returns_no_findings(mock_azure, subscription_id):
-    mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scope_level="ResourceGroup", is_shared=True)])
-    assert az_sc_007.scan(mock_azure, subscription_id) == []
-
-
-def test_sc_007_subscription_scoped_not_shared_returns_no_findings(mock_azure, subscription_id):
+def test_sc_007_subscription_scoped_not_shared_still_returns_finding(mock_azure, subscription_id):
+    """Scope is the risk, not cross-project sharing (is_shared) - a subscription-scoped
+    connection is over-privileged whether or not it is shared with other projects."""
     mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scope_level="Subscription", is_shared=False)])
+    findings = az_sc_007.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+
+
+def test_sc_007_resource_group_scoped_returns_no_findings(mock_azure, subscription_id):
+    mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scope_level="ResourceGroup")])
     assert az_sc_007.scan(mock_azure, subscription_id) == []
 
 
@@ -250,6 +279,13 @@ def test_sc_008_password_based_returns_finding(mock_azure, subscription_id):
 
 def test_sc_008_federated_returns_no_findings(mock_azure, subscription_id):
     mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scheme="WorkloadIdentityFederation")])
+    assert az_sc_008.scan(mock_azure, subscription_id) == []
+
+
+def test_sc_008_managed_identity_returns_no_findings(mock_azure, subscription_id):
+    """Managed identity is a second secretless scheme distinct from workload
+    identity federation and must not be flagged as a stored-secret connection."""
+    mock_azure.devops_client = _FakeDevOpsClient([_make_endpoint("conn1", scheme="ManagedServiceIdentity")])
     assert az_sc_008.scan(mock_azure, subscription_id) == []
 
 

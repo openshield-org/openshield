@@ -1,4 +1,4 @@
-# Rules Reference
+﻿# Rules Reference
 
 OpenShield currently ships 65 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
 
@@ -67,7 +67,7 @@ OpenShield currently ships 65 Azure scan rules. This table is generated from the
 | AZ-SC-004 | Container Registry Missing Retention or Quarantine Policy | MEDIUM | Supply Chain | TBD-SC-004 | PR.IP-1 | A.12.1.2 |
 | AZ-SC-005 | Terraform State Storage Container Publicly Readable | CRITICAL | Supply Chain | TBD-SC-005 | PR.AC-5 | A.13.1.1 |
 | AZ-SC-006 | Terraform State Storage Account Missing Versioning or Soft Delete | HIGH | Supply Chain | TBD-SC-006 | PR.IP-4 | A.12.3.1 |
-| AZ-SC-007 | Pipeline Service Connection Scoped to Subscription and Shared | HIGH | Supply Chain | TBD-SC-007 | PR.AC-4 | A.9.2.3 |
+| AZ-SC-007 | Pipeline Service Connection Scoped to Subscription | HIGH | Supply Chain | TBD-SC-007 | PR.AC-4 | A.9.2.3 |
 | AZ-SC-008 | Pipeline Service Connection Uses Password Instead of Federated Credential | MEDIUM | Supply Chain | TBD-SC-008 | PR.AC-1 | A.9.4.3 |
 
 SOC 2 mappings are maintained in `compliance/frameworks/soc2.json`.

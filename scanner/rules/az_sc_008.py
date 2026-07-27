@@ -11,23 +11,25 @@ FRAMEWORKS = {"CIS": "TBD-SC-008", "NIST": "PR.AC-1", "ISO27001": "A.9.4.3", "SO
 
 DESCRIPTION = (
     "An Azure DevOps service connection authenticates with a stored service principal secret "
-    "instead of workload identity federation. Federation eliminates the stored credential "
-    "entirely, so there is nothing to rotate or leak. A stored secret expires after a fixed "
-    "period, must be rotated manually, and can be exposed through pipeline logs or variable "
-    "misconfiguration in the meantime."
+    "instead of a secretless authentication scheme (workload identity federation or a managed "
+    "identity). A secretless scheme has nothing to rotate or leak. A stored secret expires after "
+    "a fixed period, must be rotated manually, and can be exposed through pipeline logs or "
+    "variable misconfiguration in the meantime."
 )
 
 REMEDIATION = (
-    "Re-create the service connection using workload identity federation instead of a service "
-    "principal secret. See: az devops service-endpoint azurerm create with "
-    "--service-principal-type federated or the equivalent option in the Azure DevOps UI."
+    "Re-create the service connection using workload identity federation or a managed identity "
+    "instead of a service principal secret. See: az devops service-endpoint azurerm create with "
+    "--service-principal-type federated, or the equivalent option in the Azure DevOps UI."
 )
 
 PLAYBOOK = "playbooks/cli/fix_az_sc_008.sh"
 
 logger = logging.getLogger(__name__)
 
-_FEDERATED_SCHEMES = {"workloadidentityfederation"}
+# Both schemes are secretless: workload identity federation (OIDC) and managed
+# identity. Only a plain "ServicePrincipal" scheme relies on a stored secret.
+_SECRETLESS_SCHEMES = {"workloadidentityfederation", "managedserviceidentity"}
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
@@ -54,7 +56,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             logger.warning("%s: authorization scheme unknown for %s", RULE_ID, getattr(endpoint, "name", "?"))
             continue
 
-        if scheme not in _FEDERATED_SCHEMES:
+        if scheme not in _SECRETLESS_SCHEMES:
             endpoint_id = getattr(endpoint, "id", "")
             endpoint_name = getattr(endpoint, "name", "")
             findings.append(

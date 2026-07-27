@@ -10,25 +10,28 @@ CATEGORY = "Supply Chain"
 FRAMEWORKS = {"CIS": "TBD-SC-004", "NIST": "PR.IP-1", "ISO27001": "A.12.1.2", "SOC2": "CC7.1"}
 
 DESCRIPTION = (
-    "The Azure Container Registry has no retention policy for untagged manifests, no quarantine "
-    "policy, or both. Without retention, stale and orphaned images accumulate indefinitely, "
-    "widening the pool of images that can be deployed. Without quarantine, a newly pushed image "
-    "is pullable and deployable before any vulnerability scan has evaluated it."
+    "The Azure Container Registry has no retention policy for untagged manifests, so stale and "
+    "orphaned images accumulate indefinitely, widening the pool of images that can be deployed. "
+    "On Premium-tier registries that also lack a quarantine policy, a newly pushed image is "
+    "pullable and deployable before any vulnerability scan has evaluated it."
 )
 
 REMEDIATION = (
-    "Enable a retention policy to purge untagged manifests after a defined window, and enable "
-    "the quarantine policy so pushed images are held until scanned: "
-    "az acr config retention update --registry <registry> --status enabled --days 30"
+    "Enable a retention policy to purge untagged manifests after a defined window: "
+    "az acr config retention update --registry <registry> --status enabled --days 30. "
+    "On Premium-tier registries, also enable the quarantine policy so pushed images are held "
+    "until scanned."
 )
 
 PLAYBOOK = "playbooks/cli/fix_az_sc_004.sh"
 
 logger = logging.getLogger(__name__)
 
+_PREMIUM_TIER = "premium"
+
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
-    """Detect Container Registries missing a retention or quarantine policy."""
+    """Detect Container Registries missing a retention policy, or (Premium only) a quarantine policy."""
     findings: List[Dict[str, Any]] = []
 
     registries = azure_client.get_container_registries()
@@ -40,6 +43,10 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         props = getattr(registry, "properties", None)
         if props is None:
             continue
+
+        sku = getattr(registry, "sku", None)
+        tier = str(getattr(sku, "tier", "") or "").lower() if sku is not None else ""
+        is_premium = tier == _PREMIUM_TIER
 
         policies = getattr(props, "policies", None)
         retention_status = None
@@ -53,7 +60,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         retention_enabled = str(retention_status or "").lower() == "enabled"
         quarantine_enabled = str(quarantine_status or "").lower() == "enabled"
 
-        if not (retention_enabled and quarantine_enabled):
+        # Quarantine is a Premium-only feature; a Basic/Standard registry can
+        # never satisfy it, so only require it on Premium registries.
+        is_missing = not retention_enabled or (is_premium and not quarantine_enabled)
+
+        if is_missing:
             parsed = azure_client.parse_resource_id(getattr(registry, "id", ""))
             findings.append(
                 {
@@ -70,8 +81,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "frameworks": FRAMEWORKS,
                     "metadata": {
                         "resource_group": parsed.get("resource_group", ""),
+                        "sku_tier": tier,
                         "retention_policy_enabled": retention_enabled,
-                        "quarantine_policy_enabled": quarantine_enabled,
+                        "quarantine_policy_enabled": quarantine_enabled if is_premium else None,
                     },
                 }
             )

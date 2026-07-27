@@ -321,7 +321,7 @@
     "AZ-SC-007": {
       "control_id": "CC6.1",
       "control_name": "Logical Access Security Measures",
-      "description": "A pipeline service connection is scoped to the entire subscription and shared across every pipeline, so any pipeline inherits subscription-wide access beyond what it needs."
+      "description": "A pipeline service connection is scoped to the entire subscription rather than a single resource group, so every pipeline that uses it inherits subscription-wide access beyond what it needs."
     },
     "AZ-SC-008": {
       "control_id": "CC6.1",
