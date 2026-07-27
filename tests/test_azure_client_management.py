@@ -94,3 +94,62 @@ def test_vm_extensions_normalize_sdk_page_and_failure(client):
         assert client.get_vm_extensions("rg", "vm")[0].name == "agent"
         constructor.return_value.virtual_machine_extensions.list.side_effect = RuntimeError("denied")
         assert client.get_vm_extensions("rg", "vm") is None
+
+
+def test_get_container_registries_returns_results_and_caches(client):
+    with patch("azure.mgmt.containerregistry.ContainerRegistryManagementClient") as constructor:
+        constructor.return_value.registries.list.return_value = [SimpleNamespace(name="acr1")]
+        result = client.get_container_registries()
+        assert result is not None
+        assert [r.name for r in result] == ["acr1"]
+
+        # cached: second call must not hit the SDK again
+        constructor.return_value.registries.list.side_effect = RuntimeError("should not be called")
+        assert [r.name for r in client.get_container_registries()] == ["acr1"]
+
+
+def test_get_container_registries_failure_returns_none(client):
+    with patch("azure.mgmt.containerregistry.ContainerRegistryManagementClient") as constructor:
+        constructor.return_value.registries.list.side_effect = RuntimeError("denied")
+        assert client.get_container_registries() is None
+
+
+def test_get_blob_containers_and_service_properties(client):
+    with patch("scanner.azure_client.StorageManagementClient") as constructor:
+        constructor.return_value.blob_containers.list.return_value = [SimpleNamespace(name="tfstate")]
+        result = client.get_blob_containers("rg", "sa1")
+        assert result is not None
+        assert result[0].name == "tfstate"
+
+        constructor.return_value.blob_containers.list.side_effect = RuntimeError("denied")
+        assert client.get_blob_containers("rg", "sa1") is None
+
+        constructor.return_value.blob_services.get_service_properties.return_value = SimpleNamespace(
+            is_versioning_enabled=True
+        )
+        props = client.get_blob_service_properties("rg", "sa1")
+        assert props.is_versioning_enabled is True
+
+        constructor.return_value.blob_services.get_service_properties.side_effect = RuntimeError("denied")
+        assert client.get_blob_service_properties("rg", "sa1") is None
+
+
+def test_devops_client_not_built_without_env_vars(monkeypatch):
+    monkeypatch.delenv("AZURE_DEVOPS_ORG_URL", raising=False)
+    monkeypatch.delenv("AZURE_DEVOPS_PROJECT", raising=False)
+    from scanner.azure_client import AzureClient
+
+    fresh_client = AzureClient("sub-1", credential=MagicMock())
+    assert fresh_client.devops_client is None
+
+
+def test_devops_client_built_when_env_vars_present(monkeypatch):
+    monkeypatch.setenv("AZURE_DEVOPS_ORG_URL", "https://dev.azure.com/test-org")
+    monkeypatch.setenv("AZURE_DEVOPS_PROJECT", "test-project")
+    from scanner.azure_client import AzureClient
+    from scanner.devops_client import DevOpsClient
+
+    fresh_client = AzureClient("sub-1", credential=MagicMock())
+    assert isinstance(fresh_client.devops_client, DevOpsClient)
+    assert fresh_client.devops_client.organization_url == "https://dev.azure.com/test-org"
+    assert fresh_client.devops_client.project == "test-project"

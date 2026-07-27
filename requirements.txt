@@ -26,6 +26,8 @@ msrest==0.7.1
 azure-mgmt-postgresqlflexibleservers==1.0.0b1
 azure-keyvault-certificates==4.8.0
 azure-keyvault-keys==4.9.0
+azure-mgmt-containerregistry==15.0.0
+azure-devops==7.1.0b4
 chromadb==0.4.24
 numpy<2.0
 prometheus-client>=0.19.0

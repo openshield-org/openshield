@@ -85,6 +85,11 @@ class MockAzureClient:
         self._applications: Optional[List[Dict[str, Any]]] = []
         self._managed_identity_principals: Optional[List[Dict[str, Any]]] = []
         self._subscription_role_assignments: Optional[List[Any]] = []
+        self._container_registries: Optional[List[Any]] = []
+        self._blob_containers: Dict[Tuple[str, str], Optional[List[Any]]] = {}
+        self._blob_service_properties: Dict[Tuple[str, str], Optional[Any]] = {}
+        # None by default, matching AzureClient.devops_client's "not configured" state.
+        self.devops_client: Optional[Any] = None
         # Some rules read azure_client.subscription_id when constructing an
         # SDK management client inside scan() (e.g. AZ-NET-007..010).
         self.subscription_id = "00000000-0000-0000-0000-000000000001"
@@ -121,6 +126,34 @@ class MockAzureClient:
 
     def get_subscription_role_assignments(self) -> Optional[List[Any]]:
         return self._subscription_role_assignments
+
+    def set_container_registries(self, registries: Optional[List[Any]]) -> "MockAzureClient":
+        """Configure Container Registry inventory; ``None`` represents an API failure."""
+        self._container_registries = registries
+        return self
+
+    def get_container_registries(self) -> Optional[List[Any]]:
+        return self._container_registries
+
+    def set_blob_containers(
+        self, resource_group: str, account_name: str, containers: Optional[List[Any]]
+    ) -> "MockAzureClient":
+        """Configure per-account blob container listing; ``None`` represents an API failure."""
+        self._blob_containers[(resource_group, account_name)] = containers
+        return self
+
+    def get_blob_containers(self, resource_group: str, account_name: str) -> Optional[List[Any]]:
+        return self._blob_containers.get((resource_group, account_name), None)
+
+    def set_blob_service_properties(
+        self, resource_group: str, account_name: str, properties: Optional[Any]
+    ) -> "MockAzureClient":
+        """Configure per-account blob service properties; ``None`` represents an API failure."""
+        self._blob_service_properties[(resource_group, account_name)] = properties
+        return self
+
+    def get_blob_service_properties(self, resource_group: str, account_name: str) -> Optional[Any]:
+        return self._blob_service_properties.get((resource_group, account_name), None)
 
     def set_network_security_groups(self, nsgs: List[Any]) -> "MockAzureClient":
         self._network_security_groups = nsgs
