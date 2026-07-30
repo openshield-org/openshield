@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { I18nProvider } from './contexts/I18nContext';
 import { api } from './utils/api';

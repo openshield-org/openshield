@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 import {
   FiActivity, FiSearch, FiTarget, FiZap,
   FiShield, FiGitBranch, FiCpu, FiSun, FiMoon, FiX,

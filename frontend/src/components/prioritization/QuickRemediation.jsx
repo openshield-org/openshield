@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FiLayout, FiTerminal, FiClock, FiArrowRight, FiTool, FiAlertTriangle } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 const EFFORT_ETA = { 1: '15–30 mins', 2: '1–2 hours', 3: '2–4 hours', 4: '~1 day', 5: '2–3 days' };
 
