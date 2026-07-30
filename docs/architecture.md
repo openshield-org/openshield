@@ -131,20 +131,20 @@ Every finding returned by a rule must conform to this schema:
 
 ```python
 {
-    "rule_id":       str,   # e.g. "AZ-STOR-001"
-    "rule_name":     str,
-    "severity":      str,   # HIGH | MEDIUM | LOW | INFO
-    "category":      str,   # Storage | Network | Identity | Database | Compute | Key Vault
-    "resource_id":   str,   # full Azure resource ID
+    "rule_id": str,  # e.g. "AZ-STOR-001"
+    "rule_name": str,
+    "severity": str,  # HIGH | MEDIUM | LOW | INFO
+    "category": str,  # Storage | Network | Identity | Database | Compute | Key Vault
+    "resource_id": str,  # full Azure resource ID
     "resource_name": str,
-    "resource_type": str,   # e.g. "Microsoft.Storage/storageAccounts"
-    "description":   str,
-    "remediation":   str,
-    "playbook":      str,   # path to the CLI remediation script
-    "frameworks":    dict,  # {"CIS": "3.5", "NIST": "PR.AC-3", "ISO27001": "A.9.4.1"}
-    "metadata":      dict,  # optional rule-specific context
-    "detected_at":   str,   # ISO 8601, added by engine
-    "scan_id":       str,   # UUID, added by engine
+    "resource_type": str,  # e.g. "Microsoft.Storage/storageAccounts"
+    "description": str,
+    "remediation": str,
+    "playbook": str,  # path to the CLI remediation script
+    "frameworks": dict,  # {"CIS": "3.5", "NIST": "PR.AC-3", "ISO27001": "A.9.4.1"}
+    "metadata": dict,  # optional rule-specific context
+    "detected_at": str,  # ISO 8601, added by engine
+    "scan_id": str,  # UUID, added by engine
 }
 ```
 
