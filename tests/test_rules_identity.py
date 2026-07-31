@@ -289,11 +289,12 @@ def test_idn_006_noncompliant_secret_no_expiry_returns_finding(mock_azure, subsc
 
 
 def test_idn_006_malformed_end_date_time_does_not_log_key_id(mock_azure, subscription_id, monkeypatch, caplog):
-    """CodeQL: clear-text logging of sensitive information. keyId is a Graph
-    API credential-slot identifier (not the secret itself), but the debug log
-    for a malformed endDateTime must not include it regardless — the value
-    isn't needed to diagnose a date-parsing failure."""
+    """CodeQL alert #31 (py/clear-text-logging-sensitive-data): the debug log
+    for a malformed endDateTime must not include the raw endDateTime value or
+    keyId — neither is needed to diagnose a date-parsing failure, and Graph
+    API credential fields should never be echoed into logs verbatim."""
     sentinel_key_id = "sentinel-key-id-should-not-appear-in-logs"
+    sentinel_end_date = "sentinel-malformed-end-date-should-not-appear-in-logs"
     apps = {
         "value": [
             {
@@ -305,7 +306,7 @@ def test_idn_006_malformed_end_date_time_does_not_log_key_id(mock_azure, subscri
                         "keyId": sentinel_key_id,
                         "hint": "ab",
                         "startDateTime": "2020-01-01T00:00:00Z",
-                        "endDateTime": "not-a-valid-date",
+                        "endDateTime": sentinel_end_date,
                     }
                 ],
             }
@@ -318,6 +319,7 @@ def test_idn_006_malformed_end_date_time_does_not_log_key_id(mock_azure, subscri
     # Malformed endDateTime alone doesn't matter here: the secret is already stale by age.
     assert len(findings) == 1
     assert sentinel_key_id not in caplog.text
+    assert sentinel_end_date not in caplog.text
 
 
 # ── AZ-IDN-007: active user with no MFA registered ──────────────────────────
