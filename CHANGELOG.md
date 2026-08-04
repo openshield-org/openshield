@@ -26,6 +26,7 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- Upgraded cryptography to 50.0.0 to address CVE-2026-69247
 - AI provider errors no longer expose upstream response details
 - Request body limits, AI rate limiting, and playbook path validation added
 - GitHub Actions dependencies pinned to immutable commit SHAs

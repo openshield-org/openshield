@@ -21,7 +21,7 @@ pyjwt==2.13.0
 requests==2.34.2
 PyYAML==6.0.3
 gunicorn==26.0.0
-cryptography==49.0.0
+cryptography==50.0.0
 msrest==0.7.1
 azure-mgmt-postgresqlflexibleservers==1.0.0b1
 azure-keyvault-certificates==4.8.0
