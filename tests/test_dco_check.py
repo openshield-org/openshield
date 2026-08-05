@@ -1,8 +1,9 @@
 """Tests for the dependency-free DCO enforcement helper."""
 
+import subprocess
 from unittest.mock import patch
 
-from scripts.check_dco import commits_between, has_signoff, unsigned_commits
+from scripts.check_dco import commits_between, has_signoff, main, unsigned_commits
 
 
 def test_has_signoff_accepts_standard_dco_trailer():
@@ -24,13 +25,52 @@ def test_unsigned_commits_checks_each_commit():
         assert unsigned_commits(["a", "b"]) == ["b"]
 
 
+def test_main_passes_when_every_commit_is_exempt():
+    with (
+        patch("scripts.check_dco.sys.argv", ["check_dco.py", "base", "head", "baseline"]),
+        patch("scripts.check_dco.commits_between", return_value=[]),
+    ):
+        assert main() == 0
+
+
 def test_commits_between_excludes_merge_commits():
     """A `git merge origin/dev` inside a PR branch has no Signed-off-by
     trailer and isn't the author's own commit — it must never be checked,
     or a legitimate PR gets blocked for merging the base branch in."""
     with patch("scripts.check_dco.subprocess.check_output", return_value="abc123\ndef456\n") as mock_run:
-        result = commits_between("base-sha", "head-sha")
+        result = commits_between("base-sha", "head-sha", "baseline-sha")
 
     assert result == ["abc123", "def456"]
     called_args = mock_run.call_args.args[0]
     assert "--no-merges" in called_args
+    assert "^baseline-sha" in called_args
+
+
+def _git(repository, *args):
+    return subprocess.check_output(
+        ["git", "-C", str(repository), *args],
+        text=True,
+    ).strip()
+
+
+def _commit(repository, message):
+    (repository / "history.txt").write_text(message, encoding="utf-8")
+    _git(repository, "add", "history.txt")
+    _git(repository, "commit", "-m", message)
+    return _git(repository, "rev-parse", "HEAD")
+
+
+def test_baseline_exempts_history_but_checks_new_work_from_old_branch(tmp_path, monkeypatch):
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init")
+    _git(repository, "config", "user.name", "Test User")
+    _git(repository, "config", "user.email", "test@example.com")
+
+    old_commit = _commit(repository, "old unsigned commit")
+    baseline = _commit(repository, "introduce DCO")
+    _git(repository, "switch", "-c", "old-feature", old_commit)
+    new_commit = _commit(repository, "new unsigned work")
+
+    monkeypatch.chdir(repository)
+    assert commits_between(baseline, new_commit, baseline) == [new_commit]
