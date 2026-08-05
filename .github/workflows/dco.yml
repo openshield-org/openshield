@@ -21,4 +21,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python scripts/check_dco.py "$BASE_SHA" "$HEAD_SHA"
+          # DCO was introduced on dev by PR #208. Commits already reachable
+          # from this baseline predate enforcement and remain exempt.
+          DCO_BASELINE_SHA: 1d9469e162fce788bca839cfaf8a3e66ca35cf9b
+        run: python scripts/check_dco.py "$BASE_SHA" "$HEAD_SHA" "$DCO_BASELINE_SHA"

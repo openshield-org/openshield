@@ -17,6 +17,13 @@ different authorized signer. Every non-merge commit introduced by a pull
 request is checked; a sign-off only in the pull request description is
 insufficient.
 
+DCO enforcement began with commit
+`1d9469e162fce788bca839cfaf8a3e66ca35cf9b` (PR #208). Commits already
+reachable from that baseline—or recorded before it—are exempt, so release pull
+requests and still-open legacy branches do not retroactively reject work created
+before the policy. New commits remain subject to DCO even when they are added to
+a branch created before the baseline.
+
 Merge commits (e.g. from running `git merge origin/dev` to bring your branch
 up to date) are exempt — they carry Git's own default message, not your
 authorship, so there is nothing for you to sign off on. Only commits you
