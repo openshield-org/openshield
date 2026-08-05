@@ -54,6 +54,25 @@ class AzureClient:
         self._applications_cache: Any = _UNSET
         self._managed_identity_principals_cache: Any = _UNSET
         self._subscription_role_assignments_cache: Any = _UNSET
+        self._container_registries_cache: Any = _UNSET
+        self.devops_client = self._build_devops_client()
+
+    def _build_devops_client(self) -> Optional[Any]:
+        """Return a DevOpsClient if AZURE_DEVOPS_ORG_URL and AZURE_DEVOPS_PROJECT
+        are configured, else None. Absence is a deliberate opt-out (not every
+        subscription has an associated Azure DevOps organization), so rules
+        that depend on this must treat None as "not configured, skip" rather
+        than "unknown, indeterminate"."""
+        import os
+
+        org_url = os.environ.get("AZURE_DEVOPS_ORG_URL")
+        project = os.environ.get("AZURE_DEVOPS_PROJECT")
+        if not org_url or not project:
+            return None
+
+        from scanner.devops_client import DevOpsClient
+
+        return DevOpsClient(org_url, project, credential=self.credential)
 
     # ------------------------------------------------------------------ #
     # Static helpers                                                        #
@@ -662,3 +681,74 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_network_watcher_regions failed: %s", exc)
             return []
+
+    # ------------------------------------------------------------------ #
+    # Supply chain: Container Registry, IaC state                          #
+    # ------------------------------------------------------------------ #
+
+    def get_container_registries(self) -> Optional[List[Any]]:
+        """List Azure Container Registries, preserving an indeterminate failure state.
+
+        Cached for the lifetime of this client because all AZ-SC container
+        registry rules evaluate the same subscription-level collection.
+
+        Returns:
+            A list (including an empty list) when Azure responds successfully,
+            or ``None`` when permissions, networking, or the SDK prevent the
+            collection from being evaluated. Callers must never interpret
+            ``None`` as a compliant result.
+        """
+        if self._container_registries_cache is not _UNSET:
+            return self._container_registries_cache
+
+        try:
+            from azure.mgmt.containerregistry import ContainerRegistryManagementClient
+
+            client = ContainerRegistryManagementClient(self.credential, self.subscription_id)
+            self._container_registries_cache = list(client.registries.list())
+        except Exception as exc:
+            logger.error("get_container_registries failed: %s", exc)
+            self._container_registries_cache = None
+        return self._container_registries_cache
+
+    def get_blob_containers(self, resource_group: str, account_name: str) -> Optional[List[Any]]:
+        """List blob containers for a storage account, including per-container access level.
+
+        Not cached: unlike the subscription-wide collections above, this is
+        called once per storage account rather than once per scan.
+
+        Returns:
+            A list of container items, or ``None`` when the call fails
+            (permissions, throttling, storage account not found).
+        """
+        try:
+            client = StorageManagementClient(self.credential, self.subscription_id)
+            return list(client.blob_containers.list(resource_group, account_name))
+        except Exception as exc:
+            logger.error(
+                "get_blob_containers(%s/%s) failed: %s",
+                resource_group,
+                account_name,
+                exc,
+            )
+            return None
+
+    def get_blob_service_properties(self, resource_group: str, account_name: str) -> Optional[Any]:
+        """Return account-wide blob service properties (versioning, soft-delete retention).
+
+        Not cached, for the same reason as get_blob_containers above.
+
+        Returns:
+            A BlobServiceProperties object, or ``None`` when the call fails.
+        """
+        try:
+            client = StorageManagementClient(self.credential, self.subscription_id)
+            return client.blob_services.get_service_properties(resource_group, account_name)
+        except Exception as exc:
+            logger.error(
+                "get_blob_service_properties(%s/%s) failed: %s",
+                resource_group,
+                account_name,
+                exc,
+            )
+            return None

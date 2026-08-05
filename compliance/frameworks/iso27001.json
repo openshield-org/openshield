@@ -287,6 +287,46 @@
       "control_id": "A.9.2.3",
       "control_name": "Management of privileged access rights",
       "description": "Subscription Owner and Contributor assignments to managed identities require least-privilege reduction."
+    },
+    "AZ-SC-001": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "The Container Registry admin user is enabled, providing a shared credential that bypasses individual identity management and cannot be attributed to a single user."
+    },
+    "AZ-SC-002": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "The Container Registry is reachable from the public internet, leaving the network boundary that protects the organization's built container images uncontrolled."
+    },
+    "AZ-SC-003": {
+      "control_id": "A.9.2.1",
+      "control_name": "User registration and de-registration",
+      "description": "The Container Registry allows anonymous pull, letting any client access every image without an authenticated, individually attributable identity."
+    },
+    "AZ-SC-004": {
+      "control_id": "A.12.1.2",
+      "control_name": "Change management",
+      "description": "The Container Registry has no retention or quarantine policy, so stale images accumulate and newly pushed images are deployable before any vulnerability scan evaluates them."
+    },
+    "AZ-SC-005": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A Terraform remote state container is publicly readable, leaving the network boundary around infrastructure layout and captured secrets uncontrolled."
+    },
+    "AZ-SC-006": {
+      "control_id": "A.12.3.1",
+      "control_name": "Information backup",
+      "description": "A storage account holding Terraform remote state has neither versioning nor soft delete enabled, so an overwritten or deleted state file cannot be recovered."
+    },
+    "AZ-SC-007": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "A pipeline service connection is scoped to the entire subscription rather than a single resource group, so every pipeline that uses it inherits subscription-wide access beyond what it needs."
+    },
+    "AZ-SC-008": {
+      "control_id": "A.9.4.3",
+      "control_name": "Password management system",
+      "description": "A pipeline service connection authenticates with a stored service principal secret instead of a federated credential, leaving a static credential to rotate and potentially leak."
     }
   }
 }

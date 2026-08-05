@@ -131,11 +131,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of RoleAssignment objects for service principals |
 | `azure_client.get_conditional_access_policies()` | List of CA policy dicts from MS Graph |
+| `azure_client.get_container_registries()` | List of ACR Registry objects, or `None` on API failure |
+| `azure_client.get_blob_containers(rg, account)` | List of blob container items (with `public_access`), or `None` on API failure |
+| `azure_client.get_blob_service_properties(rg, account)` | BlobServiceProperties (versioning, soft delete), or `None` on API failure |
+| `azure_client.devops_client` | `DevOpsClient` instance, or `None` if `AZURE_DEVOPS_ORG_URL`/`AZURE_DEVOPS_PROJECT` are not configured |
+| `azure_client.devops_client.get_service_endpoints()` | List of Azure DevOps service connections, or `None` on API failure |
 | `azure_client.parse_resource_id(id)` | Dict with `resource_group` and `name` |
 
 List methods return an empty list on failure. Single-resource methods return `None` when the resource cannot be fetched. Three-state checks, such as `get_storage_lifecycle_policy()`, return `True` for compliant, `False` for non-compliant, and `None` when the scanner cannot determine the state.
 
 When a helper returns `None`, skip the resource and log a warning. Never create a finding from an unknown state.
+
+`azure_client.devops_client` is `None` whenever Azure DevOps is not configured for the scanned subscription — treat that the same as "not applicable" and return no findings, not as an indeterminate failure.
 
 ---
 

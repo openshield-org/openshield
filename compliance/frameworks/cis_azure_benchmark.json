@@ -287,6 +287,46 @@
       "control_id": "TBD-IDN-015",
       "control_name": "Managed Identity least privilege (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends least-privilege roles and scopes for managed identities. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
+    },
+    "AZ-SC-001": {
+      "control_id": "TBD-SC-001",
+      "control_name": "Container Registry Admin User Enabled placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-002": {
+      "control_id": "TBD-SC-002",
+      "control_name": "Container Registry Public Network Access Enabled placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-003": {
+      "control_id": "TBD-SC-003",
+      "control_name": "Container Registry Allows Anonymous Pull placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-004": {
+      "control_id": "TBD-SC-004",
+      "control_name": "Container Registry Missing Retention or Quarantine Policy placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-005": {
+      "control_id": "TBD-SC-005",
+      "control_name": "Terraform State Storage Container Publicly Readable placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-006": {
+      "control_id": "TBD-SC-006",
+      "control_name": "Terraform State Storage Account Missing Versioning or Soft Delete placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-007": {
+      "control_id": "TBD-SC-007",
+      "control_name": "Pipeline Service Connection Scoped to Subscription placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-008": {
+      "control_id": "TBD-SC-008",
+      "control_name": "Pipeline Service Connection Uses Password Instead of Federated Credential placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
     }
   }
 }

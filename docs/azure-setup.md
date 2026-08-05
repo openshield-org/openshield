@@ -282,6 +282,27 @@ The AZ-DB-002 remediation playbook writes SQL audit logs to a storage account. T
 
 ---
 
+## Step 10 — Configure Azure DevOps Pipeline Scanning (Optional)
+
+AZ-SC-007 and AZ-SC-008 check Azure DevOps pipeline service connections for
+subscription-wide sharing and password-based authentication. Azure DevOps is
+a separate system from Azure Resource Manager, so it needs two additional
+environment variables. Both must be set or neither rule will produce
+findings — this is treated as "not applicable," not an error.
+
+```bash
+AZURE_DEVOPS_ORG_URL=https://dev.azure.com/your-org
+AZURE_DEVOPS_PROJECT=your-project-name
+```
+
+The scanner reuses the same service principal configured in Step 3, requesting
+a token scoped to Azure DevOps' well-known resource ID
+(`499b84ac-1321-427f-aa17-267ca6975798`). Grant that service principal at
+least **Reader** access to the target Azure DevOps project's service
+connections (Project Settings > Service connections > Security).
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -291,3 +312,4 @@ The AZ-DB-002 remediation playbook writes SQL audit logs to a storage account. T
 | `psycopg2.OperationalError` | Check your PostgreSQL container is running and `DATABASE_URL` is correct |
 | Empty findings | Verify the service principal has `Reader` role on the subscription |
 | AZ-IDN-002 always fires | The service principal needs `Policy.Read.All` Graph permission — see Step 4 |
+| AZ-SC-007/008 never fire | Confirm `AZURE_DEVOPS_ORG_URL` and `AZURE_DEVOPS_PROJECT` are both set — see Step 10 |
