@@ -24,26 +24,25 @@ logger = logging.getLogger(__name__)
 
 # ── Required module-level constants ─────────────────────────────────────────
 
-RULE_ID = "AZ-XXXX-000"          # Unique ID. Check existing rules to avoid clashes.
-RULE_NAME = "Human-readable name" # Shown in the dashboard and reports.
-SEVERITY = "HIGH"                 # HIGH | MEDIUM | LOW | INFO
-CATEGORY = "Storage"              # Storage | Network | Identity | Database | Compute | Key Vault | Kubernetes
+RULE_ID = "AZ-XXXX-000"  # Unique ID. Check existing rules to avoid clashes.
+RULE_NAME = "Human-readable name"  # Shown in the dashboard and reports.
+SEVERITY = "HIGH"  # HIGH | MEDIUM | LOW | INFO
+CATEGORY = "Storage"  # Storage | Network | Identity | Database | Compute | Key Vault | Kubernetes
 FRAMEWORKS = {
-    "CIS":      "3.5",            # CIS Azure Benchmark control ID
-    "NIST":     "PR.AC-3",        # NIST CSF subcategory
-    "ISO27001": "A.9.4.1",        # ISO 27001 Annex A control
+    "CIS": "3.5",  # CIS Azure Benchmark control ID
+    "NIST": "PR.AC-3",  # NIST CSF subcategory
+    "ISO27001": "A.9.4.1",  # ISO 27001 Annex A control
 }
 DESCRIPTION = (
     "Explain WHY this is a security risk. One or two sentences. "
     "What can an attacker do if this misconfiguration exists?"
 )
-REMEDIATION = (
-    "Explain HOW to fix it. What setting to change, or what command to run."
-)
+REMEDIATION = "Explain HOW to fix it. What setting to change, or what command to run."
 PLAYBOOK = "playbooks/cli/fix_az_xxxx_000.sh"  # path to the matching fix script
 
 
 # ── Required scan function ───────────────────────────────────────────────────
+
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Return a list of findings. Return [] if no issues are found.
@@ -74,20 +73,22 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             continue
 
         if status is False:
-            findings.append({
-                "rule_id":       RULE_ID,
-                "rule_name":     RULE_NAME,
-                "severity":      SEVERITY,
-                "category":      CATEGORY,
-                "resource_id":   resource_id,
-                "resource_name": resource_name,
-                "resource_type": "Microsoft.Storage/storageAccounts",  # ← update
-                "description":   DESCRIPTION,
-                "remediation":   REMEDIATION,
-                "playbook":      PLAYBOOK,
-                "frameworks":    FRAMEWORKS,
-                "metadata":      {},
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": resource_id,
+                    "resource_name": resource_name,
+                    "resource_type": "Microsoft.Storage/storageAccounts",  # ← update
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {},
+                }
+            )
 
     return findings
 ```
@@ -133,11 +134,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `azure_client.get_function_app_security_posture()` | Cached, secret-free Function App posture dicts, or `None` on API failure |
 | `azure_client.get_private_endpoint_posture()` | Public-access and approved Private Link state for supported PaaS resources, or `None` on API failure |
 | `azure_client.get_recovery_vault_security_posture()` | Cached Recovery Services vault security settings, or `None` on API failure |
+| `azure_client.get_container_registries()` | List of ACR Registry objects, or `None` on API failure |
+| `azure_client.get_blob_containers(rg, account)` | List of blob container items (with `public_access`), or `None` on API failure |
+| `azure_client.get_blob_service_properties(rg, account)` | BlobServiceProperties (versioning, soft delete), or `None` on API failure |
+| `azure_client.devops_client` | `DevOpsClient` instance, or `None` if `AZURE_DEVOPS_ORG_URL`/`AZURE_DEVOPS_PROJECT` are not configured |
+| `azure_client.devops_client.get_service_endpoints()` | List of Azure DevOps service connections, or `None` on API failure |
 | `azure_client.parse_resource_id(id)` | Dict with `resource_group` and `name` |
 
 List methods return an empty list on failure. Single-resource methods return `None` when the resource cannot be fetched. Three-state checks, such as `get_storage_lifecycle_policy()`, return `True` for compliant, `False` for non-compliant, and `None` when the scanner cannot determine the state.
 
 When a helper returns `None`, skip the resource and log a warning. Never create a finding from an unknown state.
+
+`azure_client.devops_client` is `None` whenever Azure DevOps is not configured for the scanned subscription — treat that the same as "not applicable" and return no findings, not as an indeterminate failure.
 
 ---
 

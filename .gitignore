@@ -219,3 +219,6 @@ __marimo__/
 ai/vectorstore/
 .vercel
 .env*
+
+# Node (root package.json exists solely to track react-router for Dependabot)
+node_modules/

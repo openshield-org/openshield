@@ -500,7 +500,7 @@ const siteContent = {
                 "Flask REST API with JWT authentication and CORS",
                 "Scanner engine with 20 Azure misconfiguration rules across Storage, Network, Identity, Database, Compute, and Key Vault",
                 "Compliance framework mappings for CIS Azure Benchmark, NIST CSF, ISO 27001, and SOC 2",
-                "72 Azure CLI remediation playbooks — one per scanner rule",
+                "80 Azure CLI remediation playbooks — one per scanner rule",
                 "PostgreSQL persistence for scan history and findings",
                 "Microsoft Sentinel integration via Log Analytics custom table and KQL analytics rules",
                 "GitHub Actions CI pipeline with 7 automated checks"

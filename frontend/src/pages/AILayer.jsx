@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { FiCpu, FiX, FiAlertCircle, FiKey, FiCheckCircle } from 'react-icons/fi';
 import { api } from '../utils/api';
 import { aiApi, aiSettings } from '../utils/aiApi';

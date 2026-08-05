@@ -50,13 +50,9 @@ from typing import Any, Dict, List
 
 RULE_ID = "AZ-STOR-001"
 RULE_NAME = "Public Blob Access Enabled on Storage Account"
-SEVERITY = "HIGH"           # HIGH / MEDIUM / LOW / INFO
-CATEGORY = "Storage"        # Storage / Network / Identity / Database / Compute / Key Vault / Kubernetes
-FRAMEWORKS = {
-    "CIS": "3.5",
-    "NIST": "PR.AC-3",
-    "ISO27001": "A.9.4.1"
-}
+SEVERITY = "HIGH"  # HIGH / MEDIUM / LOW / INFO
+CATEGORY = "Storage"  # Storage / Network / Identity / Database / Compute / Key Vault / Kubernetes
+FRAMEWORKS = {"CIS": "3.5", "NIST": "PR.AC-3", "ISO27001": "A.9.4.1"}
 DESCRIPTION = (
     "Storage accounts with public blob access enabled allow anyone on the "
     "internet to read data without authentication. This can lead to data "
@@ -72,20 +68,22 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
     for account in azure_client.get_storage_accounts():
         if getattr(account, "allow_blob_public_access", False):
-            findings.append({
-                "rule_id": RULE_ID,
-                "rule_name": RULE_NAME,
-                "severity": SEVERITY,
-                "category": CATEGORY,
-                "resource_id": account.id,
-                "resource_name": account.name,
-                "resource_type": "Microsoft.Storage/storageAccounts",
-                "description": DESCRIPTION,
-                "remediation": REMEDIATION,
-                "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {}
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": account.id,
+                    "resource_name": account.name,
+                    "resource_type": "Microsoft.Storage/storageAccounts",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {},
+                }
+            )
 
     return findings
 ```

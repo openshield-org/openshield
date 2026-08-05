@@ -3,19 +3,24 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --max-warnings=0",
+    "test:i18n": "node src/i18n/messages.test.mjs",
+    "test:a11y": "node scripts/accessibility-check.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
     "autoprefixer": "^10.5.0",
-    "postcss": "^8.5.15",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "postcss": "^8.5.18",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-icons": "^5.6.0",
-    "react-router-dom": "^7.16.0",
+    "react-router": "^8.3.0",
     "recharts": "^3.8.1"
   },
   "devDependencies": {

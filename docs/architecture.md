@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 72 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API consumed by a live React dashboard.
+OpenShield is a modular, open source Cloud Security Posture Management (CSPM) platform for Azure. It scans your Azure subscription against 80 security rules, maps findings to compliance frameworks (CIS, NIST CSF, ISO 27001, SOC 2), stores results in PostgreSQL, and exposes posture data through a Flask REST API consumed by a live React dashboard.
 
 ---
 
@@ -43,9 +43,9 @@ OpenShield is a modular, open source Cloud Security Posture Management (CSPM) pl
 ┌───────────▼──────────────────────────────────────────────────────┐
 │                   Rule Modules (scanner/rules/)                   │
 │                                                                   │
-│  72 rule files across Storage, Network, Identity, Database,       │
+│  80 rule files across Storage, Network, Identity, Database,       │
 │  Compute, Key Vault, AKS, post-quantum cryptography, Backup,      │
-│  Serverless, and Private Endpoint posture                         │
+│  Serverless, Private Endpoint posture, and Supply Chain           │
 └───────────┬───────────────────────────────────────────────────────┘
             │ calls
 ┌───────────▼──────────────────────────────────────────────────────┐
@@ -111,7 +111,7 @@ result = engine.run_scan()
 
 ### 4. Current Rule Modules
 
-There are 72 rule files in `scanner/rules/`. See `docs/rules-reference.md` for the full table.
+There are 80 rule files in `scanner/rules/`. See `docs/rules-reference.md` for the full table.
 
 | Category | Count | Rules |
 |---|---|---|
@@ -126,6 +126,7 @@ There are 72 rule files in `scanner/rules/`. See `docs/rules-reference.md` for t
 | Backup | 4 | AZ-BAK-001, 002, 004, 006 |
 | Serverless | 5 | AZ-FUNC-001 to 005 |
 | Private Endpoint | 6 | AZ-PE-001 to 006 |
+| Supply Chain | 8 | AZ-SC-001 to 008 |
 
 Every rule has a matching Azure CLI playbook in `playbooks/cli/`.
 
@@ -135,20 +136,20 @@ Every finding returned by a rule must conform to this schema:
 
 ```python
 {
-    "rule_id":       str,   # e.g. "AZ-STOR-001"
-    "rule_name":     str,
-    "severity":      str,   # HIGH | MEDIUM | LOW | INFO
-    "category":      str,   # Storage | Network | Identity | Database | Compute | Key Vault
-    "resource_id":   str,   # full Azure resource ID
+    "rule_id": str,  # e.g. "AZ-STOR-001"
+    "rule_name": str,
+    "severity": str,  # HIGH | MEDIUM | LOW | INFO
+    "category": str,  # Storage | Network | Identity | Database | Compute | Key Vault
+    "resource_id": str,  # full Azure resource ID
     "resource_name": str,
-    "resource_type": str,   # e.g. "Microsoft.Storage/storageAccounts"
-    "description":   str,
-    "remediation":   str,
-    "playbook":      str,   # path to the CLI remediation script
-    "frameworks":    dict,  # {"CIS": "3.5", "NIST": "PR.AC-3", "ISO27001": "A.9.4.1"}
-    "metadata":      dict,  # optional rule-specific context
-    "detected_at":   str,   # ISO 8601, added by engine
-    "scan_id":       str,   # UUID, added by engine
+    "resource_type": str,  # e.g. "Microsoft.Storage/storageAccounts"
+    "description": str,
+    "remediation": str,
+    "playbook": str,  # path to the CLI remediation script
+    "frameworks": dict,  # {"CIS": "3.5", "NIST": "PR.AC-3", "ISO27001": "A.9.4.1"}
+    "metadata": dict,  # optional rule-specific context
+    "detected_at": str,  # ISO 8601, added by engine
+    "scan_id": str,  # UUID, added by engine
 }
 ```
 

@@ -27,7 +27,7 @@ This document explains each job, how to reproduce every check locally before ope
 
 `.github/workflows/codeql.yml` (separate workflow, PRs to `dev`/`main` + weekly cron): **Analyze (python)** and **Analyze (javascript)** — CodeQL semantic/taint analysis.
 
-`.github/workflows/sbom-release.yml` (triggered `on: release: published`): generates a CycloneDX SBOM from the tagged code and uploads it to the GitHub Release assets.
+`.github/workflows/release.yml` (triggered by `v*` tags): requires a verified signed annotated tag, builds a deterministic source archive and CycloneDX SBOM, publishes SHA-256 checksums and identity-bound provenance attestations, then creates the GitHub Release.
 
 The **Container Scan** job is intentionally **not** a required check yet: no `Dockerfile` exists, so it has nothing to scan. It activates automatically once INFRA 1 (#154) adds one.
 

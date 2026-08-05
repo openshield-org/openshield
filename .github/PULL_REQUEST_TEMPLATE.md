@@ -26,6 +26,7 @@
 Closes #
 
 ## Checklist
+- [ ] Every commit includes a DCO `Signed-off-by` trailer (`git commit -s`; see `docs/dco.md`)
 - [ ] My code follows the rule template in CONTRIBUTING.md
 - [ ] I added or updated the matching CLI playbook
 - [ ] I added or updated all four compliance framework mappings

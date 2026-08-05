@@ -302,6 +302,46 @@
     "AZ-BAK-001": {"control_id":"TBD-BAK-001","control_name":"Backup soft delete placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
     "AZ-BAK-002": {"control_id":"TBD-BAK-002","control_name":"Backup immutability placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
     "AZ-BAK-004": {"control_id":"TBD-BAK-004","control_name":"Backup MUA placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
-    "AZ-BAK-006": {"control_id":"TBD-BAK-006","control_name":"Backup monitoring placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."}
+    "AZ-BAK-006": {"control_id":"TBD-BAK-006","control_name":"Backup monitoring placeholder","description":"Numbered placeholder pending maintainer approval of a direct CIS mapping."},
+    "AZ-SC-001": {
+      "control_id": "TBD-SC-001",
+      "control_name": "Container Registry Admin User Enabled placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-002": {
+      "control_id": "TBD-SC-002",
+      "control_name": "Container Registry Public Network Access Enabled placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-003": {
+      "control_id": "TBD-SC-003",
+      "control_name": "Container Registry Allows Anonymous Pull placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-004": {
+      "control_id": "TBD-SC-004",
+      "control_name": "Container Registry Missing Retention or Quarantine Policy placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-005": {
+      "control_id": "TBD-SC-005",
+      "control_name": "Terraform State Storage Container Publicly Readable placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-006": {
+      "control_id": "TBD-SC-006",
+      "control_name": "Terraform State Storage Account Missing Versioning or Soft Delete placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-007": {
+      "control_id": "TBD-SC-007",
+      "control_name": "Pipeline Service Connection Scoped to Subscription placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-SC-008": {
+      "control_id": "TBD-SC-008",
+      "control_name": "Pipeline Service Connection Uses Password Instead of Federated Credential placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    }
   }
 }

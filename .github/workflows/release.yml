@@ -1,21 +1,85 @@
-name: Release
+name: Signed Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.ref_name }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Checkout signed tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
-      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+
+      - name: Verify annotated tag signature
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag_object=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.sha')
+          object_type=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq '.object.type')
+          if [ "$object_type" != "tag" ]; then
+            echo "Release tags must be signed annotated tags; ${TAG} is ${object_type}."
+            exit 1
+          fi
+          verified=$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" --jq '.verification.verified')
+          if [ "$verified" != "true" ]; then
+            echo "GitHub could not verify the signature on ${TAG}."
+            exit 1
+          fi
+
+      - name: Install Syft
+        env:
+          SYFT_VERSION: "1.46.0"
+          SYFT_SHA256: d654f678b709eb53c393d38519d5ed7d2e57205529404018614cfefa0fb2b5ca
+        run: |
+          set -euo pipefail
+          archive="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location \
+            --output "$archive" \
+            "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/${archive}"
+          echo "${SYFT_SHA256}  ${archive}" | sha256sum --check --strict
+          sudo tar --extract --gzip --file "$archive" --directory /usr/local/bin syft
+
+      - name: Build deterministic release artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          syft dir:. --source-name openshield --source-version "$TAG" \
+            -o "cyclonedx-json=dist/openshield-${TAG}-sbom.cyclonedx.json"
+          git archive --format=tar --prefix="openshield-${TAG}/" "$TAG" | \
+            gzip --no-name > "dist/openshield-${TAG}.tar.gz"
+          cd dist
+          sha256sum "openshield-${TAG}.tar.gz" "openshield-${TAG}-sbom.cyclonedx.json" > SHA256SUMS
+
+      - name: Attest source archive
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: dist/openshield-${{ env.TAG }}.tar.gz
+
+      - name: Attest SBOM
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: dist/openshield-${{ env.TAG }}-sbom.cyclonedx.json
+
+      - name: Attest checksum manifest
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: dist/SHA256SUMS
+
+      - name: Publish release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           generate_release_notes: true
           make_latest: true
+          files: dist/*

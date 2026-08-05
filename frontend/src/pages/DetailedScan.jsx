@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { FiArrowLeft, FiX, FiAlertTriangle } from 'react-icons/fi';
 import { api } from '../utils/api';
 import FindingHeader from '../components/scan/FindingHeader';
