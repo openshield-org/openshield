@@ -14,12 +14,23 @@ def has_signoff(message: str) -> bool:
     return SIGNOFF.search(message) is not None
 
 
+def commit_timestamp(commit: str) -> int:
+    """Return a commit's recorded committer timestamp."""
+    return int(
+        subprocess.check_output(
+            ["git", "show", "--no-patch", "--format=%ct", commit],
+            text=True,
+        ).strip()
+    )
+
+
 def commits_between(base: str, head: str, baseline: str) -> list[str]:
     """Return commits introduced between the pull request base and head.
 
-    Commits reachable from ``baseline`` are exempt because they existed before
-    DCO enforcement. Subtracting the baseline's ancestry, instead of filtering
-    by date, still checks new work committed on a branch created before DCO.
+    Commits reachable from ``baseline`` and commits recorded before that policy
+    commit are exempt because they existed before DCO enforcement. The timestamp
+    check covers still-open legacy branches whose commits are not part of the
+    baseline's ancestry, while newer work on those branches remains enforced.
 
     Excludes merge commits: a `git merge origin/dev` inside a long-running PR
     branch produces a commit with Git's default merge message and no
@@ -30,7 +41,8 @@ def commits_between(base: str, head: str, baseline: str) -> list[str]:
         ["git", "rev-list", "--reverse", "--no-merges", f"{base}..{head}", f"^{baseline}"],
         text=True,
     )
-    return [item for item in output.splitlines() if item]
+    baseline_timestamp = commit_timestamp(baseline)
+    return [item for item in output.splitlines() if item and commit_timestamp(item) > baseline_timestamp]
 
 
 def commit_message(commit: str) -> str:
