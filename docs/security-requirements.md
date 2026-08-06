@@ -47,3 +47,6 @@ The security policy, architecture, assurance case, automated test suite, SAST,
 secret scanning, dependency review, SBOM generation and container scanning form
 the public evidence for these requirements. Known defects must be tracked and
 resolved through GitHub issues or private advisories as appropriate.
+
+The reviewed input boundaries, limits, allowlists and intentional free-text
+exceptions are recorded in `docs/input-validation-audit.md`.

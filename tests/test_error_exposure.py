@@ -41,7 +41,7 @@ def test_list_scans_error_does_not_leak_exception(client, auth_headers):
 
 def test_get_scan_status_error_does_not_leak_exception(client, auth_headers):
     with patch.object(scans_route, "_get_db", return_value=_raising_db("get_scan")):
-        resp = client.get("/api/scans/some-id", headers=auth_headers)
+        resp = client.get("/api/scans/00000000-0000-0000-0000-000000000001", headers=auth_headers)
     _assert_no_leak(resp, 500)
 
 

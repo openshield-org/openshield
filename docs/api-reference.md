@@ -1,12 +1,25 @@
 # API Reference
 
-The OpenShield API is a Flask app registered in `api/app.py`. All `GET` requests (including `/health` and all `/api/*` GET routes) are public — no token needed. `POST` endpoints (`/api/scans/trigger`, `/api/ai/*`) require an `Authorization: Bearer <jwt>` header signed with `JWT_SECRET`.
-
-The OpenShield API is a Flask app registered in `api/app.py`.
+The OpenShield API is a Flask app registered in `api/app.py`. By default, every
+`/api/*` route requires an `Authorization: Bearer <jwt>` header signed with
+`JWT_SECRET`; only the explicitly listed health and observability endpoints are
+public. Read-only API routes become public only when the deliberate demo-mode
+setting is enabled.
 
 ## Authentication
 
 `/health` and `/` are always public. All other routes — including all `/api/*` GET endpoints — require an `Authorization: Bearer <jwt>` header signed with `JWT_SECRET`.
+
+## Input limits
+
+- Request bodies are limited to 2 MiB.
+- Scan and subscription identifiers use canonical UUID format.
+- Finding filters accept only `severity`, `category`, `rule_id`, and `scan_id`;
+  unknown or repeated parameters return `400`.
+- AI routes accept a supported provider, an API key of at most 4,096 characters,
+  an optional model identifier of at most 128 characters, questions of at most
+  4,000 characters, and at most 1,000 finding objects.
+- Full boundary details are maintained in `docs/input-validation-audit.md`.
 
 ### Public demo mode
 
