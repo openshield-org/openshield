@@ -11,6 +11,9 @@ class ValidationError(ValueError):
     """Raised when a client-controlled value violates the public API contract."""
 
 
+VALIDATION_ERROR_MESSAGE = "Invalid request parameters"
+
+
 RULE_ID_RE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]*$")
 

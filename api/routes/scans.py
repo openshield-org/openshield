@@ -7,7 +7,13 @@ import uuid
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
-from api.validation import ValidationError, reject_unknown_fields, require_json_object, uuid_string
+from api.validation import (
+    VALIDATION_ERROR_MESSAGE,
+    ValidationError,
+    reject_unknown_fields,
+    require_json_object,
+    uuid_string,
+)
 from scanner.cve_correlator import enrich_findings
 
 scans_bp = Blueprint("scans", __name__)
@@ -46,8 +52,8 @@ def get_scan_status(scan_id):
         if not scan:
             return jsonify({"error": "Scan not found"}), 404
         return jsonify(scan)
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to get scan status: %s", exc)
         return jsonify({"error": "Database error"}), 500
@@ -86,8 +92,8 @@ def trigger_scan():
             {"scan_id": scan_id, "status": "pending", "message": "Scan has been queued and will start shortly."}
         ), 202
 
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)
         return jsonify({"error": "Critical route failure"}), 500
@@ -199,8 +205,8 @@ def enrich_scan(scan_id):
             }
         ), 202
 
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to start enrichment for scan %s: %s", scan_id, exc)
         return jsonify({"error": "Internal server error"}), 500

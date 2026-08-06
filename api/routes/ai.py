@@ -13,6 +13,7 @@ from api.validation import (
     MAX_MODEL_LENGTH,
     MAX_QUESTION_LENGTH,
     MODEL_RE,
+    VALIDATION_ERROR_MESSAGE,
     ValidationError,
     bounded_string,
     choice,
@@ -170,8 +171,8 @@ def _read_request():
             if ".." in body["model"]:
                 raise ValidationError("model has an invalid format")
         return body, None
-    except ValidationError as exc:
-        return None, (jsonify({"error": str(exc)}), 400)
+    except ValidationError:
+        return None, (jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400)
 
 
 _AI_ERROR_MESSAGES = {
@@ -209,8 +210,8 @@ def insights():
                 raise ValidationError("question must be a string")
             if data["question"].strip():
                 question = bounded_string(data["question"], "question", maximum=MAX_QUESTION_LENGTH)
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     sorted_findings = sorted(findings, key=severity_rank, reverse=True)
 
@@ -246,8 +247,8 @@ def ai_summary():
         return error
     try:
         findings = findings_list(body.get("findings"))
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     findings_text = _findings_to_text(findings)
     try:
@@ -286,8 +287,8 @@ def ai_prioritise():
         return error
     try:
         findings = findings_list(body.get("findings"))
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     findings_text = _findings_to_text(findings)
     try:
@@ -334,8 +335,8 @@ def ai_ask():
     try:
         question = bounded_string(body.get("question"), "question", maximum=MAX_QUESTION_LENGTH)
         findings = findings_list(body.get("findings"))
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     try:
         context, sources = _context_for(question)
@@ -376,8 +377,8 @@ def ai_threat_simulation():
         return error
     try:
         findings = findings_list(body.get("findings"), required=True)
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     findings_text = _findings_to_text(findings)
     try:

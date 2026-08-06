@@ -10,6 +10,7 @@ from api.validation import (
     CATEGORIES,
     RULE_ID_RE,
     SEVERITIES,
+    VALIDATION_ERROR_MESSAGE,
     ValidationError,
     bounded_string,
     choice,
@@ -66,8 +67,8 @@ def list_findings():
         db = _get_db()
         findings = db.get_findings(filters)
         return jsonify({"count": len(findings), "findings": findings})
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to list findings: %s", exc)
         return jsonify({"error": "Failed to retrieve findings"}), 500
@@ -83,8 +84,8 @@ def get_finding(finding_id: int):
         if not finding:
             return jsonify({"error": "Finding not found"}), 404
         return jsonify(finding)
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to get finding %d: %s", finding_id, exc)
         return jsonify({"error": "Database error"}), 500
@@ -155,8 +156,8 @@ def get_playbook(finding_id: int):
             }
         )
 
-    except ValidationError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to get playbook for finding %d: %s", finding_id, exc)
         return jsonify({"error": "Failed to retrieve playbook"}), 500

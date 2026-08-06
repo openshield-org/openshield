@@ -10,8 +10,9 @@ Azure/Sentinel integrations, subprocesses, or external AI providers.
 - Protected routes require a bounded Bearer token and reject malformed tokens.
 - Client request IDs accept only 1-128 letters, digits, `.`, `_`, `:` or `-`;
   invalid values are replaced with a server-generated UUID before logging.
-- Validation failures return a consistent `400` response without database or
-  provider access. Authentication failures remain `401`.
+- Validation failures return a fixed `400` response without reflecting
+  exception details and without database or provider access. Authentication
+  failures remain `401`.
 
 ## Boundary inventory
 

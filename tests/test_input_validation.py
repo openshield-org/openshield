@@ -6,7 +6,7 @@ import pytest
 
 import api.routes.findings as findings_route
 import api.routes.scans as scans_route
-from api.validation import MAX_API_KEY_LENGTH, MAX_FINDINGS, MAX_QUESTION_LENGTH
+from api.validation import MAX_API_KEY_LENGTH, MAX_FINDINGS, MAX_QUESTION_LENGTH, VALIDATION_ERROR_MESSAGE
 
 _SCAN_ID = "00000000-0000-0000-0000-000000000001"
 _SUBSCRIPTION_ID = "00000000-0000-0000-0000-000000000002"
@@ -52,6 +52,8 @@ def test_trigger_rejects_malformed_subscription_id(client, auth_headers):
     with patch.object(scans_route, "_get_db") as get_db:
         response = client.post("/api/scans/trigger", json={"subscription_id": "../../etc/passwd"}, headers=auth_headers)
     assert response.status_code == 400
+    assert response.get_json() == {"error": VALIDATION_ERROR_MESSAGE}
+    assert "../../etc/passwd" not in response.get_data(as_text=True)
     get_db.assert_not_called()
 
 
