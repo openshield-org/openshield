@@ -198,6 +198,11 @@
       "control_name": "Ensure that the expiration date is set on all certificates",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days and does not have auto-renewal configured. CIS 8.5 requires that expiration dates are monitored and certificates are renewed before expiry to prevent service outages and broken authentication flows."
     },
+    "AZ-KV-006": {
+      "control_id": "TBD-KV-006",
+      "control_name": "Ensure that Azure Key Vault Uses Azure RBAC for Data Plane Authorization",
+      "description": "Key Vaults authorizing access through legacy vault access policies instead of Azure RBAC lack scoped, auditable role assignments. Access policies grant broad permissions per permission type and are not tracked through Azure RBAC's centralized role-assignment audit trail, increasing the risk of over-privileged access to secrets, keys, and certificates. Note for maintainers: the official CIS Azure Foundations Benchmark control for this check is 8.6 (\"Enable Role Based Access Control for Azure Key Vault\"), but 8.6 is already assigned to AZ-KV-004 (purge protection) in this file — likely a pre-existing mapping error unrelated to this change. Left as TBD pending a maintainer decision on how to resolve the collision, following the same TBD-* convention used elsewhere in this file."
+    },
     "AZ-NET-013": {
       "control_id": "6.4",
       "control_name": "Ensure that Azure Firewall is enabled on Virtual Networks",

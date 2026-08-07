@@ -188,6 +188,11 @@
       "control_name": "Key management",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. A.10.1.2 requires that a policy on the use, protection, and lifetime of cryptographic keys is developed and implemented. Certificates approaching expiry without renewal represent a failure in cryptographic key lifecycle management."
     },
+    "AZ-KV-006": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "Key Vaults authorizing access through legacy vault access policies instead of Azure RBAC lack scoped, reviewable privileged-access management. A.9.2.3 requires that the allocation of privileged access rights is restricted and controlled. Access policies do not provide the granular, role-based control needed to enforce least privilege on secrets, keys, and certificates."
+    },
     "AZ-DB-004": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",

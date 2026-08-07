@@ -11,6 +11,7 @@ import scanner.rules.az_kv_002 as az_kv_002
 import scanner.rules.az_kv_003 as az_kv_003
 import scanner.rules.az_kv_004 as az_kv_004
 import scanner.rules.az_kv_005 as az_kv_005
+import scanner.rules.az_kv_006 as az_kv_006
 from tests.helpers.mock_azure import make_resource
 
 _REQUIRED_FIELDS = {
@@ -177,3 +178,30 @@ def test_kv_005_noncompliant_expiring_soon_returns_one_finding(mock_azure, subsc
     assert findings[0]["rule_id"] == "AZ-KV-005"
     assert findings[0]["severity"] == "MEDIUM"
     assert findings[0]["resource_name"] == "cert-expiring"
+
+
+# ── AZ-KV-006: legacy access policies instead of Azure RBAC ────────────────
+
+
+def test_kv_006_compliant_rbac_enabled_returns_no_findings(mock_azure, subscription_id):
+    mock_azure.set_key_vaults([_vault_with_props("kv-rbac-on", enable_rbac_authorization=True)])
+    assert az_kv_006.scan(mock_azure, subscription_id) == []
+
+
+def test_kv_006_noncompliant_access_policies_returns_one_finding(mock_azure, subscription_id):
+    mock_azure.set_key_vaults([_vault_with_props("kv-rbac-off", enable_rbac_authorization=False)])
+    findings = az_kv_006.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert _REQUIRED_FIELDS.issubset(findings[0].keys())
+    assert findings[0]["rule_id"] == "AZ-KV-006"
+    assert findings[0]["severity"] == "MEDIUM"
+    assert findings[0]["resource_name"] == "kv-rbac-off"
+    assert findings[0]["metadata"]["resource_group"] == _RG
+
+
+def test_kv_006_missing_property_defaults_to_noncompliant(mock_azure, subscription_id):
+    """A vault with no enable_rbac_authorization attribute is legacy access-policy by default."""
+    mock_azure.set_key_vaults([_vault_with_props("kv-rbac-unset")])
+    findings = az_kv_006.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-KV-006"
