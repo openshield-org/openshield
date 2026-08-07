@@ -56,6 +56,7 @@ class MockAzureClient:
         # --- Additional state added for full rule-coverage tests ---------- #
         self._network_interfaces: Dict[Tuple[str, str], Any] = {}
         self._vm_extensions: Dict[Tuple[str, str], Optional[List[Any]]] = {}
+        self._disks: Dict[str, Optional[Any]] = {}
         self._storage_lifecycle: Dict[Tuple[str, str], Optional[bool]] = {}
         self._storage_logging: Dict[Tuple[str, str, str], Optional[bool]] = {}
         self._virtual_networks: List[Any] = []
@@ -222,6 +223,14 @@ class MockAzureClient:
     def get_vm_extensions(self, resource_group: str, vm_name: str) -> Optional[List[Any]]:
         # Default to an empty list (compliant-by-default) unless configured.
         return self._vm_extensions.get((resource_group, vm_name), [])
+
+    def set_disk(self, disk_id: str, disk: Optional[Any]) -> "MockAzureClient":
+        """Configure the Disk resource returned for a managed disk ID; ``None`` represents an unreadable disk."""
+        self._disks[disk_id] = disk
+        return self
+
+    def get_disk(self, disk_id: str) -> Optional[Any]:
+        return self._disks.get(disk_id)
 
     # ------------------------------------------------------------------ #
     # Storage — lifecycle & service logging (three-state: True/False/None) #

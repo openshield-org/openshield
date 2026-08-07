@@ -55,6 +55,7 @@ class AzureClient:
         self._managed_identity_principals_cache: Any = _UNSET
         self._subscription_role_assignments_cache: Any = _UNSET
         self._container_registries_cache: Any = _UNSET
+        self._disks_cache: Dict[str, Any] = {}
         self.devops_client = self._build_devops_client()
 
     def _build_devops_client(self) -> Optional[Any]:
@@ -405,6 +406,43 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc)
             return None
+
+    def get_disk(self, disk_id: str) -> Optional[Any]:
+        """Resolve the Disk resource referenced by a VM's ManagedDiskParameters.
+
+        ManagedDiskParameters (the object embedded in a VM's storage_profile)
+        only carries id, storage_account_type, disk_encryption_set and
+        security_profile — the encryption state lives on the underlying Disk
+        resource and must be fetched separately. Cached per subscription
+        (this client instance already scopes one subscription) because the
+        same disk may be evaluated more than once during a scan.
+
+        Returns:
+            The Disk resource, or ``None`` when the ID is missing/malformed
+            or Azure cannot return it (permissions, deletion, SDK error).
+            Callers must never interpret ``None`` as a compliant result.
+        """
+        if not disk_id:
+            return None
+        if disk_id in self._disks_cache:
+            return self._disks_cache[disk_id]
+
+        disk = None
+        try:
+            parsed = self.parse_resource_id(disk_id)
+            resource_group = parsed.get("resource_group", "")
+            disk_name = parsed.get("name", "")
+            if resource_group and disk_name:
+                client = ComputeManagementClient(self.credential, self.subscription_id)
+                disk = client.disks.get(resource_group, disk_name)
+            else:
+                logger.error("get_disk failed: could not parse resource group/name from %s", disk_id)
+        except Exception as exc:
+            logger.error("get_disk failed for %s: %s", disk_id, exc)
+            disk = None
+
+        self._disks_cache[disk_id] = disk
+        return disk
 
     # ------------------------------------------------------------------ #
     # Databases                                                             #

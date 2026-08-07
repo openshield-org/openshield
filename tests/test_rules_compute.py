@@ -38,6 +38,10 @@ def _nic_id(name):
     return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Network/networkInterfaces/{name}"
 
 
+def _disk_id(name):
+    return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Compute/disks/{name}"
+
+
 # ── AZ-CMP-001: VM public IP with no NSG ────────────────────────────────────
 
 
@@ -80,14 +84,34 @@ def test_cmp_001_noncompliant_public_ip_no_nsg_returns_one_finding(mock_azure, s
 
 
 # ── AZ-CMP-002: disk using platform-managed encryption only ─────────────────
+#
+# ManagedDiskParameters (the object actually embedded in a VM's
+# storage_profile.os_disk/data_disks) only exposes id, storage_account_type,
+# disk_encryption_set and security_profile -- it has no "encryption"
+# attribute, and its security_profile (VMDiskSecurityProfile) carries
+# security_encryption_type, not "type". The real encryption state lives on
+# the underlying Disk resource, resolved via AzureClient.get_disk(id), whose
+# Encryption.type and EncryptionSettingsCollection.enabled are the fields
+# that actually distinguish compliant from non-compliant. These fixtures
+# mirror that shape instead of inventing attributes the SDK does not define.
 
 
-def test_cmp_002_compliant_cmk_disk_returns_no_findings(mock_azure, subscription_id):
-    """OS disk encrypted with a customer-managed key is compliant."""
-    os_disk = make_resource(
-        name="osdisk",
-        managed_disk=make_resource(encryption=make_resource(type="EncryptionAtRestWithCustomerKey")),
+def _managed_disk(name):
+    """A ManagedDiskParameters-shaped stub: only carries an id."""
+    return make_resource(id=_disk_id(name))
+
+
+def _disk(encryption_type=None, ade_enabled=False):
+    """A Disk-shaped stub as returned by AzureClient.get_disk()."""
+    return make_resource(
+        encryption=make_resource(type=encryption_type) if encryption_type else None,
+        encryption_settings_collection=make_resource(enabled=ade_enabled),
     )
+
+
+def test_cmp_002_compliant_customer_key_returns_no_findings(mock_azure, subscription_id):
+    """OS disk encrypted with a customer-managed key only is compliant."""
+    os_disk = make_resource(name="osdisk", managed_disk=_managed_disk("disk-cmk"))
     vm = make_resource(
         id=_vm_id("vm-cmk"),
         name="vm-cmk",
@@ -95,15 +119,49 @@ def test_cmp_002_compliant_cmk_disk_returns_no_findings(mock_azure, subscription
         storage_profile=make_resource(os_disk=os_disk, data_disks=[]),
     )
     mock_azure.set_virtual_machines([vm])
+    mock_azure.set_disk(_disk_id("disk-cmk"), _disk(encryption_type="EncryptionAtRestWithCustomerKey"))
+    assert az_cmp_002.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_002_compliant_platform_and_customer_key_returns_no_findings(mock_azure, subscription_id):
+    """OS disk encrypted with platform-and-customer keys is compliant."""
+    os_disk = make_resource(name="osdisk", managed_disk=_managed_disk("disk-both"))
+    vm = make_resource(
+        id=_vm_id("vm-both"),
+        name="vm-both",
+        location="eastus",
+        storage_profile=make_resource(os_disk=os_disk, data_disks=[]),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_disk(_disk_id("disk-both"), _disk(encryption_type="EncryptionAtRestWithPlatformAndCustomerKeys"))
+    assert az_cmp_002.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_002_compliant_ade_enabled_returns_no_findings(mock_azure, subscription_id):
+    """A platform-key disk with Azure Disk Encryption enabled is compliant."""
+    os_disk = make_resource(name="osdisk", managed_disk=_managed_disk("disk-ade"))
+    vm = make_resource(
+        id=_vm_id("vm-ade"),
+        name="vm-ade",
+        location="eastus",
+        storage_profile=make_resource(os_disk=os_disk, data_disks=[]),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_disk(
+        _disk_id("disk-ade"), _disk(encryption_type="EncryptionAtRestWithPlatformKey", ade_enabled=True)
+    )
     assert az_cmp_002.scan(mock_azure, subscription_id) == []
 
 
 def test_cmp_002_noncompliant_platform_key_returns_one_finding(mock_azure, subscription_id):
-    """OS disk using platform-managed encryption only must produce one finding."""
-    os_disk = make_resource(
-        name="osdisk",
-        managed_disk=make_resource(encryption=make_resource(type="EncryptionAtRestWithPlatformKey")),
-    )
+    """OS disk using platform-managed encryption only, with no ADE, must be flagged.
+
+    This is a regression test: the previous implementation read
+    managed_disk.security_profile / managed_disk.encryption, neither of
+    which exist on ManagedDiskParameters, so every branch resolved to None
+    and this case incorrectly returned no findings.
+    """
+    os_disk = make_resource(name="osdisk", managed_disk=_managed_disk("disk-pmk"))
     vm = make_resource(
         id=_vm_id("vm-pmk"),
         name="vm-pmk",
@@ -111,6 +169,7 @@ def test_cmp_002_noncompliant_platform_key_returns_one_finding(mock_azure, subsc
         storage_profile=make_resource(os_disk=os_disk, data_disks=[]),
     )
     mock_azure.set_virtual_machines([vm])
+    mock_azure.set_disk(_disk_id("disk-pmk"), _disk(encryption_type="EncryptionAtRestWithPlatformKey"))
     findings = az_cmp_002.scan(mock_azure, subscription_id)
     assert len(findings) == 1
     f = findings[0]
@@ -118,6 +177,29 @@ def test_cmp_002_noncompliant_platform_key_returns_one_finding(mock_azure, subsc
     assert f["rule_id"] == "AZ-CMP-002"
     assert f["severity"] == "HIGH"
     assert f["resource_name"] == "vm-pmk"
+    assert f["metadata"]["unencrypted_disks"] == ["osdisk"]
+    assert f["metadata"]["indeterminate_disks"] == []
+    assert f["metadata"]["determination"] == "non_compliant"
+
+
+def test_cmp_002_indeterminate_unreadable_disk_returns_one_finding(mock_azure, subscription_id):
+    """A Disk resource that cannot be read must not be treated as compliant."""
+    os_disk = make_resource(name="osdisk", managed_disk=_managed_disk("disk-unreadable"))
+    vm = make_resource(
+        id=_vm_id("vm-unreadable"),
+        name="vm-unreadable",
+        location="eastus",
+        storage_profile=make_resource(os_disk=os_disk, data_disks=[]),
+    )
+    mock_azure.set_virtual_machines([vm])
+    # No mock_azure.set_disk() call: get_disk() returns None, as it would if
+    # Azure denied access or the disk had been deleted.
+    findings = az_cmp_002.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["metadata"]["unencrypted_disks"] == []
+    assert f["metadata"]["indeterminate_disks"] == ["osdisk"]
+    assert f["metadata"]["determination"] == "indeterminate"
 
 
 # ── AZ-CMP-003: VM without endpoint protection ──────────────────────────────
