@@ -12,20 +12,36 @@ CATEGORY = "Compute"
 FRAMEWORKS = {"CIS": "7.2", "NIST": "PR.DS-1", "ISO27001": "A.10.1.1", "SOC2": "CC6.7"}
 DESCRIPTION = (
     "One or more disks attached to this virtual machine are using platform-managed "
-    "encryption only (EncryptionAtRestWithPlatformKey), or their encryption state could "
-    "not be verified. CIS 7.2 requires disks to be protected using either Azure Disk "
-    "Encryption (ADE) or server-side encryption with a customer-managed key (CMK). "
-    "Platform-managed encryption does not give the organisation control over the "
-    "encryption keys."
+    "encryption only (EncryptionAtRestWithPlatformKey). CIS 7.2 requires disks to be "
+    "protected using either Azure Disk Encryption (ADE) or server-side encryption with "
+    "a customer-managed key (CMK). Platform-managed encryption does not give the "
+    "organisation control over the encryption keys."
 )
 REMEDIATION = (
     "Configure server-side encryption with a customer-managed key via a Disk Encryption "
     "Set, or enable Azure Disk Encryption on all OS and data disks. Navigate to: "
     "Virtual Machine > Disks > Additional settings > Disk encryption set, or use "
-    "az vm encryption enable with a Key Vault. If any disks were reported indeterminate, "
-    "grant the scanning principal Microsoft.Compute/disks/read and re-run the scan."
+    "az vm encryption enable with a Key Vault."
 )
 PLAYBOOK = "playbooks/cli/fix_az_cmp_002.sh"
+
+# Unreadable disks are reported as an unknown scan result, not a confirmed
+# violation: a missing Microsoft.Compute/disks/read grant says nothing about
+# the disk's actual encryption state, so it must not carry HIGH severity or
+# the standard remediation (which could send someone to re-encrypt a disk
+# that was already compliant via CMK).
+INDETERMINATE_SEVERITY = "LOW"
+INDETERMINATE_DESCRIPTION = (
+    "One or more disks attached to this virtual machine could not be read, so their "
+    "encryption configuration could not be verified against CIS 7.2. This is not a "
+    "confirmed violation — the scanning principal could not resolve the Disk resource "
+    "(missing Microsoft.Compute/disks/read, transient API failure, or the disk no "
+    "longer exists)."
+)
+INDETERMINATE_REMEDIATION = (
+    "Grant the scanning principal Microsoft.Compute/disks/read on the affected disk(s) "
+    "and re-run the scan to determine the actual encryption state."
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,17 +148,22 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 indeterminate_disks.append(disk_name)
 
         if unencrypted_disks or indeterminate_disks:
+            # A confirmed non-compliant disk makes the whole finding a real
+            # HIGH violation, even if other disks on the same VM are also
+            # indeterminate. Only when *nothing* is confirmed non-compliant
+            # does this drop to an unknown/LOW scan result.
+            confirmed = bool(unencrypted_disks)
             findings.append(
                 {
                     "rule_id": RULE_ID,
                     "rule_name": RULE_NAME,
-                    "severity": SEVERITY,
+                    "severity": SEVERITY if confirmed else INDETERMINATE_SEVERITY,
                     "category": CATEGORY,
                     "resource_id": vm_id,
                     "resource_name": vm_name,
                     "resource_type": "Microsoft.Compute/virtualMachines",
-                    "description": DESCRIPTION,
-                    "remediation": REMEDIATION,
+                    "description": DESCRIPTION if confirmed else INDETERMINATE_DESCRIPTION,
+                    "remediation": REMEDIATION if confirmed else INDETERMINATE_REMEDIATION,
                     "playbook": PLAYBOOK,
                     "frameworks": FRAMEWORKS,
                     "metadata": {
@@ -152,7 +173,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "unencrypted_disk_count": len(unencrypted_disks),
                         "indeterminate_disks": indeterminate_disks,
                         "indeterminate_disk_count": len(indeterminate_disks),
-                        "determination": "non_compliant" if unencrypted_disks else "indeterminate",
+                        "determination": "non_compliant" if confirmed else "indeterminate",
                     },
                 }
             )
