@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "catalog_version": "2026.08",
+  "layer": {
+    "number": 1,
+    "name": "Physical",
+    "model": "OSI",
+    "assessment_type": "provider_assurance"
+  },
+  "scope": {
+    "environment": "azure_public_cloud",
+    "cloud_models": ["IaaS", "PaaS", "SaaS"],
+    "owner": "Microsoft",
+    "runtime_hardware_observable": false,
+    "statement": "Azure tenants consume software-defined networking and cannot inspect Microsoft datacenter cabling, signaling hardware, environmental systems, or physical access records. Coverage therefore measures responsibility and evidence completeness, not a tenant-side hardware scan."
+  },
+  "methodology": {
+    "coverage_denominator": "baseline_controls",
+    "coverage_rule": "A baseline control is covered only when it has an owner, applicability decision, verification method, at least one physical domain, at least one relevant sublayer, and at least one evidence source.",
+    "evidence_freshness_rule": "Evidence is current through review_due_at. Expiry changes evidence status but does not erase catalog mapping coverage.",
+    "baseline_control_count": 23,
+    "domain_count": 21,
+    "sublayer_count": 8
+  },
+  "sublayers": [
+    {
+      "id": "GENERIC-L1",
+      "name": "Generic OSI Layer 1 functions",
+      "profile": "osi",
+      "description": "Technology-neutral transmission of raw bits, physical interfaces, timing, rates, modes, topology, and physical link lifecycle.",
+      "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-04", "PHY-10", "PHY-11", "PHY-12", "PHY-13", "PHY-14", "PHY-15", "PHY-17"]
+    },
+    {
+      "id": "IEEE-PLCP",
+      "name": "Physical Layer Convergence Procedure",
+      "profile": "ieee_802_wireless",
+      "description": "Adapts MAC protocol data units to the physical medium, including physical framing, synchronization, rate signaling, and channel assessment functions.",
+      "domain_ids": ["PHY-08", "PHY-10", "PHY-11", "PHY-14", "PHY-16"]
+    },
+    {
+      "id": "IEEE-PCS",
+      "name": "Physical Coding Sublayer",
+      "profile": "ieee_802_ethernet",
+      "description": "Encodes and decodes data blocks, aligns lanes, and provides physical coding and synchronization functions above the attachment layer.",
+      "domain_ids": ["PHY-04", "PHY-05", "PHY-10", "PHY-11", "PHY-12"]
+    },
+    {
+      "id": "IEEE-FEC",
+      "name": "Forward Error Correction",
+      "profile": "ieee_802_ethernet",
+      "description": "Adds and checks redundant coding used to correct physical transmission errors on supported links.",
+      "domain_ids": ["PHY-06", "PHY-11", "PHY-15"]
+    },
+    {
+      "id": "IEEE-PMA",
+      "name": "Physical Medium Attachment",
+      "profile": "ieee_802_ethernet",
+      "description": "Provides serialization, deserialization, clock recovery, lane distribution, and attachment between coding and medium-dependent functions.",
+      "domain_ids": ["PHY-03", "PHY-07", "PHY-10", "PHY-11", "PHY-12", "PHY-15"]
+    },
+    {
+      "id": "IEEE-PMD",
+      "name": "Physical Medium Dependent",
+      "profile": "ieee_802",
+      "description": "Defines medium-specific transmission, reception, modulation, optical, electrical, or radio characteristics and signal measurements.",
+      "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-04", "PHY-11", "PHY-15", "PHY-16"]
+    },
+    {
+      "id": "IEEE-AN",
+      "name": "Auto-Negotiation and Link Training",
+      "profile": "ieee_802_ethernet",
+      "description": "Establishes compatible link capabilities, operating rates, duplex modes, lanes, and trained signal parameters where supported.",
+      "domain_ids": ["PHY-09", "PHY-11", "PHY-14", "PHY-15"]
+    },
+    {
+      "id": "IEEE-MDI",
+      "name": "Medium Dependent Interface",
+      "profile": "ieee_802_ethernet",
+      "description": "Covers the physical connector, port, pin, fiber, or other attachment boundary between equipment and the transmission medium.",
+      "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-17"]
+    }
+  ],
+  "domains": [
+    {"id": "PHY-01", "name": "Transmission media and cabling", "description": "Copper, fiber, radio, and other media used to carry physical signals."},
+    {"id": "PHY-02", "name": "Connectors and medium interfaces", "description": "Ports, connectors, pinouts, patching, and medium-dependent attachment boundaries."},
+    {"id": "PHY-03", "name": "Transceivers and physical attachment", "description": "Optical, electrical, and radio transmit and receive hardware and its attachment functions."},
+    {"id": "PHY-04", "name": "Signal representation and line coding", "description": "Conversion of bits into physical symbols, line codes, or modulated signals."},
+    {"id": "PHY-05", "name": "Physical coding and lane alignment", "description": "Block coding, scrambling, alignment, and lane distribution functions."},
+    {"id": "PHY-06", "name": "Forward error correction", "description": "Physical-layer redundancy used to detect or correct transmission errors."},
+    {"id": "PHY-07", "name": "Serialization and clock recovery", "description": "Serialization, deserialization, clock generation, and recovered timing functions."},
+    {"id": "PHY-08", "name": "Physical convergence and framing", "description": "Technology-specific convergence, physical preambles, headers, framing, and channel assessment."},
+    {"id": "PHY-09", "name": "Auto-negotiation and link training", "description": "Capability exchange and adaptation used to establish a compatible physical link."},
+    {"id": "PHY-10", "name": "Bit timing and synchronization", "description": "Symbol timing, bit synchronization, clocking, and alignment required for reliable transmission."},
+    {"id": "PHY-11", "name": "Data rate, bandwidth, and transmission mode", "description": "Supported rates, bandwidth, simplex, half-duplex, full-duplex, and parallel or serial operation."},
+    {"id": "PHY-12", "name": "Multiplexing and channelization", "description": "Physical aggregation, lanes, wavelengths, frequencies, and channel allocation."},
+    {"id": "PHY-13", "name": "Physical topology", "description": "Physical arrangement of endpoints, devices, paths, tiers, and interconnects."},
+    {"id": "PHY-14", "name": "Physical link lifecycle", "description": "Activation, deactivation, initialization, training, and loss-of-signal handling."},
+    {"id": "PHY-15", "name": "Signal integrity and interference", "description": "Attenuation, noise, crosstalk, electromagnetic interference, optical budget, and physical error symptoms."},
+    {"id": "PHY-16", "name": "Radio spectrum and antennas", "description": "Radio channels, frequencies, antennas, propagation, interference, and wireless physical boundaries."},
+    {"id": "PHY-17", "name": "Physical devices, ports, and cross-connects", "description": "Switching and routing hardware, racks, ports, patching, and cross-connect protection."},
+    {"id": "PHY-18", "name": "Path and failure-domain resilience", "description": "Redundant devices, diverse paths, power and cooling domains, and physical fault isolation."},
+    {"id": "PHY-19", "name": "Facility access and surveillance", "description": "Perimeters, authorization, entry mechanisms, access reviews, guards, alarms, and monitoring."},
+    {"id": "PHY-20", "name": "Power, cooling, fire, water, and environment", "description": "Supporting utilities and environmental controls protecting physical availability."},
+    {"id": "PHY-21", "name": "Equipment lifecycle and incident handling", "description": "Siting, maintenance, movement, removal, reuse, disposal, and response to physical incidents."}
+  ],
+  "evidence_sources": [
+    {
+      "id": "MS-SHARED-RESPONSIBILITY",
+      "title": "Shared responsibility in the cloud",
+      "url": "https://learn.microsoft.com/en-us/azure/security/fundamentals/shared-responsibility",
+      "evidence_type": "provider_documentation",
+      "reviewed_at": "2026-08-08",
+      "review_due_at": "2027-08-08"
+    },
+    {
+      "id": "MS-DATACENTER-SECURITY",
+      "title": "Datacenter security overview",
+      "url": "https://learn.microsoft.com/en-us/compliance/assurance/assurance-datacenter-security",
+      "evidence_type": "provider_assurance",
+      "reviewed_at": "2026-08-08",
+      "review_due_at": "2027-08-08"
+    },
+    {
+      "id": "MS-PHYSICAL-ACCESS",
+      "title": "Datacenter physical access security",
+      "url": "https://learn.microsoft.com/en-us/compliance/assurance/assurance-datacenter-physical-access-security",
+      "evidence_type": "provider_assurance",
+      "reviewed_at": "2026-08-08",
+      "review_due_at": "2027-08-08"
+    },
+    {
+      "id": "MS-AZURE-NETWORK-ARCHITECTURE",
+      "title": "Azure network architecture",
+      "url": "https://learn.microsoft.com/en-us/azure/security/fundamentals/infrastructure-network",
+      "evidence_type": "provider_documentation",
+      "reviewed_at": "2026-08-08",
+      "review_due_at": "2027-08-08"
+    },
+    {
+      "id": "MS-ISO-27001-POLICY",
+      "title": "Regulatory Compliance details for ISO 27001:2013",
+      "url": "https://learn.microsoft.com/en-us/azure/governance/policy/samples/iso-27001",
+      "evidence_type": "regulatory_mapping",
+      "reviewed_at": "2026-08-08",
+      "review_due_at": "2027-08-08"
+    }
+  ],
+  "controls": [
+    {
+      "id": "MS-PE-1", "framework": "Microsoft SOC", "control_id": "PE-1", "title": "Datacenter physical access provisioning",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19"], "evidence_source_ids": ["MS-SHARED-RESPONSIBILITY", "MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS"]
+    },
+    {
+      "id": "MS-PE-2", "framework": "Microsoft SOC", "control_id": "PE-2", "title": "Datacenter security verification",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS"]
+    },
+    {
+      "id": "MS-PE-3", "framework": "Microsoft SOC", "control_id": "PE-3", "title": "Datacenter user access review",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS"]
+    },
+    {
+      "id": "MS-PE-4", "framework": "Microsoft SOC", "control_id": "PE-4", "title": "Datacenter physical access mechanisms",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-MDI"], "domain_ids": ["PHY-02", "PHY-17", "PHY-19"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS"]
+    },
+    {
+      "id": "MS-PE-5", "framework": "Microsoft SOC", "control_id": "PE-5", "title": "Datacenter physical surveillance monitoring",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS"]
+    },
+    {
+      "id": "MS-PE-6", "framework": "Microsoft SOC", "control_id": "PE-6", "title": "Datacenter critical environment maintenance",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PMD"], "domain_ids": ["PHY-15", "PHY-20", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE"]
+    },
+    {
+      "id": "MS-PE-7", "framework": "Microsoft SOC", "control_id": "PE-7", "title": "Datacenter environmental controls",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PMD"], "domain_ids": ["PHY-15", "PHY-18", "PHY-20"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE"]
+    },
+    {
+      "id": "MS-PE-8", "framework": "Microsoft SOC", "control_id": "PE-8", "title": "Datacenter incident response",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-18", "PHY-19", "PHY-20", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS"]
+    },
+    {
+      "id": "ISO-A.11.1.1", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.1.1", "title": "Physical security perimeter",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19"], "evidence_source_ids": ["MS-SHARED-RESPONSIBILITY", "MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.1.2", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.1.2", "title": "Physical entry controls",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.1.3", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.1.3", "title": "Securing offices, rooms, and facilities",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-17", "PHY-19"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.1.4", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.1.4", "title": "Protecting against external and environmental threats",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PMD"], "domain_ids": ["PHY-15", "PHY-18", "PHY-20"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.1.5", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.1.5", "title": "Working in secure areas",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.1.6", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.1.6", "title": "Delivery and loading areas",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-17", "PHY-19", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.1", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.1", "title": "Equipment siting and protection",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-MDI", "IEEE-PMD"], "domain_ids": ["PHY-02", "PHY-03", "PHY-15", "PHY-17", "PHY-18", "PHY-20"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.2", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.2", "title": "Supporting utilities",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PMD"], "domain_ids": ["PHY-15", "PHY-18", "PHY-20"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.3", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.3", "title": "Cabling security",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PLCP", "IEEE-PCS", "IEEE-FEC", "IEEE-PMA", "IEEE-PMD", "IEEE-AN", "IEEE-MDI"],
+      "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-04", "PHY-05", "PHY-06", "PHY-07", "PHY-08", "PHY-09", "PHY-10", "PHY-11", "PHY-12", "PHY-13", "PHY-14", "PHY-15", "PHY-16", "PHY-17", "PHY-18"],
+      "evidence_source_ids": ["MS-SHARED-RESPONSIBILITY", "MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.4", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.4", "title": "Equipment maintenance",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PLCP", "IEEE-PCS", "IEEE-FEC", "IEEE-PMA", "IEEE-PMD", "IEEE-AN", "IEEE-MDI"],
+      "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-05", "PHY-06", "PHY-07", "PHY-08", "PHY-09", "PHY-10", "PHY-11", "PHY-12", "PHY-14", "PHY-15", "PHY-16", "PHY-17", "PHY-18", "PHY-20", "PHY-21"],
+      "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-AZURE-NETWORK-ARCHITECTURE", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.5", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.5", "title": "Removal of assets",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-MDI", "IEEE-PMD"], "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-17", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.6", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.6", "title": "Security of equipment and assets off-premises",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PMD", "IEEE-MDI"], "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-15", "PHY-16", "PHY-17", "PHY-21"], "evidence_source_ids": ["MS-SHARED-RESPONSIBILITY", "MS-DATACENTER-SECURITY", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.7", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.7", "title": "Secure disposal or reuse of equipment",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1", "IEEE-PMD", "IEEE-MDI"], "domain_ids": ["PHY-01", "PHY-02", "PHY-03", "PHY-17", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.8", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.8", "title": "Unattended user equipment",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-17", "PHY-19", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    },
+    {
+      "id": "ISO-A.11.2.9", "framework": "ISO/IEC 27001:2013", "control_id": "A.11.2.9", "title": "Clear desk and clear screen policy",
+      "responsibility": "Microsoft", "applicability": "APPLICABLE", "verification": "PROVIDER_ASSURANCE", "status": "PROVIDER_ATTESTED",
+      "sublayer_ids": ["GENERIC-L1"], "domain_ids": ["PHY-19", "PHY-21"], "evidence_source_ids": ["MS-DATACENTER-SECURITY", "MS-PHYSICAL-ACCESS", "MS-ISO-27001-POLICY"]
+    }
+  ]
+}
