@@ -1,6 +1,6 @@
 ﻿# Rules Reference
 
-OpenShield currently ships 65 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
+OpenShield currently ships 80 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
 
 | Rule ID | Name | Severity | Category | CIS | NIST | ISO 27001 |
 |---|---|---|---|---|---|---|
@@ -61,6 +61,21 @@ OpenShield currently ships 65 Azure scan rules. This table is generated from the
 | AZ-AKS-004 | AKS Workload Identity Not Fully Enabled | MEDIUM | Kubernetes | N/A-AKS-004 | PR.AC-4 | A.9.2.3 |
 | AZ-AKS-005 | AKS Azure Policy Add-on Not Enabled | MEDIUM | Kubernetes | N/A-AKS-005 | PR.IP-1 | A.12.1.2 |
 | AZ-AKS-006 | AKS Node OS Automatic Upgrades Disabled | HIGH | Kubernetes | N/A-AKS-006 | PR.IP-12 | A.12.6.1 |
+| AZ-BAK-001 | Backup Soft Delete Disabled or Below 35 Days | CRITICAL | Backup | TBD-BAK-001 | PR.IP-4 | A.12.3.1 |
+| AZ-BAK-002 | Backup Vault Immutability Disabled | HIGH | Backup | TBD-BAK-002 | PR.IP-4 | A.12.3.1 |
+| AZ-BAK-004 | Backup Multiuser Authorization Missing | HIGH | Backup | TBD-BAK-004 | PR.AC-4 | A.9.2.3 |
+| AZ-BAK-006 | Backup Security Monitoring Disabled | MEDIUM | Backup | TBD-BAK-006 | DE.CM-1 | A.12.4.1 |
+| AZ-FUNC-001 | Function App HTTPS Only Disabled | HIGH | Serverless | TBD-FUNC-001 | PR.DS-2 | A.13.2.1 |
+| AZ-FUNC-002 | Function App Minimum TLS Below 1.2 | HIGH | Serverless | TBD-FUNC-002 | PR.DS-2 | A.13.2.1 |
+| AZ-FUNC-003 | Function App FTP Publishing Enabled | MEDIUM | Serverless | TBD-FUNC-003 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-004 | Function App Remote Debugging Enabled | HIGH | Serverless | TBD-FUNC-004 | PR.AC-5 | A.13.1.1 |
+| AZ-FUNC-005 | Function App Managed Identity Missing | MEDIUM | Serverless | TBD-FUNC-005 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-001 | Storage Public Network Access Enabled | HIGH | Network | TBD-PE-001 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-002 | Azure SQL Public Network Access Enabled | HIGH | Network | TBD-PE-002 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-003 | PostgreSQL Public Network Access Enabled | HIGH | Network | TBD-PE-003 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-004 | Web or Function App Public Network Access Enabled | HIGH | Network | TBD-PE-004 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-005 | Recovery Vault Public Network Access Enabled | HIGH | Network | TBD-PE-005 | PR.AC-5 | A.13.1.1 |
+| AZ-PE-006 | Private Endpoint Connection Not Approved | MEDIUM | Network | TBD-PE-006 | PR.AC-5 | A.13.1.1 |
 | AZ-SC-001 | Container Registry Admin User Enabled | HIGH | Supply Chain | TBD-SC-001 | PR.AC-1 | A.9.2.1 |
 | AZ-SC-002 | Container Registry Public Network Access Enabled | HIGH | Supply Chain | TBD-SC-002 | PR.AC-5 | A.13.1.1 |
 | AZ-SC-003 | Container Registry Allows Anonymous Pull | HIGH | Supply Chain | TBD-SC-003 | PR.AC-1 | A.9.2.1 |

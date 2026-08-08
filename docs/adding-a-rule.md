@@ -131,6 +131,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of RoleAssignment objects for service principals |
 | `azure_client.get_conditional_access_policies()` | List of CA policy dicts from MS Graph |
+| `azure_client.get_function_app_security_posture()` | Cached, secret-free Function App posture dicts, or `None` on API failure |
+| `azure_client.get_private_endpoint_posture()` | Public-access and approved Private Link state for supported PaaS resources, or `None` on API failure |
+| `azure_client.get_recovery_vault_security_posture()` | Cached Recovery Services vault security settings, or `None` on API failure |
 | `azure_client.get_container_registries()` | List of ACR Registry objects, or `None` on API failure |
 | `azure_client.get_blob_containers(rg, account)` | List of blob container items (with `public_access`), or `None` on API failure |
 | `azure_client.get_blob_service_properties(rg, account)` | BlobServiceProperties (versioning, soft delete), or `None` on API failure |

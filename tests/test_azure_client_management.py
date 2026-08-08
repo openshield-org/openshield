@@ -96,6 +96,91 @@ def test_vm_extensions_normalize_sdk_page_and_failure(client):
         assert client.get_vm_extensions("rg", "vm") is None
 
 
+def test_private_endpoint_posture_one_service_failure_does_not_drop_others(client):
+    """One resource type's API call failing (e.g. SQL RP not registered) must
+    not discard records already collected for other resource types in the
+    same call — only that service's records should be missing."""
+    with (
+        patch("scanner.azure_client.NetworkManagementClient") as network_ctor,
+        patch("scanner.azure_client.StorageManagementClient") as storage_ctor,
+        patch("scanner.azure_client.SqlManagementClient") as sql_ctor,
+        patch("azure.mgmt.web.WebSiteManagementClient") as web_ctor,
+        patch("azure.mgmt.postgresqlflexibleservers.PostgreSQLManagementClient") as pg_ctor,
+        patch("azure.mgmt.recoveryservices.RecoveryServicesClient") as recovery_ctor,
+    ):
+        network_ctor.return_value.private_endpoints.list_by_subscription.return_value = []
+        storage_ctor.return_value.storage_accounts.list.return_value = [
+            SimpleNamespace(id="/sa1", name="sa1", public_network_access="Enabled")
+        ]
+        sql_ctor.return_value.servers.list.side_effect = RuntimeError("SQL RP not registered")
+        web_ctor.return_value.web_apps.list.return_value = []
+        pg_ctor.return_value.servers.list.return_value = []
+        recovery_ctor.return_value.vaults.list_by_subscription_id.return_value = []
+
+        records = client.get_private_endpoint_posture()
+
+    assert records is not None
+    services = {r["service"] for r in records}
+    assert "storage" in services
+    assert "sql" not in services
+
+
+def test_private_endpoint_posture_one_web_app_failure_does_not_drop_others(client):
+    """A failed configuration request for one Web App must not prevent later
+    Web or Function Apps from contributing posture records."""
+    with (
+        patch("scanner.azure_client.NetworkManagementClient") as network_ctor,
+        patch("scanner.azure_client.StorageManagementClient") as storage_ctor,
+        patch("scanner.azure_client.SqlManagementClient") as sql_ctor,
+        patch("azure.mgmt.web.WebSiteManagementClient") as web_ctor,
+        patch("azure.mgmt.postgresqlflexibleservers.PostgreSQLManagementClient") as pg_ctor,
+        patch("azure.mgmt.recoveryservices.RecoveryServicesClient") as recovery_ctor,
+    ):
+        network_ctor.return_value.private_endpoints.list_by_subscription.return_value = []
+        storage_ctor.return_value.storage_accounts.list.return_value = []
+        sql_ctor.return_value.servers.list.return_value = []
+        pg_ctor.return_value.servers.list.return_value = []
+        recovery_ctor.return_value.vaults.list_by_subscription_id.return_value = []
+        bad_app = SimpleNamespace(id="/apps/bad", name="bad", public_network_access="Enabled")
+        good_app = SimpleNamespace(id="/apps/good", name="good", public_network_access="Enabled")
+        web_ctor.return_value.web_apps.list.return_value = [bad_app, good_app]
+
+        def get_configuration(resource_group, name):
+            if name == "bad":
+                raise RuntimeError("configuration unavailable")
+            return SimpleNamespace(public_network_access="Enabled")
+
+        web_ctor.return_value.web_apps.get_configuration.side_effect = get_configuration
+
+        records = client.get_private_endpoint_posture()
+
+    assert records is not None
+    assert [(record["service"], record["name"]) for record in records] == [("web", "good")]
+
+
+def test_function_app_security_posture_one_app_failure_does_not_drop_others(client):
+    """A single Function App's get_configuration() call failing (e.g. the app
+    is stopped) must not discard posture data already collected for other
+    Function Apps in the same subscription."""
+    with patch("azure.mgmt.web.WebSiteManagementClient") as web_ctor:
+        good_app = SimpleNamespace(id="/apps/good", name="good", kind="functionapp", https_only=True, identity=None)
+        bad_app = SimpleNamespace(id="/apps/bad", name="bad", kind="functionapp", https_only=True, identity=None)
+        web_ctor.return_value.web_apps.list.return_value = [good_app, bad_app]
+
+        def get_configuration(resource_group, name):
+            if name == "bad":
+                raise RuntimeError("app is stopped")
+            return SimpleNamespace(min_tls_version="1.2", ftps_state="Disabled", remote_debugging_enabled=False)
+
+        web_ctor.return_value.web_apps.get_configuration.side_effect = get_configuration
+
+        result = client.get_function_app_security_posture()
+
+    assert result is not None
+    names = {app["name"] for app in result}
+    assert names == {"good"}
+
+
 def test_get_container_registries_returns_results_and_caches(client):
     with patch("azure.mgmt.containerregistry.ContainerRegistryManagementClient") as constructor:
         constructor.return_value.registries.list.return_value = [SimpleNamespace(name="acr1")]

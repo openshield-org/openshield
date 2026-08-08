@@ -206,6 +206,9 @@ Use the existing wrapper methods in `scanner/azure_client.py` rather than constr
 | `azure_client.get_subscription_role_assignments()` | Subscription RBAC assignments, or `None` on API failure |
 | `azure_client.get_service_principals()` | List of role assignments for service principals |
 | `azure_client.get_conditional_access_policies()` | List of Conditional Access policy dicts from Microsoft Graph |
+| `azure_client.get_function_app_security_posture()` | Cached, secret-free Function App posture dicts, or `None` on API failure |
+| `azure_client.get_private_endpoint_posture()` | Public-access and approved Private Link state for supported PaaS resources, or `None` on API failure |
+| `azure_client.get_recovery_vault_security_posture()` | Cached Recovery Services vault security settings, or `None` on API failure |
 
 Most list methods return an empty list on failure. Methods that fetch one resource or one policy return `None` when the result cannot be determined.
 
