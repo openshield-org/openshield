@@ -7,6 +7,13 @@ import uuid
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
+from api.validation import (
+    VALIDATION_ERROR_MESSAGE,
+    ValidationError,
+    reject_unknown_fields,
+    require_json_object,
+    uuid_string,
+)
 from scanner.cve_correlator import enrich_findings
 
 scans_bp = Blueprint("scans", __name__)
@@ -39,11 +46,14 @@ def list_scans():
 def get_scan_status(scan_id):
     """Return the details and status of a specific scan."""
     try:
+        scan_id = uuid_string(scan_id, "scan_id")
         db = _get_db()
         scan = db.get_scan(scan_id)
         if not scan:
             return jsonify({"error": "Scan not found"}), 404
         return jsonify(scan)
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to get scan status: %s", exc)
         return jsonify({"error": "Database error"}), 500
@@ -59,11 +69,14 @@ def trigger_scan():
     Returns 202 Accepted with the scan_id immediately.
     """
     try:
-        body = request.get_json(silent=True) or {}
+        raw_body = request.get_json(silent=True)
+        body = {} if raw_body is None and not request.data else require_json_object(raw_body)
+        reject_unknown_fields(body, {"subscription_id"})
         subscription_id = body.get("subscription_id") or os.environ.get("AZURE_SUBSCRIPTION_ID")
 
         if not subscription_id:
             return jsonify({"error": "subscription_id is required"}), 400
+        subscription_id = uuid_string(subscription_id, "subscription_id")
 
         scan_id = str(uuid.uuid4())
         logger.info("Async scan triggered for subscription %s (id: %s)", subscription_id, scan_id)
@@ -79,6 +92,8 @@ def trigger_scan():
             {"scan_id": scan_id, "status": "pending", "message": "Scan has been queued and will start shortly."}
         ), 202
 
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Critical error in trigger_scan route: %s", exc, exc_info=True)
         return jsonify({"error": "Critical route failure"}), 500
@@ -153,6 +168,7 @@ def enrich_scan(scan_id):
     rate-limited to one every ~7 seconds.
     """
     try:
+        scan_id = uuid_string(scan_id, "scan_id")
         db = _get_db()
 
         # Check current status to avoid redundant NVD calls
@@ -189,6 +205,8 @@ def enrich_scan(scan_id):
             }
         ), 202
 
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to start enrichment for scan %s: %s", scan_id, exc)
         return jsonify({"error": "Internal server error"}), 500

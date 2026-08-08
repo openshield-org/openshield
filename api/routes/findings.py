@@ -2,19 +2,27 @@
 
 import logging
 import os
-import re
 from pathlib import Path
 from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
+from api.validation import (
+    CATEGORIES,
+    RULE_ID_RE,
+    SEVERITIES,
+    VALIDATION_ERROR_MESSAGE,
+    ValidationError,
+    bounded_string,
+    choice,
+    positive_integer,
+    uuid_string,
+)
 
 _PLAYBOOKS_DIR = (Path(__file__).parent.parent.parent / "playbooks" / "cli").resolve()
 
 # Known rule_id shape, e.g. AZ-STOR-001. Anything else is rejected before it
 # ever reaches the filesystem, closing off path traversal via a crafted or
 # corrupted rule_id.
-_RULE_ID_RE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$")
-
 findings_bp = Blueprint("findings", __name__)
 logger = logging.getLogger(__name__)
 
@@ -37,10 +45,30 @@ def list_findings():
         scan_id   - UUID of a specific scan
     """
     try:
-        filters = {k: v for k, v in request.args.items() if k in ("severity", "category", "rule_id", "scan_id")}
+        allowed = {"severity", "category", "rule_id", "scan_id"}
+        unknown = set(request.args) - allowed
+        if unknown:
+            raise ValidationError(f"Unsupported query parameter: {sorted(unknown)[0]}")
+        for key in request.args:
+            if len(request.args.getlist(key)) != 1:
+                raise ValidationError(f"Query parameter {key} must be provided once")
+
+        filters = {}
+        if "severity" in request.args:
+            filters["severity"] = choice(request.args["severity"], "severity", SEVERITIES, case="upper")
+        if "category" in request.args:
+            filters["category"] = choice(request.args["category"], "category", CATEGORIES)
+        if "rule_id" in request.args:
+            filters["rule_id"] = bounded_string(
+                request.args["rule_id"].upper(), "rule_id", maximum=64, pattern=RULE_ID_RE
+            )
+        if "scan_id" in request.args:
+            filters["scan_id"] = uuid_string(request.args["scan_id"], "scan_id")
         db = _get_db()
         findings = db.get_findings(filters)
         return jsonify({"count": len(findings), "findings": findings})
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to list findings: %s", exc)
         return jsonify({"error": "Failed to retrieve findings"}), 500
@@ -50,11 +78,14 @@ def list_findings():
 def get_finding(finding_id: int):
     """Return a single finding by its integer ID."""
     try:
+        finding_id = positive_integer(finding_id, "finding_id")
         db = _get_db()
         finding = db.get_finding_by_id(finding_id)
         if not finding:
             return jsonify({"error": "Finding not found"}), 404
         return jsonify(finding)
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to get finding %d: %s", finding_id, exc)
         return jsonify({"error": "Database error"}), 500
@@ -68,6 +99,7 @@ def get_playbook(finding_id: int):
     and combines it with the finding's remediation guidance and any CVE references.
     """
     try:
+        finding_id = positive_integer(finding_id, "finding_id")
         db = _get_db()
         finding = db.get_finding_by_id(finding_id)
         if not finding:
@@ -79,7 +111,7 @@ def get_playbook(finding_id: int):
 
         cli_commands = []
         script_path = None
-        if _RULE_ID_RE.match(rule_id or ""):
+        if RULE_ID_RE.match(rule_id or ""):
             # Map rule_id (e.g. AZ-STOR-001) to script filename (fix_az_stor_001.sh)
             script_name = "fix_" + rule_id.lower().replace("-", "_") + ".sh"
             candidate = (_PLAYBOOKS_DIR / script_name).resolve()
@@ -124,6 +156,8 @@ def get_playbook(finding_id: int):
             }
         )
 
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
     except Exception as exc:
         logger.error("Failed to get playbook for finding %d: %s", finding_id, exc)
         return jsonify({"error": "Failed to retrieve playbook"}), 500

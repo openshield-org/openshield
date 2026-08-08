@@ -43,6 +43,7 @@ submit the public URL or justification.
 | `crypto_certificate_verification` | Standard verification defaults; no disabled verification in source |
 | `crypto_verification_private` | Verification occurs in the TLS client before HTTP data is sent |
 | `hardening` | Website/frontend CSP and security headers, production fail-closed configuration |
+| `input_validation` | `docs/input-validation-audit.md`, centralized validators and security regression tests |
 | `assurance_case` | `docs/security-assurance-case.md` |
 | `static_analysis_common_vulnerabilities` | CodeQL, Bandit and Semgrep |
 | `dynamic_analysis_unsafe` | N/A: project code is Python/JavaScript, not C/C++ |
@@ -66,7 +67,6 @@ submit the public URL or justification.
 | `internationalization` | English-only UI; implement localization or mark Unmet with justification |
 | `regression_tests_added50` | Preliminary audit shows 9 of 12 fixes with test changes; verify behavioral assertions before marking Met |
 | `interfaces_current` | Review deprecated API warnings and document the periodic check |
-| `input_validation` | Complete route-by-route allowlist audit and close discovered gaps |
 | `crypto_algorithm_agility` | Review JWT and signing algorithm agility; document supported migration path |
 | `build_repeatable` | Demonstrate repeatable frontend/release output or provide an accurate scripting-language N/A rationale |
 

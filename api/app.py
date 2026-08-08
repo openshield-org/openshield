@@ -29,6 +29,7 @@ _MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2 MB
 
 _INSECURE_JWT_DEFAULT = "change-me-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
+_MAX_AUTHORIZATION_HEADER_LENGTH = 8192
 _GENERATE_CMD = 'python -c "import secrets; print(secrets.token_urlsafe(32))"'
 
 
@@ -167,7 +168,7 @@ def create_app() -> Flask:
             return None
 
         auth = request.headers.get("Authorization", "")
-        if not auth.startswith("Bearer "):
+        if len(auth) > _MAX_AUTHORIZATION_HEADER_LENGTH or not auth.startswith("Bearer "):
             return jsonify(
                 {
                     "error": "Missing or malformed Authorization header",

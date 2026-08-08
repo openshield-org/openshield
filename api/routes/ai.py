@@ -8,6 +8,19 @@ from flask import Blueprint, jsonify, request
 from api.rate_limit import rate_limit
 from api.services.ai_provider import PROVIDERS as SUPPORTED_PROVIDERS
 from api.services.ai_provider import get_completion
+from api.validation import (
+    MAX_API_KEY_LENGTH,
+    MAX_MODEL_LENGTH,
+    MAX_QUESTION_LENGTH,
+    MODEL_RE,
+    VALIDATION_ERROR_MESSAGE,
+    ValidationError,
+    bounded_string,
+    choice,
+    findings_list,
+    reject_unknown_fields,
+    require_json_object,
+)
 from ai.retriever import retrieve, VectorStoreNotBuilt
 
 ai_bp = Blueprint("ai", __name__)
@@ -148,14 +161,18 @@ def _context_for(query):
 
 
 def _read_request():
-    body = request.get_json(silent=True)
-    if not body:
-        return None, (jsonify({"error": "Request body must be JSON"}), 400)
-    if not body.get("provider"):
-        return None, (jsonify({"error": "provider is required"}), 400)
-    if not body.get("api_key"):
-        return None, (jsonify({"error": "api_key is required"}), 400)
-    return body, None
+    try:
+        body = require_json_object(request.get_json(silent=True))
+        reject_unknown_fields(body, {"provider", "api_key", "model", "findings", "question"})
+        body["provider"] = choice(body.get("provider"), "provider", SUPPORTED_PROVIDERS, case="lower")
+        body["api_key"] = bounded_string(body.get("api_key"), "api_key", maximum=MAX_API_KEY_LENGTH)
+        if body.get("model") is not None:
+            body["model"] = bounded_string(body["model"], "model", maximum=MAX_MODEL_LENGTH, pattern=MODEL_RE)
+            if ".." in body["model"]:
+                raise ValidationError("model has an invalid format")
+        return body, None
+    except ValidationError:
+        return None, (jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400)
 
 
 _AI_ERROR_MESSAGES = {
@@ -180,27 +197,21 @@ def _ai_error_response(exc: Exception, status: int, log_context: str):
 @ai_bp.post("/api/ai/insights")
 @rate_limit(_AI_RATE_LIMIT)
 def insights():
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Request body must be valid JSON"}), 400
-
-    provider = str(data.get("provider") or "").strip().lower()
-    api_key = str(data.get("api_key") or "").strip()
-    findings = data.get("findings")
-    question = str(data.get("question") or "").strip()
-
-    if not provider:
-        return jsonify({"error": "Missing required field: provider"}), 400
-    if provider not in SUPPORTED_PROVIDERS:
-        return jsonify({"error": f"Unsupported provider: {provider}"}), 400
-    if not api_key:
-        return jsonify({"error": "Missing required field: api_key"}), 400
-    if findings is None:
-        return jsonify({"error": "Missing required field: findings"}), 400
-    if not isinstance(findings, list):
-        return jsonify({"error": "findings must be a list"}), 400
-    if len(findings) == 0:
-        return jsonify({"error": "findings must not be empty"}), 400
+    data, error = _read_request()
+    if error:
+        return error
+    try:
+        provider = data["provider"]
+        api_key = data["api_key"]
+        findings = findings_list(data.get("findings"), required=True)
+        question = ""
+        if data.get("question") is not None:
+            if not isinstance(data["question"], str):
+                raise ValidationError("question must be a string")
+            if data["question"].strip():
+                question = bounded_string(data["question"], "question", maximum=MAX_QUESTION_LENGTH)
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     sorted_findings = sorted(findings, key=severity_rank, reverse=True)
 
@@ -234,9 +245,10 @@ def ai_summary():
     body, error = _read_request()
     if error:
         return error
-    findings = body.get("findings", [])
-    if not isinstance(findings, list):
-        return jsonify({"error": "findings must be a list"}), 400
+    try:
+        findings = findings_list(body.get("findings"))
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     findings_text = _findings_to_text(findings)
     try:
@@ -273,9 +285,10 @@ def ai_prioritise():
     body, error = _read_request()
     if error:
         return error
-    findings = body.get("findings", [])
-    if not isinstance(findings, list):
-        return jsonify({"error": "findings must be a list"}), 400
+    try:
+        findings = findings_list(body.get("findings"))
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     findings_text = _findings_to_text(findings)
     try:
@@ -319,16 +332,17 @@ def ai_ask():
     body, error = _read_request()
     if error:
         return error
-    question = body.get("question", "")
-    if not question or not question.strip():
-        return jsonify({"error": "question is required"}), 400
+    try:
+        question = bounded_string(body.get("question"), "question", maximum=MAX_QUESTION_LENGTH)
+        findings = findings_list(body.get("findings"))
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     try:
         context, sources = _context_for(question)
     except VectorStoreNotBuilt as exc:
         return _ai_error_response(exc, 503, "Vector store unavailable in ai_ask")
 
-    findings = body.get("findings", [])
     findings_text = _findings_to_text(findings) if findings else "Not provided."
 
     prompt = (
@@ -361,11 +375,10 @@ def ai_threat_simulation():
     body, error = _read_request()
     if error:
         return error
-    findings = body.get("findings", [])
-    if not isinstance(findings, list):
-        return jsonify({"error": "findings must be a list"}), 400
-    if not findings:
-        return jsonify({"error": "findings must not be empty"}), 400
+    try:
+        findings = findings_list(body.get("findings"), required=True)
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE}), 400
 
     findings_text = _findings_to_text(findings)
     try:

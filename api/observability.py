@@ -13,6 +13,7 @@ status code, scan status, rule ID and provider name) are used as labels.
 
 import logging
 import os
+import re
 import time
 import uuid
 
@@ -35,6 +36,7 @@ except ImportError:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 REQUEST_ID_HEADER = "X-Request-ID"
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 # --------------------------------------------------------------------------- #
 # Prometheus metrics                                                           #
@@ -160,7 +162,8 @@ def init_app(app: Flask) -> None:
 
     @app.before_request
     def _start_observability() -> None:
-        g.request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
+        supplied_request_id = request.headers.get(REQUEST_ID_HEADER, "")
+        g.request_id = supplied_request_id if _REQUEST_ID_RE.fullmatch(supplied_request_id) else str(uuid.uuid4())
         g.request_start_time = time.perf_counter()
 
     @app.after_request
