@@ -1,8 +1,17 @@
 """AZ-DL-001: Enabled ExpressRoute Direct link has no MACsec configuration."""
 
+import logging
 from typing import Any, Dict, List
 
-from scanner.rules._data_link_common import enabled_links, has_macsec, resource_identity
+from scanner.rules._data_link_common import (
+    InventoryState,
+    enabled_links,
+    has_macsec,
+    inventory_state,
+    resource_identity,
+)
+
+logger = logging.getLogger(__name__)
 
 RULE_ID = "AZ-DL-001"
 RULE_NAME = "ExpressRoute Direct Link Does Not Use MACsec"
@@ -20,7 +29,12 @@ PLAYBOOK = "playbooks/cli/fix_az_dl_001.sh"
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Report enabled links without MACsec and preserve API failures as indeterminate."""
     ports = azure_client.get_express_route_ports()
-    if ports is None:
+    state = inventory_state(ports)
+    if state is InventoryState.INDETERMINATE:
+        logger.warning("%s: ExpressRoute Direct inventory unavailable; result is indeterminate", RULE_ID)
+        return []
+    if state is InventoryState.NOT_APPLICABLE:
+        logger.info("%s: no ExpressRoute Direct ports; rule is not applicable", RULE_ID)
         return []
 
     findings: List[Dict[str, Any]] = []

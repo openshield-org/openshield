@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from azure.mgmt.network.models import ExpressRouteLink, ExpressRouteLinkMacSecConfig, ExpressRoutePort
 
 from api.services.data_link_assurance import (
     EXPECTED_DOMAIN_IDS,
@@ -17,6 +18,7 @@ from api.services.data_link_assurance import (
 )
 from api.services.physical_assurance import CatalogValidationError
 from scanner.rules import az_dl_001, az_dl_002
+from scanner.rules._data_link_common import InventoryState, inventory_state
 
 
 def _link(
@@ -29,7 +31,12 @@ def _link(
     config = None
     if cipher is not None:
         config = SimpleNamespace(cipher=cipher, cak_secret_identifier=cak, ckn_secret_identifier=ckn)
-    return SimpleNamespace(name="link1", admin_state=state, macsec_config=config)
+    return SimpleNamespace(
+        id="/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/expressRoutePorts/erd1/links/link1",
+        name="link1",
+        admin_state=state,
+        mac_sec_config=config,
+    )
 
 
 def _port(link: SimpleNamespace, bandwidth: int = 100) -> SimpleNamespace:
@@ -110,11 +117,19 @@ def test_data_link_endpoint_hides_catalog_errors(client, auth_headers):
     assert "sensitive path" not in response.get_data(as_text=True)
 
 
-@pytest.mark.parametrize("inventory", [[], None])
-def test_empty_or_failed_inventory_creates_no_findings(mock_azure, subscription_id, inventory):
-    mock_azure.set_express_route_ports(inventory)
+def test_empty_inventory_is_not_applicable_and_creates_no_findings(mock_azure, subscription_id):
+    mock_azure.set_express_route_ports([])
+    assert inventory_state(mock_azure.get_express_route_ports()) is InventoryState.NOT_APPLICABLE
     assert az_dl_001.scan(mock_azure, subscription_id) == []
     assert az_dl_002.scan(mock_azure, subscription_id) == []
+
+
+def test_failed_inventory_is_indeterminate_and_creates_no_findings(mock_azure, subscription_id, caplog):
+    mock_azure.set_express_route_ports(None)
+    assert inventory_state(mock_azure.get_express_route_ports()) is InventoryState.INDETERMINATE
+    assert az_dl_001.scan(mock_azure, subscription_id) == []
+    assert az_dl_002.scan(mock_azure, subscription_id) == []
+    assert caplog.text.count("result is indeterminate") == 2
 
 
 def test_enabled_link_without_macsec_creates_only_absence_finding(mock_azure, subscription_id):
@@ -124,6 +139,8 @@ def test_enabled_link_without_macsec_creates_only_absence_finding(mock_azure, su
     assert findings[0]["rule_id"] == "AZ-DL-001"
     assert findings[0]["category"] == "Data Link"
     assert findings[0]["playbook"] == "playbooks/cli/fix_az_dl_001.sh"
+    assert findings[0]["resource_id"].endswith("/expressRoutePorts/erd1/links/link1")
+    assert findings[0]["resource_name"] == "erd1/link1"
     assert az_dl_002.scan(mock_azure, subscription_id) == []
 
 
@@ -134,6 +151,8 @@ def test_high_speed_non_xpn_cipher_creates_finding(mock_azure, subscription_id):
     assert findings[0]["rule_id"] == "AZ-DL-002"
     assert findings[0]["category"] == "Data Link"
     assert findings[0]["playbook"] == "playbooks/cli/fix_az_dl_002.sh"
+    assert findings[0]["resource_id"].endswith("/expressRoutePorts/erd1/links/link1")
+    assert findings[0]["resource_name"] == "erd1/link1"
     assert findings[0]["metadata"]["cipher"] == "GcmAes256"
 
 
@@ -158,6 +177,37 @@ def test_findings_never_expose_cak_or_ckn(mock_azure, subscription_id):
     assert "cak-sensitive-value" not in serialized
     assert "ckn-sensitive-value" not in serialized
     assert "secret_identifier" not in serialized
+
+
+def test_rules_use_real_azure_sdk_link_structure(mock_azure, subscription_id):
+    """Protect the exact Azure SDK field names and child-link resource identity."""
+    config = ExpressRouteLinkMacSecConfig(
+        cipher="GcmAes256",
+        cak_secret_identifier="https://vault.example/secrets/cak",
+        ckn_secret_identifier="https://vault.example/secrets/ckn",
+    )
+    link_id = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/expressRoutePorts/erd1/links/link2"
+    link = ExpressRouteLink(
+        id=link_id,
+        name="link2",
+        admin_state="Enabled",
+        mac_sec_config=config,
+    )
+    port = ExpressRoutePort(
+        id="/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/expressRoutePorts/erd1",
+        bandwidth_in_gbps=100,
+        links=[link],
+    )
+    port.name = "erd1"
+    mock_azure.set_express_route_ports([port])
+
+    assert az_dl_001.scan(mock_azure, subscription_id) == []
+    findings = az_dl_002.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["resource_id"] == link_id
+    assert findings[0]["resource_name"] == "erd1/link2"
+    serialized = json.dumps(findings)
+    assert "vault.example" not in serialized
 
 
 def test_express_route_inventory_uses_azure_client_abstraction():

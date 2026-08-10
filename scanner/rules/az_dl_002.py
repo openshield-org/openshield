@@ -1,8 +1,19 @@
 """AZ-DL-002: High-speed ExpressRoute Direct link uses a non-XPN MACsec cipher."""
 
+import logging
 from typing import Any, Dict, List
 
-from scanner.rules._data_link_common import cipher_name, enabled_links, has_macsec, resource_identity, value
+from scanner.rules._data_link_common import (
+    InventoryState,
+    cipher_name,
+    enabled_links,
+    has_macsec,
+    inventory_state,
+    resource_identity,
+    value,
+)
+
+logger = logging.getLogger(__name__)
 
 RULE_ID = "AZ-DL-002"
 RULE_NAME = "High-Speed ExpressRoute Direct Link Uses Non-XPN MACsec"
@@ -20,7 +31,12 @@ PLAYBOOK = "playbooks/cli/fix_az_dl_002.sh"
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     """Report high-speed enabled links whose configured MACsec cipher is not XPN."""
     ports = azure_client.get_express_route_ports()
-    if ports is None:
+    state = inventory_state(ports)
+    if state is InventoryState.INDETERMINATE:
+        logger.warning("%s: ExpressRoute Direct inventory unavailable; result is indeterminate", RULE_ID)
+        return []
+    if state is InventoryState.NOT_APPLICABLE:
+        logger.info("%s: no ExpressRoute Direct ports; rule is not applicable", RULE_ID)
         return []
 
     findings: List[Dict[str, Any]] = []
