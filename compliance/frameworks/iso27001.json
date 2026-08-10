@@ -333,12 +333,12 @@
       "control_name": "Password management system",
       "description": "A pipeline service connection authenticates with a stored service principal secret instead of a federated credential, leaving a static credential to rotate and potentially leak."
     },
-    "AZ-NET-016": {
+    "AZ-DL-001": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "MACsec protects traffic on the customer-visible ExpressRoute Direct Ethernet boundary."
     },
-    "AZ-NET-017": {
+    "AZ-DL-002": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "XPN MACsec provides appropriate packet-number capacity for high-speed ExpressRoute Direct links."

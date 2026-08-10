@@ -16,7 +16,7 @@ from api.services.data_link_assurance import (
     validate_catalog,
 )
 from api.services.physical_assurance import CatalogValidationError
-from scanner.rules import az_net_016, az_net_017
+from scanner.rules import az_dl_001, az_dl_002
 
 
 def _link(
@@ -113,22 +113,27 @@ def test_data_link_endpoint_hides_catalog_errors(client, auth_headers):
 @pytest.mark.parametrize("inventory", [[], None])
 def test_empty_or_failed_inventory_creates_no_findings(mock_azure, subscription_id, inventory):
     mock_azure.set_express_route_ports(inventory)
-    assert az_net_016.scan(mock_azure, subscription_id) == []
-    assert az_net_017.scan(mock_azure, subscription_id) == []
+    assert az_dl_001.scan(mock_azure, subscription_id) == []
+    assert az_dl_002.scan(mock_azure, subscription_id) == []
 
 
 def test_enabled_link_without_macsec_creates_only_absence_finding(mock_azure, subscription_id):
     mock_azure.set_express_route_ports([_port(_link(cipher=None))])
-    findings = az_net_016.scan(mock_azure, subscription_id)
+    findings = az_dl_001.scan(mock_azure, subscription_id)
     assert len(findings) == 1
-    assert findings[0]["rule_id"] == "AZ-NET-016"
-    assert az_net_017.scan(mock_azure, subscription_id) == []
+    assert findings[0]["rule_id"] == "AZ-DL-001"
+    assert findings[0]["category"] == "Data Link"
+    assert findings[0]["playbook"] == "playbooks/cli/fix_az_dl_001.sh"
+    assert az_dl_002.scan(mock_azure, subscription_id) == []
 
 
 def test_high_speed_non_xpn_cipher_creates_finding(mock_azure, subscription_id):
     mock_azure.set_express_route_ports([_port(_link(cipher="GcmAes256"), bandwidth=100)])
-    findings = az_net_017.scan(mock_azure, subscription_id)
+    findings = az_dl_002.scan(mock_azure, subscription_id)
     assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-DL-002"
+    assert findings[0]["category"] == "Data Link"
+    assert findings[0]["playbook"] == "playbooks/cli/fix_az_dl_002.sh"
     assert findings[0]["metadata"]["cipher"] == "GcmAes256"
 
 
@@ -138,18 +143,18 @@ def test_high_speed_non_xpn_cipher_creates_finding(mock_azure, subscription_id):
 )
 def test_low_speed_or_xpn_links_do_not_create_cipher_findings(mock_azure, subscription_id, bandwidth, cipher):
     mock_azure.set_express_route_ports([_port(_link(cipher=cipher), bandwidth=bandwidth)])
-    assert az_net_017.scan(mock_azure, subscription_id) == []
+    assert az_dl_002.scan(mock_azure, subscription_id) == []
 
 
 def test_disabled_links_are_not_customer_actionable(mock_azure, subscription_id):
     mock_azure.set_express_route_ports([_port(_link(state="Disabled", cipher=None))])
-    assert az_net_016.scan(mock_azure, subscription_id) == []
-    assert az_net_017.scan(mock_azure, subscription_id) == []
+    assert az_dl_001.scan(mock_azure, subscription_id) == []
+    assert az_dl_002.scan(mock_azure, subscription_id) == []
 
 
 def test_findings_never_expose_cak_or_ckn(mock_azure, subscription_id):
     mock_azure.set_express_route_ports([_port(_link(cipher="GcmAes256"))])
-    serialized = json.dumps(az_net_017.scan(mock_azure, subscription_id))
+    serialized = json.dumps(az_dl_002.scan(mock_azure, subscription_id))
     assert "cak-sensitive-value" not in serialized
     assert "ckn-sensitive-value" not in serialized
     assert "secret_identifier" not in serialized

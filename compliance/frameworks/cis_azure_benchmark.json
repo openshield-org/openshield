@@ -333,13 +333,13 @@
       "control_name": "Pipeline Service Connection Uses Password Instead of Federated Credential placeholder",
       "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
     },
-    "AZ-NET-016": {
-      "control_id": "TBD-NET-016",
+    "AZ-DL-001": {
+      "control_id": "TBD-DL-001",
       "control_name": "ExpressRoute Direct MACsec placeholder",
       "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
     },
-    "AZ-NET-017": {
-      "control_id": "TBD-NET-017",
+    "AZ-DL-002": {
+      "control_id": "TBD-DL-002",
       "control_name": "ExpressRoute Direct XPN MACsec placeholder",
       "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
     }

@@ -4,6 +4,8 @@ OpenShield treats Azure OSI Layer 2 as a shared responsibility boundary. Microso
 
 ExpressRoute Direct is different because Azure exposes customer-controlled Ethernet link configuration through the management API. OpenShield checks enabled links for MACsec and checks ports of 40 Gbps or greater for an XPN MACsec cipher. A subscription with no ExpressRoute Direct ports is not applicable. An Azure API or permission failure is indeterminate and never creates a finding.
 
+The customer-actionable checks use the dedicated Data Link identifiers `AZ-DL-001` and `AZ-DL-002`. The `AZ-DL` namespace distinguishes these Layer 2 controls from the mixed-layer rules historically stored under `AZ-NET`.
+
 ## Coverage
 
 The closed catalog covers both IEEE 802 Data Link sublayers, LLC and MAC, and all 19 functional domains required by issue #241. Each domain records Azure applicability, responsibility, observability, evidence, and one of the supported verification states.

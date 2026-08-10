@@ -333,12 +333,12 @@
       "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
       "description": "A pipeline service connection authenticates with a stored service principal secret instead of a federated credential, leaving a static credential to rotate and potentially leak."
     },
-    "AZ-NET-016": {
+    "AZ-DL-001": {
       "control_id": "PR.DS-2",
       "control_name": "Data in transit is protected",
       "description": "MACsec protects traffic on the customer-visible ExpressRoute Direct Ethernet boundary."
     },
-    "AZ-NET-017": {
+    "AZ-DL-002": {
       "control_id": "PR.DS-2",
       "control_name": "Data in transit is protected",
       "description": "XPN MACsec avoids packet-number exhaustion risk on high-speed ExpressRoute Direct links."

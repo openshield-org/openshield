@@ -1,20 +1,20 @@
-"""AZ-NET-017: High-speed ExpressRoute Direct link uses a non-XPN MACsec cipher."""
+"""AZ-DL-002: High-speed ExpressRoute Direct link uses a non-XPN MACsec cipher."""
 
 from typing import Any, Dict, List
 
 from scanner.rules._data_link_common import cipher_name, enabled_links, has_macsec, resource_identity, value
 
-RULE_ID = "AZ-NET-017"
+RULE_ID = "AZ-DL-002"
 RULE_NAME = "High-Speed ExpressRoute Direct Link Uses Non-XPN MACsec"
 SEVERITY = "MEDIUM"
-CATEGORY = "Network"
-FRAMEWORKS = {"CIS": "TBD-NET-017", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}
+CATEGORY = "Data Link"
+FRAMEWORKS = {"CIS": "TBD-DL-002", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}
 DESCRIPTION = "An enabled ExpressRoute Direct port of 40 Gbps or greater uses a MACsec cipher without XPN."
 REMEDIATION = (
     "Confirm both peer devices support an XPN cipher, schedule a maintenance window, update the MACsec "
     "cipher on both ends, and verify link counters and traffic before completing the change."
 )
-PLAYBOOK = "playbooks/cli/fix_az_net_017.sh"
+PLAYBOOK = "playbooks/cli/fix_az_dl_002.sh"
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
