@@ -9,6 +9,7 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Azure Data Link Layer Assurance API with LLC and MAC coverage plus ExpressRoute Direct MACsec checks
 - Azure public-cloud Physical Layer Assurance API with complete OSI and IEEE PHY domain, sublayer, and provider-evidence coverage
 - Semgrep SAST integrated into GitHub Actions CI as an open-source, account-free complement to CodeQL
 - OpenSSF Best Practices Passing Badge achieved with 100% of applicable Passing-level criteria completed

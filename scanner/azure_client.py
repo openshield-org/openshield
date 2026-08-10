@@ -243,6 +243,20 @@ class AzureClient:
             logger.error("get_network_security_groups failed: %s", exc)
             return []
 
+    def get_express_route_ports(self) -> Optional[List[Any]]:
+        """List ExpressRoute Direct ports without collapsing API failures.
+
+        An empty list means the subscription has no ExpressRoute Direct ports.
+        ``None`` means Azure could not be queried, so callers must preserve an
+        indeterminate result and avoid creating findings.
+        """
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.express_route_ports.list())
+        except Exception as exc:
+            logger.error("get_express_route_ports failed: %s", exc)
+            return None
+
     def get_network_interface(self, resource_group: str, nic_name: str) -> Optional[Any]:
         """Fetch a single NIC by resource group and name."""
         try:

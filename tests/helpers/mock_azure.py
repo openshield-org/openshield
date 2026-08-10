@@ -48,6 +48,7 @@ class MockAzureClient:
     def __init__(self) -> None:
         self._storage_accounts: List[Any] = []
         self._network_security_groups: List[Any] = []
+        self._express_route_ports: Optional[List[Any]] = []
         self._virtual_machines: List[Any] = []
         self._key_vaults: List[Any] = []
         self._sql_servers: List[Any] = []
@@ -98,6 +99,14 @@ class MockAzureClient:
     def set_storage_accounts(self, accounts: List[Any]) -> "MockAzureClient":
         self._storage_accounts = accounts
         return self
+
+    def set_express_route_ports(self, ports: Optional[List[Any]]) -> "MockAzureClient":
+        """Configure ExpressRoute Direct inventory; ``None`` represents an API failure."""
+        self._express_route_ports = ports
+        return self
+
+    def get_express_route_ports(self) -> Optional[List[Any]]:
+        return self._express_route_ports
 
     def set_managed_clusters(self, clusters: Optional[List[Any]]) -> "MockAzureClient":
         """Configure AKS inventory; ``None`` represents an API failure."""

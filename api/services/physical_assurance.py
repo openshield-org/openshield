@@ -7,7 +7,14 @@ import json
 from datetime import date
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+
+from api.services.assurance_catalog import (
+    CatalogValidationError,
+    require_reference_list as _require_reference_list,
+    require_string as _require_string,
+    require_unique as _require_unique,
+    validate_evidence_source,
+)
 
 
 CATALOG_PATH = Path(__file__).resolve().parents[2] / "compliance" / "assurance" / "physical_layer.json"
@@ -30,52 +37,6 @@ EXPECTED_SUBLAYER_IDS = {
 }
 ALLOWED_STATUSES = {"PROVIDER_ATTESTED", "REVIEW_DUE", "NOT_APPLICABLE", "UNKNOWN"}
 ALLOWED_EVIDENCE_HOSTS = {"learn.microsoft.com"}
-
-
-class CatalogValidationError(ValueError):
-    """Raised when the bundled assurance catalog is incomplete or unsafe."""
-
-
-def _require_string(item: dict[str, Any], field: str, context: str) -> str:
-    value = item.get(field)
-    if not isinstance(value, str) or not value.strip():
-        raise CatalogValidationError(f"{context}: {field} must be a non-empty string")
-    return value
-
-
-def _require_unique(items: list[dict[str, Any]], name: str) -> dict[str, dict[str, Any]]:
-    indexed: dict[str, dict[str, Any]] = {}
-    for item in items:
-        if not isinstance(item, dict):
-            raise CatalogValidationError(f"{name}: every entry must be an object")
-        item_id = _require_string(item, "id", name)
-        if item_id in indexed:
-            raise CatalogValidationError(f"{name}: duplicate id {item_id}")
-        indexed[item_id] = item
-    return indexed
-
-
-def _require_reference_list(item: dict[str, Any], field: str, allowed_ids: set[str], context: str) -> list[str]:
-    values = item.get(field)
-    if not isinstance(values, list) or not values:
-        raise CatalogValidationError(f"{context}: {field} must be a non-empty list")
-    if any(not isinstance(value, str) for value in values):
-        raise CatalogValidationError(f"{context}: {field} must contain only strings")
-    if len(values) != len(set(values)):
-        raise CatalogValidationError(f"{context}: {field} contains duplicate references")
-    unknown = set(values) - allowed_ids
-    if unknown:
-        raise CatalogValidationError(f"{context}: {field} contains unknown ids {sorted(unknown)}")
-    return values
-
-
-def _parse_date(value: Any, context: str) -> date:
-    if not isinstance(value, str):
-        raise CatalogValidationError(f"{context}: date must be an ISO-8601 string")
-    try:
-        return date.fromisoformat(value)
-    except ValueError as exc:
-        raise CatalogValidationError(f"{context}: invalid ISO-8601 date {value!r}") from exc
 
 
 def load_catalog(path: Path = CATALOG_PATH) -> dict[str, Any]:
@@ -153,16 +114,8 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         _require_reference_list(sublayer, "domain_ids", domain_ids, sublayer_id)
 
     for evidence_id, evidence in evidence_index.items():
-        _require_string(evidence, "title", evidence_id)
         _require_string(evidence, "evidence_type", evidence_id)
-        url = _require_string(evidence, "url", evidence_id)
-        parsed_url = urlparse(url)
-        if parsed_url.scheme != "https" or parsed_url.hostname not in ALLOWED_EVIDENCE_HOSTS:
-            raise CatalogValidationError(f"{evidence_id}: evidence URL must use HTTPS on an allowed host")
-        reviewed_at = _parse_date(evidence.get("reviewed_at"), f"{evidence_id}.reviewed_at")
-        review_due_at = _parse_date(evidence.get("review_due_at"), f"{evidence_id}.review_due_at")
-        if review_due_at <= reviewed_at:
-            raise CatalogValidationError(f"{evidence_id}: review_due_at must be after reviewed_at")
+        validate_evidence_source(evidence, evidence_id, ALLOWED_EVIDENCE_HOSTS)
 
     microsoft_controls: set[str] = set()
     iso_controls: set[str] = set()
