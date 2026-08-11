@@ -6,6 +6,7 @@ azure-mgmt-storage==21.0.0
 azure-mgmt-network==25.0.0
 azure-mgmt-compute==30.0.0
 azure-mgmt-resource==23.0.0
+azure-mgmt-resourcegraph==8.0.1
 azure-mgmt-sql==3.0.1
 azure-mgmt-keyvault==10.3.0
 azure-mgmt-rdbms==10.1.0
