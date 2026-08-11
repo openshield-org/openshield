@@ -141,7 +141,6 @@ class ArgInventoryClient:
                     top=self.page_size,
                     skip_token=skip_token,
                     result_format="objectArray",
-                    allow_partial_scopes=True,
                 ),
             )
             try:
@@ -174,11 +173,10 @@ class ArgInventoryClient:
                 seen_resources.add(key)
                 resources.append(resource)
 
-            for partial_error in _response_errors(response):
-                errors.append(f"page {pages}: {partial_error}")
-
             next_token = str(getattr(response, "skip_token", "") or "")
             if not next_token:
+                if _response_is_truncated(response):
+                    errors.append("ARG reported truncated results without a pagination token")
                 break
             if next_token in seen_tokens:
                 errors.append("ARG returned a repeated pagination token")
@@ -284,12 +282,12 @@ def _required_string(row: Mapping[str, Any], field: str) -> str:
     return value.strip()
 
 
-def _response_errors(response: Any) -> list[str]:
-    """Extract partial-scope diagnostics without coupling to one SDK model version."""
-    raw_errors = getattr(response, "errors", None) or getattr(response, "partial_query_failure", None) or []
-    if not isinstance(raw_errors, list):
-        raw_errors = [raw_errors]
-    return [str(getattr(item, "message", item)) for item in raw_errors if item]
+def _response_is_truncated(response: Any) -> bool:
+    """Return whether ARG says the result set is incomplete."""
+    value = getattr(response, "result_truncated", False)
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return value is True
 
 
 def _retry_delay(exc: HttpResponseError, attempt: int) -> float:

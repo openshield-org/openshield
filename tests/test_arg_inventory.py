@@ -32,8 +32,8 @@ def _row(
     }
 
 
-def _response(rows: list[dict], skip_token: str | None = None, errors: list | None = None):
-    return SimpleNamespace(data=rows, skip_token=skip_token, errors=errors or [])
+def _response(rows: list[dict], skip_token: str | None = None, result_truncated: bool | str = False):
+    return SimpleNamespace(data=rows, skip_token=skip_token, result_truncated=result_truncated)
 
 
 def _http_error(status_code: int, retry_after: str | None = None) -> HttpResponseError:
@@ -167,6 +167,23 @@ def test_repeated_pagination_token_stops_with_partial_status():
     assert snapshot.status is InventoryStatus.PARTIAL
     assert snapshot.pages == 2
     assert snapshot.errors == ("ARG returned a repeated pagination token",)
+
+
+def test_truncated_response_without_pagination_token_is_partial():
+    client = MagicMock()
+    client.resources.return_value = _response(
+        [_row("/subscriptions/a/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/one")],
+        result_truncated="true",
+    )
+
+    snapshot = ArgInventoryClient(client=client).collect(
+        tenant_id=TENANT_ID,
+        subscription_ids=[SUBSCRIPTION_A],
+    )
+
+    assert snapshot.status is InventoryStatus.PARTIAL
+    assert len(snapshot.resources) == 1
+    assert snapshot.errors == ("ARG reported truncated results without a pagination token",)
 
 
 def test_scope_requires_valid_non_empty_identifiers():
