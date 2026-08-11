@@ -11,21 +11,115 @@ OpenShield currently evaluates many security controls independently. The propose
 resources, identities, permissions, exposures, findings, infrastructure code, and remediation evidence into one
 traceable security model.
 
-```text
-Azure Resource Graph and targeted SDK evidence
-                    |
-                    v
-          Normalised evidence snapshot
-                    |
-                    v
-          Evidence-backed attack paths
-                    |
-                    v
-        Reviewed, controlled remediation
-                    |
-                    v
-             Rescan and verification
+## Target architecture
+
+The target is a hybrid scanner. ARG performs broad resource discovery, Python remains the orchestration and rule
+engine, and Azure SDK calls are retained only where ARG cannot supply the required evidence.
+
+```mermaid
+flowchart TB
+    subgraph Scope[Customer Azure boundary]
+        A[Azure tenant]
+        B[Authorised subscriptions]
+        C[Least-privilege read credential]
+        A --> B --> C
+    end
+
+    subgraph Collection[Phase 1 - inventory foundation]
+        D[ARG KQL batch query]
+        E[Pagination and bounded retry]
+        F[Truncation and repeated-token guards]
+        G[Normalised inventory snapshot]
+        H{Snapshot status}
+        I[COMPLETE]
+        J[PARTIAL]
+        K[FAILED]
+        C --> D --> E --> F --> G --> H
+        H --> I
+        H --> J
+        H --> K
+    end
+
+    subgraph Evaluation[Hybrid security evaluation]
+        L[ARG-compatible resource evidence]
+        M[Missing security properties]
+        N[Targeted Azure SDK enrichment]
+        O[Python rule engine]
+        P[Findings with snapshot and resource provenance]
+        Q[Score, API, database and dashboard]
+        I --> L --> O
+        I --> M --> N --> O
+        O --> P --> Q
+        R[Current SDK rule path retained during migration]
+        C --> R --> O
+    end
+
+    subgraph Graph[Future evidence reasoning]
+        S[Evidence graph nodes and validated edges]
+        T[Toxic-combination and attack-path detection]
+        U[Prioritised path with evidence and blast radius]
+        P --> S --> T --> U
+    end
+
+    subgraph Code[Future Code-to-Cloud-to-Code]
+        V[Terraform and Bicep source mapping]
+        W[Repository, commit, file and line evidence]
+        X[Reviewable remediation pull request]
+        S --> V --> W --> X
+    end
+
+    subgraph Remediation[Future dual-gated remediation]
+        Y[Security and operational impact preview]
+        Z[Human approval]
+        AA[Short-lived scoped write credential]
+        AB[Execute approved playbook]
+        AC[Rescan and verify]
+        U --> Y
+        X --> Y --> Z --> AA --> AB --> AC
+        AC --> D
+    end
+
+    subgraph Trust[Cross-cutting customer trust controls]
+        T1[Tenant and subscription isolation]
+        T2[Read-only collection by default]
+        T3[Complete, partial and failed states remain explicit]
+        T4[No Phase 1 persistence or external LLM transfer]
+        T5[Future tamper-evident approval and action audit]
+    end
+
+    T1 -. protects .-> G
+    T2 -. constrains .-> D
+    T2 -. constrains .-> N
+    T3 -. controls .-> H
+    T4 -. limits .-> G
+    T5 -. records .-> Y
+    T5 -. records .-> AC
+
+    classDef implemented fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef current fill:#fef3c7,stroke:#d97706,color:#111827
+    classDef next fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef future fill:#f3e8ff,stroke:#9333ea,color:#111827
+    classDef trust fill:#f1f5f9,stroke:#475569,color:#111827
+
+    class D,E,F,G,H,I,J,K implemented
+    class C,O,P,Q,R current
+    class L,M,N next
+    class S,T,U,V,W,X,Y,Z,AA,AB,AC future
+    class T1,T2,T3,T4,T5 trust
 ```
+
+Diagram status:
+
+- **Blue:** implemented by PR #250.
+- **Amber:** existing OpenShield components retained during migration.
+- **Green:** the next integration step required for a fair end-to-end speed benchmark.
+- **Purple:** later Evidence Graph, Code-to-Cloud, and controlled-remediation phases.
+- **Grey:** customer-trust controls that apply across the architecture.
+
+The live Azure for Students benchmark returned five resources with a 0.438-second median ARG inventory time. The
+existing Python scanner ran 68 rules and returned 643 findings in 113.167 seconds. These results demonstrate the
+inventory opportunity but are not presented as an end-to-end speedup until migrated rules produce equivalent
+findings from the shared snapshot.
 
 ## Customer Trust Layer
 
