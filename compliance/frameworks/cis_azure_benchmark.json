@@ -344,14 +344,14 @@
       "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
     },
     "AZ-NET-016": {
-      "control_id": "TBD-NET-016",
-      "control_name": "Network interface IP forwarding placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-NET-016",
+      "control_name": "Network interface IP forwarding review (no direct CIS Azure Foundations 2.0.0 control)",
+      "description": "Azure recommends disabling NIC IP forwarding unless the interface belongs to a reviewed routing function, but CIS Azure Foundations 2.0.0 does not assign this check a direct recommendation number."
     },
     "AZ-NET-017": {
-      "control_id": "TBD-NET-017",
-      "control_name": "Direct Internet default route placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-NET-017",
+      "control_name": "Direct Internet default route review (no direct CIS Azure Foundations 2.0.0 control)",
+      "description": "Azure exposes and documents user-defined Internet next hops, but CIS Azure Foundations 2.0.0 does not assign this route check a direct recommendation number."
     }
   }
 }
