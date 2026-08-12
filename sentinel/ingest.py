@@ -1,5 +1,5 @@
 import base64
-import datetime
+from datetime import datetime, timezone
 import hashlib
 import hmac
 import json
@@ -29,7 +29,7 @@ def normalise(raw, scan_id):
     return {
         "ScanId": scan_id,
         "FindingId": raw.get("id", ""),
-        "TimeGenerated": raw.get("detected_at", datetime.datetime.utcnow().isoformat() + "Z"),
+        "TimeGenerated": raw.get("detected_at", datetime.now(timezone.utc).isoformat()),
         "ResourceId": raw.get("resource_id", ""),
         "ResourceType": raw.get("resource_type", ""),
         "ResourceName": raw.get("resource_name", ""),
@@ -51,7 +51,7 @@ def normalise(raw, scan_id):
 
 def send(records):
     body = json.dumps(records).encode("utf-8")
-    rfc_date = datetime.datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+    rfc_date = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT")
     sig = build_signature(rfc_date, len(body))
     url = f"https://{WORKSPACE_ID}.ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
     headers = {
@@ -77,7 +77,7 @@ def send(records):
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else "scanner/output/test_findings.json"
-    scan_id = sys.argv[2] if len(sys.argv) > 2 else datetime.datetime.utcnow().strftime("scan-%Y%m%d-%H%M")
+    scan_id = sys.argv[2] if len(sys.argv) > 2 else datetime.now(timezone.utc).strftime("scan-%Y%m%d-%H%M")
     print(f"[INFO] Scan ID: {scan_id}")
     with open(path) as f:
         data = json.load(f)
