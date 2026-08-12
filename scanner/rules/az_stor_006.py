@@ -62,13 +62,19 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if not resource_group:
             continue
 
-        # azure_client.get_storage_account_properties should return:
-        #   True  -> supportsHttpsTrafficOnly is True (compliant)
-        #   False -> supportsHttpsTrafficOnly is False (non-compliant)
-        #   None  -> could not determine (skip)
-        https_only: Optional[bool] = azure_client.get_storage_account_https_only(
-            resource_group, account_name
-        )
+        # AzureClient implementations vary slightly across integrations:
+        #   - some expose a dedicated get_storage_account_https_only() helper
+        #   - others only surface the value on the resource's properties bag
+        if hasattr(azure_client, "get_storage_account_https_only"):
+            https_only: Optional[bool] = azure_client.get_storage_account_https_only(
+                resource_group, account_name
+            )
+        else:
+            property_obj = getattr(account, "properties", None)
+            if property_obj is not None and hasattr(property_obj, "get"):
+                https_only = property_obj.get("supportsHttpsTrafficOnly")
+            else:
+                https_only = getattr(account, "supportsHttpsTrafficOnly", None)
 
         if https_only is None:
             logger.warning(

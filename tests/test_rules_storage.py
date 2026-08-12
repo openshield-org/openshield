@@ -9,6 +9,7 @@ import scanner.rules.az_stor_002 as az_stor_002
 import scanner.rules.az_stor_003 as az_stor_003
 import scanner.rules.az_stor_004 as az_stor_004
 import scanner.rules.az_stor_005 as az_stor_005
+import scanner.rules.az_stor_006 as az_stor_006
 from tests.helpers.mock_azure import make_resource
 
 _REQUIRED_FIELDS = {
@@ -172,3 +173,35 @@ def test_stor_005_noncompliant_lrs_returns_one_finding(mock_azure, subscription_
     assert findings[0]["rule_id"] == "AZ-STOR-005"
     assert findings[0]["severity"] == "MEDIUM"
     assert findings[0]["resource_name"] == "sa-lrs"
+
+
+# ── AZ-STOR-006: HTTPS-only enforcement ─────────────────────────────────────
+
+def test_stor_006_compliant_returns_no_findings(mock_azure, subscription_id):
+    """A storage account with HTTPS-only enabled must produce no findings."""
+    account = make_resource(
+        id=_storage_id("https-enabled-storage"),
+        name="https-enabled-storage",
+        enable_https_traffic_only=True,
+    )
+    mock_azure.set_storage_accounts([account])
+    findings = az_stor_006.scan(mock_azure, subscription_id)
+    assert findings == []
+
+
+def test_stor_006_noncompliant_returns_one_finding(mock_azure, subscription_id):
+    """A storage account that allows HTTP traffic must produce exactly one finding."""
+    account = make_resource(
+        id=_storage_id("http-allowed-storage"),
+        name="http-allowed-storage",
+        enable_https_traffic_only=False,
+    )
+    mock_azure.set_storage_accounts([account])
+    findings = az_stor_006.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    finding = findings[0]
+    assert _REQUIRED_FIELDS.issubset(finding.keys())
+    assert finding["rule_id"] == "AZ-STOR-006"
+    assert finding["severity"] == "HIGH"
+    assert finding["category"] == "Storage"
+    assert finding["resource_name"] == "http-allowed-storage"
