@@ -94,16 +94,10 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
         if status not in ALLOWED_CONTROL_STATUSES:
             raise CatalogValidationError(f"{control_id}: invalid status")
         covered_domains.update(require_reference_list(control, "domain_ids", set(domains), control_id))
-        covered_subdomains.update(
-            require_reference_list(control, "subdomain_ids", set(subdomains), control_id)
-        )
-        referenced_evidence.update(
-            require_reference_list(control, "evidence_source_ids", set(evidence), control_id)
-        )
+        covered_subdomains.update(require_reference_list(control, "subdomain_ids", set(subdomains), control_id))
+        referenced_evidence.update(require_reference_list(control, "evidence_source_ids", set(evidence), control_id))
         scanner_rule_ids = control.get("scanner_rule_ids")
-        if not isinstance(scanner_rule_ids, list) or any(
-            not isinstance(rule_id, str) for rule_id in scanner_rule_ids
-        ):
+        if not isinstance(scanner_rule_ids, list) or any(not isinstance(rule_id, str) for rule_id in scanner_rule_ids):
             raise CatalogValidationError(f"{control_id}: scanner_rule_ids must be a list of strings")
         if len(scanner_rule_ids) != len(set(scanner_rule_ids)) or set(scanner_rule_ids) - set(rules):
             raise CatalogValidationError(f"{control_id}: scanner_rule_ids contains invalid references")
@@ -192,9 +186,7 @@ def build_report(catalog: dict[str, Any], as_of: date | None = None) -> dict[str
         )
     for subdomain in report["subdomains"]:
         subdomain["control_ids"] = [
-            control["id"]
-            for control in report["controls"]
-            if subdomain["id"] in control["subdomain_ids"]
+            control["id"] for control in report["controls"] if subdomain["id"] in control["subdomain_ids"]
         ]
         subdomain["domain_ids"] = sorted(
             {

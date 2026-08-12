@@ -35,21 +35,15 @@ def test_catalog_covers_all_domains_and_audits_all_network_rules():
 
 def test_rule_audit_matches_every_network_rule_file():
     rules_dir = Path(__file__).resolve().parents[1] / "scanner" / "rules"
-    discovered_ids = {
-        f"AZ-NET-{path.stem.rsplit('_', 1)[1]}" for path in rules_dir.glob("az_net_[0-9][0-9][0-9].py")
-    }
-    classified_ids = {
-        item["id"] for item in load_catalog()["rule_classifications"] if item["id"].startswith("AZ-NET-")
-    }
+    discovered_ids = {f"AZ-NET-{path.stem.rsplit('_', 1)[1]}" for path in rules_dir.glob("az_net_[0-9][0-9][0-9].py")}
+    classified_ids = {item["id"] for item in load_catalog()["rule_classifications"] if item["id"].startswith("AZ-NET-")}
     assert classified_ids == discovered_ids
 
 
 def test_controls_cover_every_domain_and_subdomain():
     catalog = load_catalog()
     covered_domains = {domain_id for control in catalog["controls"] for domain_id in control["domain_ids"]}
-    covered_subdomains = {
-        subdomain_id for control in catalog["controls"] for subdomain_id in control["subdomain_ids"]
-    }
+    covered_subdomains = {subdomain_id for control in catalog["controls"] for subdomain_id in control["subdomain_ids"]}
     assert covered_domains == EXPECTED_DOMAIN_IDS
     assert covered_subdomains == EXPECTED_SUBDOMAIN_IDS
     assert all(control["evidence_source_ids"] for control in catalog["controls"])
