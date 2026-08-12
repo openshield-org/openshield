@@ -342,6 +342,16 @@
       "control_id": "CC6.7",
       "control_name": "Restricts Transmission and Movement of Information",
       "description": "XPN MACsec provides suitable packet-number capacity for high-speed protected links."
+    },
+    "AZ-NET-016": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "NIC IP forwarding is restricted to reviewed network virtual appliances and routing functions."
+    },
+    "AZ-NET-017": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "User-defined default routes preserve approved inspected egress paths."
     }
   }
 }

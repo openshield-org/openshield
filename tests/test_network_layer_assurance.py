@@ -3,7 +3,8 @@
 import copy
 from datetime import date
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -123,7 +124,7 @@ def test_network_layer_endpoint_returns_complete_report(client, auth_headers):
     assert len(payload["domains"]) == 20
     assert len(payload["subdomains"]) == 5
     assert len(payload["controls"]) == 20
-    assert len(payload["rule_classifications"]) == 17
+    assert len(payload["rule_classifications"]) == 19
 
 
 def test_network_layer_endpoint_hides_catalog_errors(client, auth_headers):
@@ -135,3 +136,24 @@ def test_network_layer_endpoint_hides_catalog_errors(client, auth_headers):
     assert response.status_code == 500
     assert response.get_json() == {"error": "Network Layer assurance catalog is unavailable"}
     assert "sensitive path" not in response.get_data(as_text=True)
+
+
+def test_layer_3_inventory_uses_azure_client_abstraction():
+    from scanner.azure_client import AzureClient
+
+    sdk_client = MagicMock()
+    sdk_client.network_interfaces.list_all.return_value = [SimpleNamespace(name="nic1")]
+    sdk_client.route_tables.list_all.return_value = [SimpleNamespace(name="rt1")]
+    with patch("scanner.azure_client.NetworkManagementClient", return_value=sdk_client):
+        azure_client = AzureClient("sub-1", credential=MagicMock())
+        assert [nic.name for nic in azure_client.get_network_interfaces()] == ["nic1"]
+        assert [table.name for table in azure_client.get_route_tables()] == ["rt1"]
+
+
+def test_layer_3_inventory_preserves_api_failure():
+    from scanner.azure_client import AzureClient
+
+    with patch("scanner.azure_client.NetworkManagementClient", side_effect=PermissionError("denied")):
+        azure_client = AzureClient("sub-1", credential=MagicMock())
+        assert azure_client.get_network_interfaces() is None
+        assert azure_client.get_route_tables() is None

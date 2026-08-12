@@ -56,6 +56,8 @@ class MockAzureClient:
         self._sql_firewall_rules: Dict[Tuple[str, str], List[Any]] = {}
         # --- Additional state added for full rule-coverage tests ---------- #
         self._network_interfaces: Dict[Tuple[str, str], Any] = {}
+        self._all_network_interfaces: Optional[List[Any]] = []
+        self._route_tables: Optional[List[Any]] = []
         self._vm_extensions: Dict[Tuple[str, str], Optional[List[Any]]] = {}
         self._disks: Dict[str, Optional[Any]] = {}
         self._storage_lifecycle: Dict[Tuple[str, str], Optional[bool]] = {}
@@ -107,6 +109,20 @@ class MockAzureClient:
 
     def get_express_route_ports(self) -> Optional[List[Any]]:
         return self._express_route_ports
+
+    def set_network_interfaces(self, interfaces: Optional[List[Any]]) -> "MockAzureClient":
+        self._all_network_interfaces = interfaces
+        return self
+
+    def get_network_interfaces(self) -> Optional[List[Any]]:
+        return self._all_network_interfaces
+
+    def set_route_tables(self, route_tables: Optional[List[Any]]) -> "MockAzureClient":
+        self._route_tables = route_tables
+        return self
+
+    def get_route_tables(self) -> Optional[List[Any]]:
+        return self._route_tables
 
     def set_managed_clusters(self, clusters: Optional[List[Any]]) -> "MockAzureClient":
         """Configure AKS inventory; ``None`` represents an API failure."""

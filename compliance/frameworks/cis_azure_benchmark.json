@@ -342,6 +342,16 @@
       "control_id": "TBD-DL-002",
       "control_name": "ExpressRoute Direct XPN MACsec placeholder",
       "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-NET-016": {
+      "control_id": "TBD-NET-016",
+      "control_name": "Network interface IP forwarding placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+    },
+    "AZ-NET-017": {
+      "control_id": "TBD-NET-017",
+      "control_name": "Direct Internet default route placeholder",
+      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
     }
   }
 }

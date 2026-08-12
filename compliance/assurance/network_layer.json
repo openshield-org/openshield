@@ -111,10 +111,12 @@
         "NL-04"
       ],
       "evidence_source_ids": [
-        "E-NEXT-HOP"
+        "E-NEXT-HOP",
+        "E-NETWORK-POLICY"
       ],
       "scanner_rule_ids": [
-        "AZ-NET-011"
+        "AZ-NET-011",
+        "AZ-NET-016"
       ]
     },
     {
@@ -131,9 +133,12 @@
         "NL-05"
       ],
       "evidence_source_ids": [
-        "E-ROUTING"
+        "E-ROUTING",
+        "E-ROUTE-API"
       ],
-      "scanner_rule_ids": []
+      "scanner_rule_ids": [
+        "AZ-NET-017"
+      ]
     },
     {
       "id": "NL-C06",
@@ -239,7 +244,8 @@
       "scanner_rule_ids": [
         "AZ-NET-006",
         "AZ-NET-010",
-        "AZ-NET-013"
+        "AZ-NET-013",
+        "AZ-NET-017"
       ]
     },
     {
@@ -421,7 +427,9 @@
         "AZ-NET-004",
         "AZ-NET-010",
         "AZ-NET-013",
-        "AZ-NET-014"
+        "AZ-NET-014",
+        "AZ-NET-016",
+        "AZ-NET-017"
       ]
     },
     {
@@ -497,13 +505,15 @@
       "responsibility_owner": "Shared",
       "observability_method": "Use Network Watcher next-hop diagnostics for a selected VM NIC and destination.",
       "evidence_source_ids": [
-        "E-NEXT-HOP"
+        "E-NEXT-HOP",
+        "E-NETWORK-POLICY"
       ],
-      "verification": "MANUALLY_VERIFIABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
       "rule_ids": [
-        "AZ-NET-011"
+        "AZ-NET-011",
+        "AZ-NET-016"
       ],
-      "automation_decision": "Next hop is contextual and cannot be judged securely without an intended-flow policy."
+      "automation_decision": "NIC IP forwarding is checked from authoritative configuration; path-specific next-hop intent remains manual."
     },
     {
       "id": "NL-05",
@@ -512,11 +522,14 @@
       "responsibility_owner": "Shared",
       "observability_method": "Inspect route tables and documented Azure system routes.",
       "evidence_source_ids": [
-        "E-ROUTING"
+        "E-ROUTING",
+        "E-ROUTE-API"
       ],
-      "verification": "MANUALLY_VERIFIABLE",
-      "rule_ids": [],
-      "automation_decision": "A default or Internet route can be intentional; no safe universal finding is emitted."
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-017"
+      ],
+      "automation_decision": "Explicit user-defined default Internet routes are checked; system routes and intended private routing remain contextual."
     },
     {
       "id": "NL-06",
@@ -593,7 +606,8 @@
       "rule_ids": [
         "AZ-NET-006",
         "AZ-NET-010",
-        "AZ-NET-013"
+        "AZ-NET-013",
+        "AZ-NET-017"
       ],
       "automation_decision": "Existing rules check unused public IPs and selected segmentation boundaries; they do not prove end-to-end exposure."
     },
@@ -726,7 +740,9 @@
         "AZ-NET-004",
         "AZ-NET-010",
         "AZ-NET-013",
-        "AZ-NET-014"
+        "AZ-NET-014",
+        "AZ-NET-016",
+        "AZ-NET-017"
       ],
       "automation_decision": "Existing cross-layer rules provide limited configuration checks; platform tenant isolation is provider-owned."
     },
@@ -899,6 +915,27 @@
       "osi_classification": "Layer 7",
       "classification_basis": "DNS is an application-layer naming protocol even when records contain IP addresses.",
       "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-016",
+      "name": "Network interface with IP forwarding enabled",
+      "osi_classification": "Layer 3",
+      "classification_basis": "IP forwarding changes Layer 3 source, destination, and transit behavior on the network interface.",
+      "layer_3_domain_ids": [
+        "NL-04",
+        "NL-19"
+      ]
+    },
+    {
+      "id": "AZ-NET-017",
+      "name": "User-defined default route using direct Internet next hop",
+      "osi_classification": "Layer 3",
+      "classification_basis": "The route explicitly selects the Layer 3 next hop for all IPv4 or IPv6 destinations.",
+      "layer_3_domain_ids": [
+        "NL-05",
+        "NL-10",
+        "NL-19"
+      ]
     }
   ],
   "evidence_sources": [
@@ -920,6 +957,20 @@
       "id": "E-ROUTING",
       "title": "Azure virtual network traffic routing",
       "url": "https://learn.microsoft.com/azure/virtual-network/virtual-networks-udr-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-NETWORK-POLICY",
+      "title": "Built-in policy definitions for Azure networking services",
+      "url": "https://learn.microsoft.com/azure/networking/policy-reference",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-ROUTE-API",
+      "title": "Microsoft.Network route tables resource reference",
+      "url": "https://learn.microsoft.com/azure/templates/microsoft.network/routetables",
       "reviewed_at": "2026-08-12",
       "review_due_at": "2027-02-12"
     },

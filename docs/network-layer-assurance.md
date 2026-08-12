@@ -10,6 +10,6 @@ The catalog classifies every `AZ-NET-001` through `AZ-NET-015` rule by actual be
 
 ## Automation limits
 
-The report cross-references existing authoritative management-plane checks. It does not add speculative findings for route intent, address overlap, next-hop correctness, MTU, ICMP reachability, BGP advertisement, or Microsoft anti-spoofing internals. Those conditions require architecture intent, selected endpoints, packet tests, or provider evidence that the scanner does not possess.
+The report cross-references authoritative management-plane checks. `AZ-NET-016` reports NICs with IP forwarding enabled for network-security review, and `AZ-NET-017` reports explicit IPv4 or IPv6 default user-defined routes that select the direct Internet next hop. It does not add speculative findings for address overlap, path-specific next-hop correctness, MTU, ICMP reachability, BGP advertisement, or Microsoft anti-spoofing internals. Those conditions require architecture intent, selected endpoints, packet tests, or provider evidence that the scanner does not possess.
 
 Empty relevant inventory is `NOT_APPLICABLE`; Azure API or permission failure is `INDETERMINATE`. Neither state creates a finding. The endpoint is documentation-backed assurance, not packet capture, live traffic inspection, or access to Microsoft forwarding tables.
