@@ -21,17 +21,17 @@ OpenShield currently ships 65 Azure scan rules. This table is generated from the
 | AZ-IDN-007 | Active User with No MFA Registered in Entra ID | HIGH | Identity | 1.1 | PR.AC-7 | A.9.4.2 |
 | AZ-IDN-008 | Custom RBAC Role with Wildcard Permissions at Subscription Scope | HIGH | Identity | 1.23 | PR.AC-4 | A.9.2.3 |
 | AZ-IDN-009 | No Activity Log Alert for Role Assignment Changes | MEDIUM | Identity | 5.2.1 | DE.CM-3 | A.12.4.1 |
-| AZ-IDN-010 | App Registration Has No Owner | MEDIUM | Identity | TBD-IDN-010 | PR.AC-4 | A.9.2.1 |
-| AZ-IDN-011 | App Registration Uses Insecure Redirect URI | HIGH | Identity | TBD-IDN-011 | PR.DS-2 | A.14.1.2 |
-| AZ-IDN-012 | App Registration Enables OAuth Implicit Grant | MEDIUM | Identity | TBD-IDN-012 | PR.AC-3 | A.9.4.2 |
-| AZ-IDN-013 | App Registration Uses Password Credentials | MEDIUM | Identity | TBD-IDN-013 | PR.AC-1 | A.9.4.3 |
-| AZ-IDN-014 | Multi-Tenant App Registration Lacks Property Lock | HIGH | Identity | TBD-IDN-014 | PR.IP-1 | A.12.1.2 |
-| AZ-IDN-015 | Managed Identity Has Privileged Subscription Role | HIGH | Identity | TBD-IDN-015 | PR.AC-4 | A.9.2.3 |
-| AZ-KV-001 | Key Vault with Soft Delete Disabled | MEDIUM | KeyVault | 8.8 | PR.IP-4 | A.17.2.1 |
+| AZ-IDN-010 | App Registration Has No Owner | MEDIUM | Identity | N/A-IDN-010 | PR.AC-4 | A.9.2.1 |
+| AZ-IDN-011 | App Registration Uses Insecure Redirect URI | HIGH | Identity | N/A-IDN-011 | PR.DS-2 | A.14.1.2 |
+| AZ-IDN-012 | App Registration Enables OAuth Implicit Grant | MEDIUM | Identity | N/A-IDN-012 | PR.AC-3 | A.9.4.2 |
+| AZ-IDN-013 | App Registration Uses Password Credentials | MEDIUM | Identity | N/A-IDN-013 | PR.AC-1 | A.9.4.3 |
+| AZ-IDN-014 | Multi-Tenant App Registration Lacks Property Lock | HIGH | Identity | N/A-IDN-014 | PR.IP-1 | A.12.1.2 |
+| AZ-IDN-015 | Managed Identity Has Privileged Subscription Role | HIGH | Identity | N/A-IDN-015 | PR.AC-4 | A.9.2.3 |
+| AZ-KV-001 | Key Vault with Soft Delete Disabled | MEDIUM | KeyVault | N/A-KV-001 | PR.IP-4 | A.17.2.1 |
 | AZ-KV-002 | Key Vault Allows Public Network Access Without Private Endpoint | HIGH | Key Vault | 8.7 | AC-17 | A.13.1.1 |
 | AZ-KV-003 | Key Vault Without Diagnostic Logging Enabled | MEDIUM | Key Vault | 8.4 | DE.CM-7 | A.12.4.1 |
-| AZ-KV-004 | Key Vault Purge Protection Disabled | MEDIUM | Key Vault | 8.6 | PR.IP-4 | A.17.2.1 |
-| AZ-KV-005 | Key Vault Certificate Expiring Within 30 Days | MEDIUM | Key Vault | 8.5 | PR.MA-1 | A.10.1.2 |
+| AZ-KV-004 | Key Vault Purge Protection Disabled | MEDIUM | Key Vault | 8.5 | PR.IP-4 | A.17.2.1 |
+| AZ-KV-005 | Key Vault Certificate Expiring Within 30 Days | MEDIUM | Key Vault | N/A-KV-005 | PR.MA-1 | A.10.1.2 |
 | AZ-NET-001 | NSG Allows Unrestricted Inbound SSH from Any Source | HIGH | Network | 6.2 | PR.AC-3 | A.13.1.1 |
 | AZ-NET-002 | NSG Allows Unrestricted Inbound RDP from Any Source | HIGH | Network | 6.3 | PR.AC-3 | A.13.1.1 |
 | AZ-NET-003 | NSG allows unrestricted inbound on port 443 | HIGH | Network | 9.3 | SC-7 | A.13.1.1 |
@@ -61,14 +61,14 @@ OpenShield currently ships 65 Azure scan rules. This table is generated from the
 | AZ-AKS-004 | AKS Workload Identity Not Fully Enabled | MEDIUM | Kubernetes | N/A-AKS-004 | PR.AC-4 | A.9.2.3 |
 | AZ-AKS-005 | AKS Azure Policy Add-on Not Enabled | MEDIUM | Kubernetes | N/A-AKS-005 | PR.IP-1 | A.12.1.2 |
 | AZ-AKS-006 | AKS Node OS Automatic Upgrades Disabled | HIGH | Kubernetes | N/A-AKS-006 | PR.IP-12 | A.12.6.1 |
-| AZ-SC-001 | Container Registry Admin User Enabled | HIGH | Supply Chain | TBD-SC-001 | PR.AC-1 | A.9.2.1 |
-| AZ-SC-002 | Container Registry Public Network Access Enabled | HIGH | Supply Chain | TBD-SC-002 | PR.AC-5 | A.13.1.1 |
-| AZ-SC-003 | Container Registry Allows Anonymous Pull | HIGH | Supply Chain | TBD-SC-003 | PR.AC-1 | A.9.2.1 |
-| AZ-SC-004 | Container Registry Missing Retention or Quarantine Policy | MEDIUM | Supply Chain | TBD-SC-004 | PR.IP-1 | A.12.1.2 |
-| AZ-SC-005 | Terraform State Storage Container Publicly Readable | CRITICAL | Supply Chain | TBD-SC-005 | PR.AC-5 | A.13.1.1 |
-| AZ-SC-006 | Terraform State Storage Account Missing Versioning or Soft Delete | HIGH | Supply Chain | TBD-SC-006 | PR.IP-4 | A.12.3.1 |
-| AZ-SC-007 | Pipeline Service Connection Scoped to Subscription | HIGH | Supply Chain | TBD-SC-007 | PR.AC-4 | A.9.2.3 |
-| AZ-SC-008 | Pipeline Service Connection Uses Password Instead of Federated Credential | MEDIUM | Supply Chain | TBD-SC-008 | PR.AC-1 | A.9.4.3 |
+| AZ-SC-001 | Container Registry Admin User Enabled | HIGH | Supply Chain | N/A-SC-001 | PR.AC-1 | A.9.2.1 |
+| AZ-SC-002 | Container Registry Public Network Access Enabled | HIGH | Supply Chain | N/A-SC-002 | PR.AC-5 | A.13.1.1 |
+| AZ-SC-003 | Container Registry Allows Anonymous Pull | HIGH | Supply Chain | N/A-SC-003 | PR.AC-1 | A.9.2.1 |
+| AZ-SC-004 | Container Registry Missing Retention or Quarantine Policy | MEDIUM | Supply Chain | N/A-SC-004 | PR.IP-1 | A.12.1.2 |
+| AZ-SC-005 | Terraform State Storage Container Publicly Readable | CRITICAL | Supply Chain | N/A-SC-005 | PR.AC-5 | A.13.1.1 |
+| AZ-SC-006 | Terraform State Storage Account Missing Versioning or Soft Delete | HIGH | Supply Chain | N/A-SC-006 | PR.IP-4 | A.12.3.1 |
+| AZ-SC-007 | Pipeline Service Connection Scoped to Subscription | HIGH | Supply Chain | N/A-SC-007 | PR.AC-4 | A.9.2.3 |
+| AZ-SC-008 | Pipeline Service Connection Uses Password Instead of Federated Credential | MEDIUM | Supply Chain | N/A-SC-008 | PR.AC-1 | A.9.4.3 |
 
 SOC 2 mappings are maintained in `compliance/frameworks/soc2.json`.
 

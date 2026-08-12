@@ -9,7 +9,7 @@ RULE_NAME = "Key Vault Certificate Expiring Within 30 Days"
 SEVERITY = "MEDIUM"
 CATEGORY = "KeyVault"
 FRAMEWORKS = {
-    "CIS": "8.5",
+    "CIS": "N/A-KV-005",
     "NIST": "PR.MA-1",
     "ISO27001": "A.10.1.2",
     "SOC2": "CC9.1",

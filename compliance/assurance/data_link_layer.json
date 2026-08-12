@@ -18,8 +18,8 @@
     {"id": "AZ-ERD-API", "title": "Express Route Ports REST API", "url": "https://learn.microsoft.com/en-us/rest/api/expressroute/express-route-ports", "reviewed_at": "2026-08-10", "review_due_at": "2027-08-10"}
   ],
   "automated_controls": [
-    {"id": "AZ-DL-001", "name": "ExpressRoute Direct link uses MACsec", "domain_ids": ["DL-15"], "frameworks": {"CIS": "TBD-DL-001", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}, "playbook": "playbooks/cli/fix_az_dl_001.sh"},
-    {"id": "AZ-DL-002", "name": "High-speed ExpressRoute Direct link uses XPN MACsec", "domain_ids": ["DL-07", "DL-15"], "frameworks": {"CIS": "TBD-DL-002", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}, "playbook": "playbooks/cli/fix_az_dl_002.sh"}
+    {"id": "AZ-DL-001", "name": "ExpressRoute Direct link uses MACsec", "domain_ids": ["DL-15"], "frameworks": {"CIS": "N/A-DL-001", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}, "playbook": "playbooks/cli/fix_az_dl_001.sh"},
+    {"id": "AZ-DL-002", "name": "High-speed ExpressRoute Direct link uses XPN MACsec", "domain_ids": ["DL-07", "DL-15"], "frameworks": {"CIS": "N/A-DL-002", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}, "playbook": "playbooks/cli/fix_az_dl_002.sh"}
   ],
   "domains": [
     {"id":"DL-01","name":"Frame construction and delimiting","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider documentation","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"PROVIDER_ATTESTED"},
