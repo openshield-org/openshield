@@ -46,3 +46,15 @@ def test_az_stor_006_noncompliant_returns_one_finding(mock_azure, subscription_i
     # message/description compatibility
     text = finding.get("message") or finding.get("description", "")
     assert "https" in text.lower()
+
+
+def test_az_stor_006_unknown_status_skips(mock_azure, subscription_id):
+    """If the HTTPS status cannot be determined, the rule must not flag the resource."""
+    acct = make_resource(
+        id=_storage_id("unknown-storage"),
+        name="unknown-storage",
+        properties={"supportsHttpsTrafficOnly": None},
+    )
+    mock_azure.set_storage_accounts([acct])
+    findings = az_stor_006.scan(mock_azure, subscription_id)
+    assert findings == []
