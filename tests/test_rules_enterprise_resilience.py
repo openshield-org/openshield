@@ -82,7 +82,7 @@ def test_function_noncompliance(rule, change):
     finding = rule.scan(client, "s")[0]
     assert finding["rule_id"] == rule.RULE_ID
     assert finding["resource_type"] == "Microsoft.Web/sites"
-    assert finding["frameworks"]["CIS"].startswith("TBD-FUNC-")
+    assert finding["frameworks"]["CIS"].startswith("N/A-FUNC-")
 
 
 @pytest.mark.parametrize("rule", FUNCTION_RULES)

@@ -52,13 +52,13 @@ the resource, hosting tier, private endpoint approval, DNS, and client path
 before disabling public access. Backup immutability must be reviewed separately
 and is never locked by an OpenShield playbook.
 
-## Compliance placeholders
+## Compliance mappings
 
 The repository's CIS Azure Foundations version has no direct controls for all
-of these settings. Each rule therefore uses a numbered `TBD-FUNC-*`, `TBD-PE-*`,
-or `TBD-BAK-*` placeholder so maintainers can replace it with an approved
-benchmark mapping later. NIST, ISO 27001, and SOC 2 mappings use the framework
-versions already represented by OpenShield.
+of these settings. Each rule therefore uses a unique `N/A-FUNC-*`, `N/A-PE-*`,
+or `N/A-BAK-*` identifier to state explicitly that no direct CIS recommendation
+is assigned. NIST, ISO 27001, and SOC 2 mappings use the framework versions
+already represented by OpenShield.
 
 ## References
 

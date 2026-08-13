@@ -4,7 +4,7 @@ RULE_ID = "AZ-PE-006"
 RULE_NAME = "Private Endpoint Connection Not Approved"
 SEVERITY = "MEDIUM"
 CATEGORY = "Network"
-FRAMEWORKS = {**FRAMEWORKS, "CIS": "TBD-PE-006"}
+FRAMEWORKS = {**FRAMEWORKS, "CIS": "N/A-PE-006"}
 DESCRIPTION = (
     "A private endpoint connection is pending, rejected, or disconnected and does not provide an active private path."
 )

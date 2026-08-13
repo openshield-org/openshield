@@ -4,7 +4,7 @@ RULE_ID = "AZ-PE-002"
 RULE_NAME = "Azure SQL Public Network Access Enabled"
 SEVERITY = "HIGH"
 CATEGORY = "Network"
-FRAMEWORKS = {**FRAMEWORKS, "CIS": "TBD-PE-002"}
+FRAMEWORKS = {**FRAMEWORKS, "CIS": "N/A-PE-002"}
 DESCRIPTION = (
     "An Azure SQL logical server remains publicly reachable, regardless of whether a private endpoint also exists."
 )

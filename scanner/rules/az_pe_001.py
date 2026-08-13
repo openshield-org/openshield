@@ -4,7 +4,7 @@ RULE_ID = "AZ-PE-001"
 RULE_NAME = "Storage Public Network Access Enabled"
 SEVERITY = "HIGH"
 CATEGORY = "Network"
-FRAMEWORKS = {**FRAMEWORKS, "CIS": "TBD-PE-001"}
+FRAMEWORKS = {**FRAMEWORKS, "CIS": "N/A-PE-001"}
 DESCRIPTION = (
     "A Storage Account remains publicly reachable; an approved private endpoint alone "
     "does not disable its public endpoint."
