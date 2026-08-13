@@ -319,3 +319,89 @@ def test_secops_010_action_groups_api_failure_is_unknown(monkeypatch, tmp_path):
     collector = make_collector(monitor_client=monitor)
     stub_collector(monkeypatch, az_secops_010, collector)
     assert az_secops_010.scan(_client(), _SUB) == []
+
+
+def test_secops_010_onboarding_discovery_partial_is_unknown_not_fail(monkeypatch, tmp_path):
+    """One workspace's Sentinel onboarding check fails; the other is confirmed onboarded with
+    no automation rule. The failed workspace might have had the routing rule, so this must be
+    UNKNOWN, not a confident FAIL."""
+    set_policy_env(monkeypatch, tmp_path)
+    ws_ok = workspace(name="ws-ok", resource_group="rg-ok")
+    ws_denied = workspace(name="ws-denied", resource_group="rg-denied")
+    monitor = SimpleNamespace(action_groups=SimpleNamespace(list_by_subscription_id=lambda: []))
+
+    def sentinel_factory(rg):
+        if rg == "rg-denied":
+            return _sentinel_client(raise_onboarding=True)
+        return _sentinel_client(onboarded=True, automation_rules=[])
+
+    collector = make_collector(
+        monitor_client=monitor,
+        log_analytics_client=_log_analytics([ws_ok, ws_denied]),
+        sentinel_client_factory=sentinel_factory,
+    )
+    stub_collector(monkeypatch, az_secops_010, collector)
+    assert az_secops_010.scan(_client(), _SUB) == []
+
+
+def test_secops_010_automation_rules_partial_is_unknown_not_fail(monkeypatch, tmp_path):
+    """Both workspaces are confirmed Sentinel-onboarded, but the automation-rules collection
+    fails for one of them. The reachable workspace has no automation rule, but the unreachable
+    one might have had the routing rule, so this must be UNKNOWN, not a confident FAIL."""
+    set_policy_env(monkeypatch, tmp_path)
+    ws_ok = workspace(name="ws-ok", resource_group="rg-ok")
+    ws_broken = workspace(name="ws-broken", resource_group="rg-broken")
+    monitor = SimpleNamespace(action_groups=SimpleNamespace(list_by_subscription_id=lambda: []))
+
+    def automation_rules_list(rg, wn):
+        if rg == "rg-broken":
+            raise RuntimeError("boom")
+        return []
+
+    def sentinel_factory(rg):
+        return SimpleNamespace(
+            sentinel_onboarding_states=SimpleNamespace(list=lambda rg, wn: _onboarding_states_list(1)),
+            data_connectors=SimpleNamespace(list=lambda rg, wn: []),
+            alert_rules=SimpleNamespace(list=lambda rg, wn: []),
+            automation_rules=SimpleNamespace(list=automation_rules_list),
+        )
+
+    collector = make_collector(
+        monitor_client=monitor,
+        log_analytics_client=_log_analytics([ws_ok, ws_broken]),
+        sentinel_client_factory=sentinel_factory,
+    )
+    stub_collector(monkeypatch, az_secops_010, collector)
+    assert az_secops_010.scan(_client(), _SUB) == []
+
+
+def test_secops_010_automation_rules_partial_but_coverage_found_is_compliant(monkeypatch, tmp_path):
+    """Automation-rules collection fails for one workspace, but the reachable workspace already
+    has a routing rule. Coverage is real evidence and should short-circuit before the incomplete
+    evidence from the other workspace is even considered."""
+    set_policy_env(monkeypatch, tmp_path)
+    ws_covered = workspace(name="ws-covered", resource_group="rg-covered")
+    ws_broken = workspace(name="ws-broken", resource_group="rg-broken")
+    monitor = SimpleNamespace(action_groups=SimpleNamespace(list_by_subscription_id=lambda: []))
+    automation_rules = [SimpleNamespace(display_name="route-to-playbook")]
+
+    def automation_rules_list(rg, wn):
+        if rg == "rg-broken":
+            raise RuntimeError("boom")
+        return automation_rules
+
+    def sentinel_factory(rg):
+        return SimpleNamespace(
+            sentinel_onboarding_states=SimpleNamespace(list=lambda rg, wn: _onboarding_states_list(1)),
+            data_connectors=SimpleNamespace(list=lambda rg, wn: []),
+            alert_rules=SimpleNamespace(list=lambda rg, wn: []),
+            automation_rules=SimpleNamespace(list=automation_rules_list),
+        )
+
+    collector = make_collector(
+        monitor_client=monitor,
+        log_analytics_client=_log_analytics([ws_covered, ws_broken]),
+        sentinel_client_factory=sentinel_factory,
+    )
+    stub_collector(monkeypatch, az_secops_010, collector)
+    assert az_secops_010.scan(_client(), _SUB) == []

@@ -3,7 +3,13 @@
 import logging
 from typing import Any, Dict, List
 
-from scanner.rules._security_operations_common import build_collector, build_finding, load_policy_from_env, value
+from scanner.rules._security_operations_common import (
+    build_collector,
+    build_finding,
+    is_usable,
+    load_policy_from_env,
+    value,
+)
 from scanner.security_operations import CollectionStatus, workspace_scope_key
 
 logger = logging.getLogger(__name__)
@@ -53,17 +59,29 @@ def _action_group_is_monitored(group: Any) -> bool:
     return False
 
 
-def _has_automation_rule_coverage(automation_rules_result: Any, workspaces: Any) -> bool:
+def _automation_rule_coverage(automation_rules_result: Any, workspaces: Any) -> tuple[bool, bool]:
+    """Return (has_coverage, evidence_is_complete) for Sentinel automation-rule routing.
+
+    ``evidence_is_complete`` is False whenever any onboarded workspace's
+    automation rules could not be collected (a PARTIAL result, or a workspace
+    absent from an otherwise-COMPLETE result because its own scope failed).
+    A caller must never treat incomplete evidence as proof of "no coverage":
+    the workspace that could not be checked might be the one with the
+    routing rule.
+    """
     if automation_rules_result.status is CollectionStatus.FAILED or not automation_rules_result.items:
-        return False
+        return False, False
     per_workspace = automation_rules_result.items[0]
+    has_coverage = False
+    evidence_is_complete = True
     for workspace in workspaces:
         scope_key = workspace_scope_key(workspace)
         if scope_key in automation_rules_result.failed_scopes:
+            evidence_is_complete = False
             continue
         if per_workspace.get(scope_key, ()):
-            return True
-    return False
+            has_coverage = True
+    return has_coverage, evidence_is_complete
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
@@ -87,12 +105,40 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     # No action group covers it; a Sentinel automation rule routing incidents
     # onward is an accepted alternative destination, so check before failing.
     workspaces_result = collector.sentinel_onboarded_workspaces()
+    if not is_usable(workspaces_result):
+        logger.warning(
+            "%s: Sentinel onboarding discovery unavailable (%s); result is UNKNOWN",
+            RULE_ID,
+            workspaces_result.error_code,
+        )
+        return []
+
     has_automation_coverage = False
-    if workspaces_result.status is not CollectionStatus.FAILED and workspaces_result.items:
+    evidence_is_complete = True
+    if workspaces_result.items:
         automation_rules_result = collector.sentinel_automation_rules(workspaces_result.items)
-        has_automation_coverage = _has_automation_rule_coverage(automation_rules_result, workspaces_result.items)
+        if not is_usable(automation_rules_result):
+            logger.warning(
+                "%s: Sentinel automation rules unavailable (%s); result is UNKNOWN",
+                RULE_ID,
+                automation_rules_result.error_code,
+            )
+            return []
+        has_automation_coverage, evidence_is_complete = _automation_rule_coverage(
+            automation_rules_result, workspaces_result.items
+        )
 
     if has_automation_coverage:
+        return []
+
+    # sentinel_onboarded_workspaces() itself can also be PARTIAL: some
+    # workspaces were confirmed onboarded (and checked above), but others
+    # could not be checked at all, so their automation-rule coverage is
+    # completely unknown, not just incomplete.
+    if not evidence_is_complete or workspaces_result.status is CollectionStatus.PARTIAL:
+        logger.warning(
+            "%s: incomplete Sentinel evidence (some workspace scopes unreachable); result is UNKNOWN", RULE_ID
+        )
         return []
 
     finding = build_finding(
