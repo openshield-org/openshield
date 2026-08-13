@@ -5,6 +5,7 @@ import json
 import pytest
 
 from api.validation import ValidationError
+import sentinel.ingest as ingest
 from sentinel.ingest import load_findings, normalise
 
 
@@ -36,3 +37,26 @@ def test_normalise_accepts_bounded_finding():
     )
     assert record["Severity"] == "High"
     assert record["RuleId"] == "AZ-NET-001"
+
+
+def test_main_handles_invalid_config_without_traceback(monkeypatch, capsys):
+    monkeypatch.setattr(ingest, "WORKSPACE_ID", "")
+    monkeypatch.setattr(ingest.sys, "argv", ["ingest.py"])
+
+    assert ingest.main() == 2
+    captured = capsys.readouterr()
+    assert "Invalid Sentinel configuration or findings input" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_main_rejects_entire_batch_before_send_when_one_record_is_invalid(monkeypatch, tmp_path):
+    path = tmp_path / "findings.json"
+    path.write_text(json.dumps([{"severity": "HIGH"}, {"severity": "urgent"}]), encoding="utf-8")
+    monkeypatch.setattr(ingest, "WORKSPACE_ID", "00000000-0000-0000-0000-000000000001")
+    monkeypatch.setattr(ingest, "SHARED_KEY", "c2VjcmV0")
+    monkeypatch.setattr(ingest.sys, "argv", ["ingest.py", str(path), "scan-1"])
+    called = []
+    monkeypatch.setattr(ingest, "send", called.append)
+
+    assert ingest.main() == 2
+    assert called == []

@@ -13,6 +13,7 @@ from api.validation import (
     VALIDATION_ERROR_MESSAGE,
     ValidationError,
     bounded_string,
+    canonical_choice,
     choice,
     positive_integer,
     uuid_string,
@@ -57,7 +58,7 @@ def list_findings():
         if "severity" in request.args:
             filters["severity"] = choice(request.args["severity"], "severity", SEVERITIES, case="upper")
         if "category" in request.args:
-            filters["category"] = choice(request.args["category"], "category", CATEGORIES)
+            filters["category"] = canonical_choice(request.args["category"], "category", CATEGORIES)
         if "rule_id" in request.args:
             filters["rule_id"] = bounded_string(
                 request.args["rule_id"].upper(), "rule_id", maximum=64, pattern=RULE_ID_RE

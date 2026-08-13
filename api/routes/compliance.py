@@ -5,6 +5,7 @@ import os
 from flask import Blueprint, g, jsonify
 
 from api.models.finding import DatabaseManager
+from api.validation import VALIDATION_ERROR_MESSAGE, ValidationError, choice
 
 compliance_bp = Blueprint("compliance", __name__)
 logger = logging.getLogger(__name__)
@@ -31,21 +32,17 @@ def get_compliance(framework: str):
     Returns control-level pass/fail status mapped to current open findings.
     """
     try:
-        if framework.lower() not in SUPPORTED_FRAMEWORKS:
-            return jsonify(
-                {
-                    "error": f"Unknown framework '{framework}'",
-                    "supported": list(SUPPORTED_FRAMEWORKS),
-                }
-            ), 400
+        framework = choice(framework, "framework", SUPPORTED_FRAMEWORKS, case="lower")
 
         db = _get_db()
-        result = db.get_compliance_score(framework.lower())
+        result = db.get_compliance_score(framework)
 
         if "error" in result:
             return jsonify(result), 500
 
         return jsonify(result)
+    except ValidationError:
+        return jsonify({"error": VALIDATION_ERROR_MESSAGE, "supported": list(SUPPORTED_FRAMEWORKS)}), 400
     except FileNotFoundError as exc:
         logger.error("Frameworks directory not found: %s", exc)
         return jsonify({"error": "Compliance frameworks are not available"}), 500

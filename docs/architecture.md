@@ -249,9 +249,10 @@ The flow:
 2. Use the second CLI argument as `scan_id`, or generate one from the current UTC timestamp.
 3. Accept either a raw findings list or an object with a `findings` array.
 4. Normalise each finding into Sentinel-friendly fields such as `RuleId`, `RuleName`, `Severity`, `SeverityScore`, `ResourceId`, and `TimeGenerated`.
-5. HMAC-sign the payload with `SENTINEL_SHARED_KEY`.
-6. POST the records to the Log Analytics Data Collector API.
-7. Query and analytics rules in `sentinel/rules/` operate on `OpenShieldFindings_CL`.
+5. Validate the complete batch before sending it. If configuration or any record is invalid, reject the entire batch with a concise error and send no records.
+6. HMAC-sign the payload with `SENTINEL_SHARED_KEY`.
+7. POST the records to the Log Analytics Data Collector API.
+8. Query and analytics rules in `sentinel/rules/` operate on `OpenShieldFindings_CL`.
 
 Required environment variables:
 

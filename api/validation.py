@@ -86,6 +86,16 @@ def choice(value: Any, field: str, allowed: Iterable[str], *, case: str = "prese
     return result
 
 
+def canonical_choice(value: Any, field: str, allowed: Iterable[str]) -> str:
+    """Return the allowlisted spelling while accepting case-insensitive input."""
+    result = bounded_string(value, field, maximum=128)
+    canonical = {item.casefold(): item for item in allowed}
+    try:
+        return canonical[result.casefold()]
+    except KeyError as exc:
+        raise ValidationError(f"Unsupported {field}") from exc
+
+
 def uuid_string(value: Any, field: str) -> str:
     result = bounded_string(value, field, maximum=36)
     try:

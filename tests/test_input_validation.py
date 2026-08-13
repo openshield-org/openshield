@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import api.routes.findings as findings_route
+import api.routes.compliance as compliance_route
 import api.routes.scans as scans_route
 from api.validation import MAX_API_KEY_LENGTH, MAX_FINDINGS, MAX_QUESTION_LENGTH, VALIDATION_ERROR_MESSAGE
 
@@ -83,18 +84,29 @@ def test_finding_filters_reject_values_outside_contract(client, auth_headers, qu
     get_db.assert_not_called()
 
 
-def test_finding_filters_are_normalised_before_database(client, auth_headers):
+@pytest.mark.parametrize("category", ["Network", "network", "NETWORK"])
+def test_finding_filters_are_normalised_before_database(client, auth_headers, category):
     db = MagicMock()
     db.get_findings.return_value = []
     with patch.object(findings_route, "_get_db", return_value=db):
         response = client.get(
-            f"/api/findings?severity=high&category=Network&rule_id=az-net-001&scan_id={_SCAN_ID}",
+            f"/api/findings?severity=high&category={category}&rule_id=az-net-001&scan_id={_SCAN_ID}",
             headers=auth_headers,
         )
     assert response.status_code == 200
     db.get_findings.assert_called_once_with(
         {"severity": "HIGH", "category": "Network", "rule_id": "AZ-NET-001", "scan_id": _SCAN_ID}
     )
+
+
+def test_compliance_framework_rejects_untrusted_value_without_reflection(client, auth_headers):
+    supplied = "not-a-framework<script>"
+    with patch.object(compliance_route, "_get_db") as get_db:
+        response = client.get(f"/api/compliance/{supplied}", headers=auth_headers)
+    assert response.status_code == 400
+    assert response.get_json()["error"] == VALIDATION_ERROR_MESSAGE
+    assert supplied not in response.get_data(as_text=True)
+    get_db.assert_not_called()
 
 
 @pytest.mark.parametrize(

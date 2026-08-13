@@ -130,15 +130,19 @@ def send(records):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "scanner/output/test_findings.json"
-    scan_id = sys.argv[2] if len(sys.argv) > 2 else datetime.datetime.utcnow().strftime("scan-%Y%m%d-%H%M")
-    print(f"[INFO] Scan ID: {scan_id}")
-    validate_config()
-    findings = load_findings(path)
-    print(f"[INFO] Loaded {len(findings)} findings")
-    records = [normalise(f, scan_id) for f in findings]
-    send(records)
+    try:
+        path = sys.argv[1] if len(sys.argv) > 1 else "scanner/output/test_findings.json"
+        scan_id = sys.argv[2] if len(sys.argv) > 2 else datetime.datetime.now(datetime.UTC).strftime("scan-%Y%m%d-%H%M")
+        print(f"[INFO] Scan ID: {scan_id}")
+        validate_config()
+        findings = load_findings(path)
+        print(f"[INFO] Loaded {len(findings)} findings")
+        records = [normalise(f, scan_id) for f in findings]
+    except ValidationError:
+        print("[ERROR] Invalid Sentinel configuration or findings input", file=sys.stderr)
+        return 2
+    return 0 if send(records) else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
