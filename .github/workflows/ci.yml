@@ -101,6 +101,14 @@ jobs:
           seen_ids = defaultdict(list)
 
           for filename in sorted(os.listdir(rules_dir)):
+              is_helper = filename == "__init__.py" or (
+                  filename.startswith("_") and filename.endswith("_common.py")
+              )
+              if filename.endswith(".py") and not (filename.startswith("az_") or is_helper):
+                  failures.append(
+                      f"{filename}: rule-directory Python files must match az_*.py or _*_common.py"
+                  )
+                  continue
               if not filename.startswith("az_") or not filename.endswith(".py"):
                   continue
 

@@ -6,6 +6,8 @@ so there is no constructor injection point for a mock. These tests monkeypatch
 instantiating the engine, then exercise run_scan() end-to-end with no network.
 """
 
+from pathlib import Path
+
 import scanner.engine as engine_mod
 from scanner.engine import ScanEngine
 from tests.helpers.mock_azure import MockAzureClient, make_resource
@@ -52,6 +54,28 @@ def test_engine_loads_all_57_rules(monkeypatch):
     for rule in eng.rules:
         assert callable(getattr(rule, "scan", None))
         assert getattr(rule, "RULE_ID", None)
+
+
+def test_engine_discovery_matches_ci_and_ignores_misnamed_modules(monkeypatch, tmp_path):
+    """Only CI-validated az_*.py modules may execute at scan time."""
+    (tmp_path / "az_valid_001.py").write_text(
+        'RULE_ID = "AZ-VALID-001"\n\ndef scan(azure_client, subscription_id):\n    return []\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "scratch_test.py").write_text(
+        'def scan(azure_client, subscription_id):\n    raise AssertionError("must not load")\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "_network_common.py").write_text(
+        'def scan(azure_client, subscription_id):\n    raise AssertionError("must not load")\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(engine_mod, "RULES_DIR", Path(tmp_path))
+    _patch_engine_client(monkeypatch, _offline_mock())
+
+    eng = ScanEngine(_SUB)
+
+    assert [rule.RULE_ID for rule in eng.rules] == ["AZ-VALID-001"]
 
 
 def test_engine_run_scan_result_is_self_consistent(monkeypatch):

@@ -1,4 +1,4 @@
-"""Rule regression tests for the network rules AZ-NET-001 .. AZ-NET-015.
+"""Rule regression tests for the network rules AZ-NET-001 .. AZ-NET-017.
 
 AZ-NET-007/009/010 construct a NetworkManagementClient inside scan(); those
 tests monkeypatch azure.mgmt.network.NetworkManagementClient. The rest read data
@@ -24,6 +24,8 @@ import scanner.rules.az_net_012 as az_net_012
 import scanner.rules.az_net_013 as az_net_013
 import scanner.rules.az_net_014 as az_net_014
 import scanner.rules.az_net_015 as az_net_015
+import scanner.rules.az_net_016 as az_net_016
+import scanner.rules.az_net_017 as az_net_017
 from tests.helpers.mock_azure import make_resource
 
 try:
@@ -673,3 +675,69 @@ def test_net_015_skips_private_zone(mock_azure, subscription_id):
         ],
     )
     assert az_net_015.scan(mock_azure, subscription_id) == []
+
+
+# ── AZ-NET-016: NIC IP forwarding ──────────────────────────────────────────
+
+
+def test_net_016_empty_and_failed_inventory_create_no_findings(mock_azure, subscription_id):
+    mock_azure.set_network_interfaces([])
+    assert az_net_016.scan(mock_azure, subscription_id) == []
+    mock_azure.set_network_interfaces(None)
+    assert az_net_016.scan(mock_azure, subscription_id) == []
+
+
+def test_net_016_disabled_ip_forwarding_is_compliant(mock_azure, subscription_id):
+    mock_azure.set_network_interfaces(
+        [
+            make_resource(
+                id="/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/networkInterfaces/nic1",
+                name="nic1",
+                enable_ip_forwarding=False,
+            )
+        ]
+    )
+    assert az_net_016.scan(mock_azure, subscription_id) == []
+
+
+def test_net_016_enabled_ip_forwarding_creates_finding(mock_azure, subscription_id):
+    nic_id = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/networkInterfaces/nic1"
+    mock_azure.set_network_interfaces([make_resource(id=nic_id, name="nic1", enable_ip_forwarding=True)])
+    findings = az_net_016.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-NET-016"
+    assert findings[0]["metadata"]["requires_routing_function_review"] is True
+
+
+# ── AZ-NET-017: direct Internet default UDR ─────────────────────────────────
+
+
+def test_net_017_empty_and_failed_inventory_create_no_findings(mock_azure, subscription_id):
+    mock_azure.set_route_tables([])
+    assert az_net_017.scan(mock_azure, subscription_id) == []
+    mock_azure.set_route_tables(None)
+    assert az_net_017.scan(mock_azure, subscription_id) == []
+
+
+def test_net_017_private_route_and_inspected_default_are_compliant(mock_azure, subscription_id):
+    routes = [
+        make_resource(name="private", address_prefix="10.0.0.0/8", next_hop_type="Internet"),
+        make_resource(name="default", address_prefix="0.0.0.0/0", next_hop_type="VirtualAppliance"),
+    ]
+    mock_azure.set_route_tables([make_resource(id="/routeTables/rt1", name="rt1", routes=routes)])
+    assert az_net_017.scan(mock_azure, subscription_id) == []
+
+
+@pytest.mark.parametrize("prefix", ["0.0.0.0/0", "::/0"])
+def test_net_017_direct_internet_default_creates_finding(mock_azure, subscription_id, prefix):
+    route = make_resource(
+        id="/routeTables/rt1/routes/default",
+        name="default",
+        address_prefix=prefix,
+        next_hop_type="Internet",
+    )
+    mock_azure.set_route_tables([make_resource(id="/routeTables/rt1", name="rt1", routes=[route])])
+    findings = az_net_017.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["rule_id"] == "AZ-NET-017"
+    assert findings[0]["metadata"]["address_prefix"] == prefix
