@@ -188,6 +188,11 @@
       "control_name": "Key management",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. A.10.1.2 requires that a policy on the use, protection, and lifetime of cryptographic keys is developed and implemented. Certificates approaching expiry without renewal represent a failure in cryptographic key lifecycle management."
     },
+    "AZ-KV-006": {
+      "control_id": "A.9.2.3",
+      "control_name": "Management of privileged access rights",
+      "description": "Key Vaults authorizing access through legacy vault access policies instead of Azure RBAC lack scoped, reviewable privileged-access management. A.9.2.3 requires that the allocation of privileged access rights is restricted and controlled. Access policies do not provide the granular, role-based control needed to enforce least privilege on secrets, keys, and certificates."
+    },
     "AZ-DB-004": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
@@ -327,6 +332,26 @@
       "control_id": "A.9.4.3",
       "control_name": "Password management system",
       "description": "A pipeline service connection authenticates with a stored service principal secret instead of a federated credential, leaving a static credential to rotate and potentially leak."
+    },
+    "AZ-DL-001": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "MACsec protects traffic on the customer-visible ExpressRoute Direct Ethernet boundary."
+    },
+    "AZ-DL-002": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "XPN MACsec provides appropriate packet-number capacity for high-speed ExpressRoute Direct links."
+    },
+    "AZ-NET-016": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "NIC IP forwarding must be restricted to approved routing functions."
+    },
+    "AZ-NET-017": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Default routes must preserve the approved controlled egress boundary."
     }
   }
 }

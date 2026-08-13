@@ -1,0 +1,1069 @@
+{
+  "schema_version": 1,
+  "catalog_version": "2026.08",
+  "layer": {
+    "number": 3,
+    "name": "Network",
+    "model": "OSI",
+    "assessment_type": "mixed_assurance"
+  },
+  "scope": {
+    "environment": "azure_public_cloud",
+    "statement": "Azure public-cloud IPv4 and IPv6 addressing, routing, transit, isolation, IP-boundary protection, and Layer 3 diagnostics exposed through documented management-plane state.",
+    "responsibility_boundary": "Customers configure address spaces, routes, peerings, gateways, public IP boundaries, and supported diagnostics. Microsoft owns and operates the physical fabric, tenant isolation, system-route implementation, packet forwarding, and other internals not exposed as tenant-verifiable state."
+  },
+  "subdomains": [
+    {
+      "id": "ADDRESSING",
+      "name": "Addressing and packet behavior",
+      "description": "IP addressing, prefix allocation, subnetting, NAT, public/private boundaries, fragmentation, MTU, ICMP, and source validation."
+    },
+    {
+      "id": "ROUTING",
+      "name": "Routing and forwarding",
+      "description": "Packet forwarding, next-hop selection, system and user-defined routes, propagation, effective routes, BGP, redundancy, and failover."
+    },
+    {
+      "id": "TRANSIT",
+      "name": "Network transit",
+      "description": "Virtual network peering, hub-and-spoke topology, VPN Gateway, and ExpressRoute routing and advertisement."
+    },
+    {
+      "id": "PROTECTION",
+      "name": "Protection and isolation",
+      "description": "DDoS protection, tenant boundaries, segmentation, and network isolation."
+    },
+    {
+      "id": "OBSERVABILITY",
+      "name": "Layer 3 observability",
+      "description": "Route diagnostics, flow visibility, reachability diagnostics, and monitoring coverage."
+    }
+  ],
+  "controls": [
+    {
+      "id": "NL-C01",
+      "title": "IPv4 addressing and prefix management assurance",
+      "responsibility": "Customer",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING"
+      ],
+      "domain_ids": [
+        "NL-01"
+      ],
+      "evidence_source_ids": [
+        "E-NETWORKING"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-006"
+      ]
+    },
+    {
+      "id": "NL-C02",
+      "title": "IPv6 addressing and dual-stack assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING"
+      ],
+      "domain_ids": [
+        "NL-02"
+      ],
+      "evidence_source_ids": [
+        "E-IPV6"
+      ],
+      "scanner_rule_ids": []
+    },
+    {
+      "id": "NL-C03",
+      "title": "Subnet and overlap assurance",
+      "responsibility": "Customer",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING"
+      ],
+      "domain_ids": [
+        "NL-03"
+      ],
+      "evidence_source_ids": [
+        "E-NETWORKING",
+        "E-PEERING"
+      ],
+      "scanner_rule_ids": []
+    },
+    {
+      "id": "NL-C04",
+      "title": "Packet forwarding and next-hop assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING"
+      ],
+      "domain_ids": [
+        "NL-04"
+      ],
+      "evidence_source_ids": [
+        "E-NEXT-HOP",
+        "E-NETWORK-POLICY"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-011",
+        "AZ-NET-016"
+      ]
+    },
+    {
+      "id": "NL-C05",
+      "title": "System and user-defined route assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING"
+      ],
+      "domain_ids": [
+        "NL-05"
+      ],
+      "evidence_source_ids": [
+        "E-ROUTING",
+        "E-ROUTE-API"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-017"
+      ]
+    },
+    {
+      "id": "NL-C06",
+      "title": "Route propagation and effective-route assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING",
+        "OBSERVABILITY"
+      ],
+      "domain_ids": [
+        "NL-06"
+      ],
+      "evidence_source_ids": [
+        "E-ROUTING",
+        "E-EFFECTIVE"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-011"
+      ]
+    },
+    {
+      "id": "NL-C07",
+      "title": "Virtual network peering and transit assurance",
+      "responsibility": "Customer",
+      "applicability": "APPLICABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "TRANSIT"
+      ],
+      "domain_ids": [
+        "NL-07"
+      ],
+      "evidence_source_ids": [
+        "E-PEERING"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-014"
+      ]
+    },
+    {
+      "id": "NL-C08",
+      "title": "Hub-and-spoke routing assurance",
+      "responsibility": "Customer",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING",
+        "TRANSIT"
+      ],
+      "domain_ids": [
+        "NL-08"
+      ],
+      "evidence_source_ids": [
+        "E-HUB-SPOKE"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-013",
+        "AZ-NET-014"
+      ]
+    },
+    {
+      "id": "NL-C09",
+      "title": "Network address translation assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING"
+      ],
+      "domain_ids": [
+        "NL-09"
+      ],
+      "evidence_source_ids": [
+        "E-NAT"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-006"
+      ]
+    },
+    {
+      "id": "NL-C10",
+      "title": "Public and private IP boundary assurance",
+      "responsibility": "Customer",
+      "applicability": "APPLICABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING",
+        "PROTECTION"
+      ],
+      "domain_ids": [
+        "NL-10"
+      ],
+      "evidence_source_ids": [
+        "E-NETWORKING"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-006",
+        "AZ-NET-010",
+        "AZ-NET-013",
+        "AZ-NET-017"
+      ]
+    },
+    {
+      "id": "NL-C11",
+      "title": "IP fragmentation, MTU, and path MTU assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING"
+      ],
+      "domain_ids": [
+        "NL-11"
+      ],
+      "evidence_source_ids": [
+        "E-MTU"
+      ],
+      "scanner_rule_ids": []
+    },
+    {
+      "id": "NL-C12",
+      "title": "ICMP and diagnostic reachability assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING",
+        "OBSERVABILITY"
+      ],
+      "domain_ids": [
+        "NL-12"
+      ],
+      "evidence_source_ids": [
+        "E-DIAGNOSTICS"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-011"
+      ]
+    },
+    {
+      "id": "NL-C13",
+      "title": "Source-address validation and anti-spoofing assurance",
+      "responsibility": "Microsoft",
+      "applicability": "APPLICABLE",
+      "verification": "PROVIDER_ATTESTED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ADDRESSING",
+        "PROTECTION"
+      ],
+      "domain_ids": [
+        "NL-13"
+      ],
+      "evidence_source_ids": [
+        "E-SECURITY"
+      ],
+      "scanner_rule_ids": []
+    },
+    {
+      "id": "NL-C14",
+      "title": "BGP routing assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING"
+      ],
+      "domain_ids": [
+        "NL-14"
+      ],
+      "evidence_source_ids": [
+        "E-BGP"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-009"
+      ]
+    },
+    {
+      "id": "NL-C15",
+      "title": "VPN Gateway routing assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING",
+        "TRANSIT"
+      ],
+      "domain_ids": [
+        "NL-15"
+      ],
+      "evidence_source_ids": [
+        "E-VPN"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-009"
+      ]
+    },
+    {
+      "id": "NL-C16",
+      "title": "ExpressRoute routing and advertisement assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING",
+        "TRANSIT"
+      ],
+      "domain_ids": [
+        "NL-16"
+      ],
+      "evidence_source_ids": [
+        "E-EXPRESSROUTE"
+      ],
+      "scanner_rule_ids": []
+    },
+    {
+      "id": "NL-C17",
+      "title": "Route redundancy and failover assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "MANUALLY_VERIFIABLE",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "ROUTING"
+      ],
+      "domain_ids": [
+        "NL-17"
+      ],
+      "evidence_source_ids": [
+        "E-RELIABILITY"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-008",
+        "AZ-NET-009"
+      ]
+    },
+    {
+      "id": "NL-C18",
+      "title": "DDoS protection at the IP boundary assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "PROTECTION"
+      ],
+      "domain_ids": [
+        "NL-18"
+      ],
+      "evidence_source_ids": [
+        "E-DDOS"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-005"
+      ]
+    },
+    {
+      "id": "NL-C19",
+      "title": "Network isolation and segmentation assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "PROTECTION"
+      ],
+      "domain_ids": [
+        "NL-19"
+      ],
+      "evidence_source_ids": [
+        "E-SECURITY"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-004",
+        "AZ-NET-010",
+        "AZ-NET-013",
+        "AZ-NET-014",
+        "AZ-NET-016",
+        "AZ-NET-017"
+      ]
+    },
+    {
+      "id": "NL-C20",
+      "title": "Layer 3 monitoring and route diagnostics assurance",
+      "responsibility": "Shared",
+      "applicability": "APPLICABLE",
+      "verification": "AUTOMATICALLY_CHECKED",
+      "status": "DOCUMENTED",
+      "subdomain_ids": [
+        "OBSERVABILITY"
+      ],
+      "domain_ids": [
+        "NL-20"
+      ],
+      "evidence_source_ids": [
+        "E-DIAGNOSTICS",
+        "E-EFFECTIVE"
+      ],
+      "scanner_rule_ids": [
+        "AZ-NET-011",
+        "AZ-NET-012"
+      ]
+    }
+  ],
+  "domains": [
+    {
+      "id": "NL-01",
+      "name": "IPv4 addressing and prefix management",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Customer",
+      "observability_method": "Inspect VNet, subnet, NIC, and public IP management-plane configuration.",
+      "evidence_source_ids": [
+        "E-NETWORKING"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-006"
+      ],
+      "automation_decision": "Existing public-IP association check covers one boundary condition; broad prefix policy is deployment-specific."
+    },
+    {
+      "id": "NL-02",
+      "name": "IPv6 addressing and dual-stack behavior",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect IPv6 VNet prefixes, subnet prefixes, NIC configurations, and public IP SKUs.",
+      "evidence_source_ids": [
+        "E-IPV6"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [],
+      "automation_decision": "No universal requirement to enable dual stack; absence is not a safe finding."
+    },
+    {
+      "id": "NL-03",
+      "name": "Subnetting and address-space overlap",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Customer",
+      "observability_method": "Compare authoritative VNet, subnet, peering, and connected-network prefixes.",
+      "evidence_source_ids": [
+        "E-NETWORKING",
+        "E-PEERING"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [],
+      "automation_decision": "Azure prevents invalid local subnet overlap, while intended cross-network overlap requires topology context not currently inventoried."
+    },
+    {
+      "id": "NL-04",
+      "name": "Packet forwarding and next-hop selection",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Use Network Watcher next-hop diagnostics for a selected VM NIC and destination.",
+      "evidence_source_ids": [
+        "E-NEXT-HOP",
+        "E-NETWORK-POLICY"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-011",
+        "AZ-NET-016"
+      ],
+      "automation_decision": "NIC IP forwarding is checked from authoritative configuration; path-specific next-hop intent remains manual."
+    },
+    {
+      "id": "NL-05",
+      "name": "System routes and user-defined routes",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect route tables and documented Azure system routes.",
+      "evidence_source_ids": [
+        "E-ROUTING",
+        "E-ROUTE-API"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-017"
+      ],
+      "automation_decision": "Explicit user-defined default Internet routes are checked; system routes and intended private routing remain contextual."
+    },
+    {
+      "id": "NL-06",
+      "name": "Route propagation and effective routes",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect route-table propagation settings and Network Watcher effective routes for selected NICs.",
+      "evidence_source_ids": [
+        "E-ROUTING",
+        "E-EFFECTIVE"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-011"
+      ],
+      "automation_decision": "Effective-route evaluation requires workload intent and NIC scope."
+    },
+    {
+      "id": "NL-07",
+      "name": "Virtual network peering and transit",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Customer",
+      "observability_method": "Inspect both peering directions, forwarded-traffic, remote-gateway, and gateway-transit flags.",
+      "evidence_source_ids": [
+        "E-PEERING"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-014"
+      ],
+      "automation_decision": "Existing peering transit rule supplies a limited management-plane check; full topology validity remains manual."
+    },
+    {
+      "id": "NL-08",
+      "name": "Hub-and-spoke routing",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Customer",
+      "observability_method": "Correlate peerings, route tables, gateways, and network virtual appliances against the intended topology.",
+      "evidence_source_ids": [
+        "E-HUB-SPOKE"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-013",
+        "AZ-NET-014"
+      ],
+      "automation_decision": "Inventory does not identify intended hubs, spokes, or routing functions, so topology assumptions cannot create findings."
+    },
+    {
+      "id": "NL-09",
+      "name": "Network address translation",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect NAT Gateway attachment, outbound rules, and Azure-managed translation behavior.",
+      "evidence_source_ids": [
+        "E-NAT"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-006"
+      ],
+      "automation_decision": "NAT design is workload-specific; public IP association is the only existing related check."
+    },
+    {
+      "id": "NL-10",
+      "name": "Public and private IP boundaries",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Customer",
+      "observability_method": "Inspect public IP resources and associations plus private subnet and NIC addressing.",
+      "evidence_source_ids": [
+        "E-NETWORKING"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-006",
+        "AZ-NET-010",
+        "AZ-NET-013",
+        "AZ-NET-017"
+      ],
+      "automation_decision": "Existing rules check unused public IPs and selected segmentation boundaries; they do not prove end-to-end exposure."
+    },
+    {
+      "id": "NL-11",
+      "name": "IP fragmentation, MTU, and path MTU behavior",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Validate workload paths with documented Azure MTU guidance and controlled diagnostics.",
+      "evidence_source_ids": [
+        "E-MTU"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [],
+      "automation_decision": "Management-plane inventory cannot prove packet fragmentation or path MTU behavior."
+    },
+    {
+      "id": "NL-12",
+      "name": "ICMP and diagnostic reachability",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Use Network Watcher connection troubleshoot and IP flow verification for an explicitly selected path.",
+      "evidence_source_ids": [
+        "E-DIAGNOSTICS"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-011"
+      ],
+      "automation_decision": "Reachability is path- and policy-specific; scanner inventory alone is insufficient."
+    },
+    {
+      "id": "NL-13",
+      "name": "Source-address validation and anti-spoofing",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Microsoft",
+      "observability_method": "Rely on Microsoft platform documentation; tenant inventory cannot inspect fabric enforcement.",
+      "evidence_source_ids": [
+        "E-SECURITY"
+      ],
+      "verification": "PROVIDER_ATTESTED",
+      "rule_ids": [],
+      "automation_decision": "No customer-actionable authoritative state exists; no finding is safe."
+    },
+    {
+      "id": "NL-14",
+      "name": "BGP routing",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect gateway BGP configuration and learned or advertised routes for an applicable gateway.",
+      "evidence_source_ids": [
+        "E-BGP"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-009"
+      ],
+      "automation_decision": "BGP correctness depends on intended on-premises prefixes and policy."
+    },
+    {
+      "id": "NL-15",
+      "name": "VPN gateway routing",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect VPN gateway, connection, local network gateway, routing, and effective route state.",
+      "evidence_source_ids": [
+        "E-VPN"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-009"
+      ],
+      "automation_decision": "Existing VPN rule checks IKE configuration; route correctness remains contextual."
+    },
+    {
+      "id": "NL-16",
+      "name": "ExpressRoute routing and route advertisement",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect circuit, gateway, peering, BGP, and advertised-route management-plane state when ExpressRoute is deployed.",
+      "evidence_source_ids": [
+        "E-EXPRESSROUTE"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [],
+      "automation_decision": "The MACsec rules are Layer 2 and deliberately excluded; Layer 3 advertisement correctness requires customer route intent."
+    },
+    {
+      "id": "NL-17",
+      "name": "Route redundancy and failover",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect gateway redundancy mode and validate planned failover using service-specific diagnostics.",
+      "evidence_source_ids": [
+        "E-RELIABILITY"
+      ],
+      "verification": "MANUALLY_VERIFIABLE",
+      "rule_ids": [
+        "AZ-NET-008",
+        "AZ-NET-009"
+      ],
+      "automation_decision": "Backend presence and VPN configuration are related cross-layer signals, not proof of route failover."
+    },
+    {
+      "id": "NL-18",
+      "name": "DDoS protection at the IP boundary",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect VNet DDoS plan association and Microsoft platform protection documentation.",
+      "evidence_source_ids": [
+        "E-DDOS"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-005"
+      ],
+      "automation_decision": "Existing VNet DDoS rule checks authoritative plan association."
+    },
+    {
+      "id": "NL-19",
+      "name": "Network isolation and segmentation",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect prefixes, subnets, peerings, route boundaries, NSGs, and firewall placement against architecture intent.",
+      "evidence_source_ids": [
+        "E-SECURITY"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-004",
+        "AZ-NET-010",
+        "AZ-NET-013",
+        "AZ-NET-014",
+        "AZ-NET-016",
+        "AZ-NET-017"
+      ],
+      "automation_decision": "Existing cross-layer rules provide limited configuration checks; platform tenant isolation is provider-owned."
+    },
+    {
+      "id": "NL-20",
+      "name": "Layer 3 monitoring, flow visibility, and route diagnostics",
+      "azure_applicability": "APPLICABLE",
+      "responsibility_owner": "Shared",
+      "observability_method": "Inspect Network Watcher availability and supported flow and route diagnostic configuration.",
+      "evidence_source_ids": [
+        "E-DIAGNOSTICS",
+        "E-EFFECTIVE"
+      ],
+      "verification": "AUTOMATICALLY_CHECKED",
+      "rule_ids": [
+        "AZ-NET-011",
+        "AZ-NET-012"
+      ],
+      "automation_decision": "Existing rules check selected diagnostic services; they do not constitute live traffic or fabric inspection."
+    }
+  ],
+  "rule_classifications": [
+    {
+      "id": "AZ-DL-001",
+      "name": "ExpressRoute Direct link without MACsec",
+      "osi_classification": "Layer 2",
+      "classification_basis": "MACsec protects Ethernet frames on the direct link and remains a Data Link control.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-DL-002",
+      "name": "ExpressRoute Direct non-XPN MACsec cipher",
+      "osi_classification": "Layer 2",
+      "classification_basis": "The MACsec cipher suite protects Ethernet frames and remains a Data Link control.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-001",
+      "name": "Unrestricted inbound SSH",
+      "osi_classification": "Layer 4",
+      "classification_basis": "The finding is selected by TCP destination port 22.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-002",
+      "name": "Unrestricted inbound RDP",
+      "osi_classification": "Layer 4",
+      "classification_basis": "The finding is selected by TCP destination port 3389.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-003",
+      "name": "Unrestricted inbound HTTPS",
+      "osi_classification": "Layer 4",
+      "classification_basis": "The finding is selected by TCP destination port 443.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-004",
+      "name": "NSG with no rules",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "NSGs evaluate Layer 3 prefixes and Layer 4 protocol and port tuples.",
+      "layer_3_domain_ids": [
+        "NL-19"
+      ]
+    },
+    {
+      "id": "AZ-NET-005",
+      "name": "VNet without DDoS plan",
+      "osi_classification": "Layer 3",
+      "classification_basis": "The control protects the VNet IP boundary against network-layer denial of service.",
+      "layer_3_domain_ids": [
+        "NL-18"
+      ]
+    },
+    {
+      "id": "AZ-NET-006",
+      "name": "Unassociated public IP",
+      "osi_classification": "Layer 3",
+      "classification_basis": "The resource represents an IP address and public/private boundary.",
+      "layer_3_domain_ids": [
+        "NL-01",
+        "NL-09",
+        "NL-10"
+      ]
+    },
+    {
+      "id": "AZ-NET-007",
+      "name": "Application Gateway without WAF",
+      "osi_classification": "Layer 7",
+      "classification_basis": "Application Gateway WAF inspects HTTP application traffic.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-008",
+      "name": "Load balancer without backend pool",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "Azure Load Balancer spans IP frontend selection and transport-layer load balancing.",
+      "layer_3_domain_ids": [
+        "NL-17"
+      ]
+    },
+    {
+      "id": "AZ-NET-009",
+      "name": "VPN gateway using IKEv1",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "IKE establishes the VPN security association while the gateway carries routed IP traffic.",
+      "layer_3_domain_ids": [
+        "NL-14",
+        "NL-15",
+        "NL-17"
+      ]
+    },
+    {
+      "id": "AZ-NET-010",
+      "name": "Subnet without NSG",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "The subnet is Layer 3 while NSG policy can match Layer 3 and Layer 4 fields.",
+      "layer_3_domain_ids": [
+        "NL-10",
+        "NL-19"
+      ]
+    },
+    {
+      "id": "AZ-NET-011",
+      "name": "Network Watcher regional coverage",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "Network Watcher exposes Layer 3 route and reachability diagnostics plus broader network tooling.",
+      "layer_3_domain_ids": [
+        "NL-04",
+        "NL-06",
+        "NL-12",
+        "NL-20"
+      ]
+    },
+    {
+      "id": "AZ-NET-012",
+      "name": "NSG flow logs disabled",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "Flow records contain Layer 3 addresses and Layer 4 protocol and port information.",
+      "layer_3_domain_ids": [
+        "NL-20"
+      ]
+    },
+    {
+      "id": "AZ-NET-013",
+      "name": "VNet without Azure Firewall",
+      "osi_classification": "Cross-layer",
+      "classification_basis": "Firewall placement creates a Layer 3 boundary while policy can enforce through Layer 7.",
+      "layer_3_domain_ids": [
+        "NL-08",
+        "NL-10",
+        "NL-19"
+      ]
+    },
+    {
+      "id": "AZ-NET-014",
+      "name": "Peering gateway transit restrictions",
+      "osi_classification": "Layer 3",
+      "classification_basis": "VNet peering and gateway transit determine routed IP reachability.",
+      "layer_3_domain_ids": [
+        "NL-07",
+        "NL-08",
+        "NL-19"
+      ]
+    },
+    {
+      "id": "AZ-NET-015",
+      "name": "Public DNS exposing private infrastructure",
+      "osi_classification": "Layer 7",
+      "classification_basis": "DNS is an application-layer naming protocol even when records contain IP addresses.",
+      "layer_3_domain_ids": []
+    },
+    {
+      "id": "AZ-NET-016",
+      "name": "Network interface with IP forwarding enabled",
+      "osi_classification": "Layer 3",
+      "classification_basis": "IP forwarding changes Layer 3 source, destination, and transit behavior on the network interface.",
+      "layer_3_domain_ids": [
+        "NL-04",
+        "NL-19"
+      ]
+    },
+    {
+      "id": "AZ-NET-017",
+      "name": "User-defined default route using direct Internet next hop",
+      "osi_classification": "Layer 3",
+      "classification_basis": "The route explicitly selects the Layer 3 next hop for all IPv4 or IPv6 destinations.",
+      "layer_3_domain_ids": [
+        "NL-05",
+        "NL-10",
+        "NL-19"
+      ]
+    }
+  ],
+  "evidence_sources": [
+    {
+      "id": "E-NETWORKING",
+      "title": "Azure Virtual Network overview",
+      "url": "https://learn.microsoft.com/azure/virtual-network/virtual-networks-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-IPV6",
+      "title": "IPv6 for Azure Virtual Network",
+      "url": "https://learn.microsoft.com/azure/virtual-network/ip-services/ipv6-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-ROUTING",
+      "title": "Azure virtual network traffic routing",
+      "url": "https://learn.microsoft.com/azure/virtual-network/virtual-networks-udr-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-NETWORK-POLICY",
+      "title": "Built-in policy definitions for Azure networking services",
+      "url": "https://learn.microsoft.com/azure/networking/policy-reference",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-ROUTE-API",
+      "title": "Microsoft.Network route tables resource reference",
+      "url": "https://learn.microsoft.com/azure/templates/microsoft.network/routetables",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-EFFECTIVE",
+      "title": "Diagnose a virtual machine routing problem",
+      "url": "https://learn.microsoft.com/azure/virtual-network/diagnose-network-routing-problem",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-NEXT-HOP",
+      "title": "Network Watcher next hop overview",
+      "url": "https://learn.microsoft.com/azure/network-watcher/next-hop-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-PEERING",
+      "title": "Azure virtual network peering",
+      "url": "https://learn.microsoft.com/azure/virtual-network/virtual-network-peering-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-HUB-SPOKE",
+      "title": "Hub-spoke network topology in Azure",
+      "url": "https://learn.microsoft.com/azure/architecture/networking/architecture/hub-spoke",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-NAT",
+      "title": "Azure NAT Gateway overview",
+      "url": "https://learn.microsoft.com/azure/nat-gateway/nat-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-MTU",
+      "title": "Azure VPN Gateway packet capture and MTU guidance",
+      "url": "https://learn.microsoft.com/azure/vpn-gateway/packet-capture",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-DIAGNOSTICS",
+      "title": "Azure Network Watcher overview",
+      "url": "https://learn.microsoft.com/azure/network-watcher/network-watcher-monitoring-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-SECURITY",
+      "title": "Azure network security overview",
+      "url": "https://learn.microsoft.com/azure/security/fundamentals/network-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-BGP",
+      "title": "BGP with Azure VPN Gateway",
+      "url": "https://learn.microsoft.com/azure/vpn-gateway/vpn-gateway-bgp-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-VPN",
+      "title": "About Azure VPN Gateway",
+      "url": "https://learn.microsoft.com/azure/vpn-gateway/vpn-gateway-about-vpngateways",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-EXPRESSROUTE",
+      "title": "ExpressRoute routing requirements",
+      "url": "https://learn.microsoft.com/azure/expressroute/expressroute-routing",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-RELIABILITY",
+      "title": "Reliability in Azure Virtual Network Gateways",
+      "url": "https://learn.microsoft.com/azure/reliability/reliability-virtual-network-gateway",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    },
+    {
+      "id": "E-DDOS",
+      "title": "Azure DDoS Protection overview",
+      "url": "https://learn.microsoft.com/azure/ddos-protection/ddos-protection-overview",
+      "reviewed_at": "2026-08-12",
+      "review_due_at": "2027-02-12"
+    }
+  ]
+}

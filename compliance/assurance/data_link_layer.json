@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "catalog_version": "2026.08",
+  "layer": {"number": 2, "name": "Data Link", "model": "OSI", "assessment_type": "mixed_assurance"},
+  "scope": {
+    "environment": "azure_public_cloud",
+    "statement": "Azure tenants cannot inspect Microsoft fabric switching or forwarding internals. ExpressRoute Direct is the customer-visible Ethernet boundary with authoritative management-plane configuration.",
+    "responsibility_boundary": "Microsoft owns the Azure fabric. Customers own their ExpressRoute Direct port configuration and connected devices."
+  },
+  "sublayers": [
+    {"id": "LLC", "name": "Logical Link Control", "description": "Link service adaptation, flow and error semantics, and protocol multiplexing."},
+    {"id": "MAC", "name": "Media Access Control", "description": "Framing, addressing, medium access, switching, VLAN, QoS, and link security."}
+  ],
+  "evidence_sources": [
+    {"id": "AZ-L2-BOUNDARY", "title": "Azure virtual network overview", "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-overview", "reviewed_at": "2026-08-10", "review_due_at": "2027-08-10"},
+    {"id": "AZ-ERD-OVERVIEW", "title": "About ExpressRoute Direct", "url": "https://learn.microsoft.com/en-us/azure/expressroute/expressroute-erdirect-about", "reviewed_at": "2026-08-10", "review_due_at": "2027-08-10"},
+    {"id": "AZ-ERD-MACSEC", "title": "Configure MACsec for ExpressRoute Direct ports", "url": "https://learn.microsoft.com/en-us/azure/expressroute/expressroute-howto-macsec", "reviewed_at": "2026-08-10", "review_due_at": "2027-08-10"},
+    {"id": "AZ-ERD-API", "title": "Express Route Ports REST API", "url": "https://learn.microsoft.com/en-us/rest/api/expressroute/express-route-ports", "reviewed_at": "2026-08-10", "review_due_at": "2027-08-10"}
+  ],
+  "automated_controls": [
+    {"id": "AZ-DL-001", "name": "ExpressRoute Direct link uses MACsec", "domain_ids": ["DL-15"], "frameworks": {"CIS": "N/A-DL-001", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}, "playbook": "playbooks/cli/fix_az_dl_001.sh"},
+    {"id": "AZ-DL-002", "name": "High-speed ExpressRoute Direct link uses XPN MACsec", "domain_ids": ["DL-07", "DL-15"], "frameworks": {"CIS": "N/A-DL-002", "NIST": "PR.DS-2", "ISO27001": "A.13.1.1", "SOC2": "CC6.7"}, "playbook": "playbooks/cli/fix_az_dl_002.sh"}
+  ],
+  "domains": [
+    {"id":"DL-01","name":"Frame construction and delimiting","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider documentation","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"PROVIDER_ATTESTED"},
+    {"id":"DL-02","name":"Source and destination MAC addressing","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"provider documentation and ExpressRoute configuration","evidence_source_ids":["AZ-L2-BOUNDARY","AZ-ERD-OVERVIEW"],"verification":"MANUALLY_VERIFIABLE"},
+    {"id":"DL-03","name":"Media access control","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider documentation","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"PROVIDER_ATTESTED"},
+    {"id":"DL-04","name":"Frame check sequence and error detection","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"platform behavior and provider documentation","evidence_source_ids":["AZ-ERD-OVERVIEW"],"verification":"PLATFORM_ENFORCED"},
+    {"id":"DL-05","name":"Link-level flow control","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider documentation","evidence_source_ids":["AZ-ERD-OVERVIEW"],"verification":"PROVIDER_ATTESTED"},
+    {"id":"DL-06","name":"Link establishment and teardown","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"ExpressRoute administrative link state","evidence_source_ids":["AZ-ERD-API"],"verification":"MANUALLY_VERIFIABLE"},
+    {"id":"DL-07","name":"MTU, frame size, and jumbo-frame behavior","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"ExpressRoute configuration and documentation","evidence_source_ids":["AZ-ERD-OVERVIEW","AZ-ERD-API"],"verification":"MANUALLY_VERIFIABLE"},
+    {"id":"DL-08","name":"VLAN tagging, 802.1Q, and QinQ encapsulation","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"ExpressRoute encapsulation configuration","evidence_source_ids":["AZ-ERD-OVERVIEW","AZ-ERD-API"],"verification":"MANUALLY_VERIFIABLE"},
+    {"id":"DL-09","name":"Switching, bridging, filtering, and forwarding tables","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider assurance only","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"PROVIDER_ATTESTED"},
+    {"id":"DL-10","name":"Loop prevention and spanning-tree behavior","sublayer_ids":["MAC"],"azure_applicability":"NOT_APPLICABLE","responsibility_owner":"Microsoft","observability_method":"not exposed to Azure tenants","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"NOT_APPLICABLE"},
+    {"id":"DL-11","name":"Link aggregation and LACP","sublayer_ids":["MAC"],"azure_applicability":"UNSUPPORTED","responsibility_owner":"Shared","observability_method":"connected-device review","evidence_source_ids":["AZ-ERD-OVERVIEW"],"verification":"UNSUPPORTED"},
+    {"id":"DL-12","name":"Neighbor and link discovery such as LLDP","sublayer_ids":["LLC","MAC"],"azure_applicability":"UNSUPPORTED","responsibility_owner":"Shared","observability_method":"connected-device review","evidence_source_ids":["AZ-ERD-OVERVIEW"],"verification":"UNSUPPORTED"},
+    {"id":"DL-13","name":"ARP and neighbor-discovery boundary protection","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"provider assurance and connected-device review","evidence_source_ids":["AZ-L2-BOUNDARY","AZ-ERD-OVERVIEW"],"verification":"MANUALLY_VERIFIABLE"},
+    {"id":"DL-14","name":"Broadcast and multicast handling","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider documentation","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"PLATFORM_ENFORCED"},
+    {"id":"DL-15","name":"MACsec and port-access security","sublayer_ids":["MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Customer","observability_method":"ExpressRoute Direct management API","evidence_source_ids":["AZ-ERD-MACSEC","AZ-ERD-API"],"verification":"AUTOMATICALLY_CHECKED","automated_control_ids":["AZ-DL-001","AZ-DL-002"]},
+    {"id":"DL-16","name":"Layer 2 quality of service and priority handling","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"provider documentation","evidence_source_ids":["AZ-ERD-OVERVIEW"],"verification":"PROVIDER_ATTESTED"},
+    {"id":"DL-17","name":"Operations, administration, monitoring, and packet visibility","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"Azure metrics and connected-device telemetry","evidence_source_ids":["AZ-ERD-OVERVIEW","AZ-ERD-API"],"verification":"MANUALLY_VERIFIABLE"},
+    {"id":"DL-18","name":"Virtual switching, SR-IOV, and overlay adaptation","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Microsoft","observability_method":"platform documentation","evidence_source_ids":["AZ-L2-BOUNDARY"],"verification":"PLATFORM_ENFORCED"},
+    {"id":"DL-19","name":"Link redundancy and failover","sublayer_ids":["LLC","MAC"],"azure_applicability":"APPLICABLE","responsibility_owner":"Shared","observability_method":"ExpressRoute Direct link inventory and connected-device review","evidence_source_ids":["AZ-ERD-OVERVIEW","AZ-ERD-API"],"verification":"MANUALLY_VERIFIABLE"}
+  ]
+}

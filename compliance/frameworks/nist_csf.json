@@ -188,6 +188,11 @@
       "control_name": "Maintenance and repair of organisational assets is performed",
       "description": "A certificate stored in Azure Key Vault is expiring within 30 days with no auto-renewal configured. PR.MA-1 requires that maintenance of organisational assets is performed and logged. Certificate renewal is a critical maintenance task and failure to renew before expiry causes immediate service disruption."
     },
+    "AZ-KV-006": {
+      "control_id": "PR.AC-4",
+      "control_name": "Access permissions and authorizations are managed",
+      "description": "Key Vaults authorizing access through legacy vault access policies instead of Azure RBAC lack centrally managed, auditable access permissions. PR.AC-4 requires that access permissions are managed incorporating the principles of least privilege and separation of duties. Access policies cannot express fine-grained, role-scoped permissions the way Azure RBAC role assignments can."
+    },
     "AZ-DB-004": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
@@ -327,6 +332,26 @@
       "control_id": "PR.AC-1",
       "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",
       "description": "A pipeline service connection authenticates with a stored service principal secret instead of a federated credential, leaving a static credential to rotate and potentially leak."
+    },
+    "AZ-DL-001": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data in transit is protected",
+      "description": "MACsec protects traffic on the customer-visible ExpressRoute Direct Ethernet boundary."
+    },
+    "AZ-DL-002": {
+      "control_id": "PR.DS-2",
+      "control_name": "Data in transit is protected",
+      "description": "XPN MACsec avoids packet-number exhaustion risk on high-speed ExpressRoute Direct links."
+    },
+    "AZ-NET-016": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Unnecessary NIC IP forwarding weakens Azure source and destination validation and can create an unintended transit path."
+    },
+    "AZ-NET-017": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "An explicit default Internet UDR can bypass the approved inspected egress path."
     }
   }
 }

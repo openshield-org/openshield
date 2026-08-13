@@ -65,18 +65,20 @@ class ScanEngine:
 
     def load_rules(self) -> None:
         """Dynamically import every *.py file in scanner/rules/ as a rule module."""
-        for rule_path in sorted(RULES_DIR.glob("*.py")):
-            if rule_path.name.startswith("_"):
-                continue
+        # Keep runtime discovery identical to CI validation and documentation
+        # counts. A misnamed scratch module must never execute against a real
+        # subscription without first passing the rule checks.
+        for rule_path in sorted(RULES_DIR.glob("az_*.py")):
             try:
                 spec = importlib.util.spec_from_file_location(rule_path.stem, rule_path)
                 module = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
                 spec.loader.exec_module(module)  # type: ignore[union-attr]
-                if callable(getattr(module, "scan", None)):
+                rule_id = getattr(module, "RULE_ID", None)
+                if callable(getattr(module, "scan", None)) and isinstance(rule_id, str) and rule_id:
                     self.rules.append(module)
-                    logger.info("Loaded rule: %s", getattr(module, "RULE_ID", rule_path.stem))
+                    logger.info("Loaded rule: %s", rule_id)
                 else:
-                    logger.warning("Rule file %s has no scan() function — skipped", rule_path.name)
+                    logger.warning("Rule file %s has no scan() function or RULE_ID — skipped", rule_path.name)
             except Exception as exc:
                 logger.error("Failed to load rule %s: %s", rule_path.name, exc)
 

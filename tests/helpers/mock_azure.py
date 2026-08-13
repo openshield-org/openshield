@@ -48,6 +48,7 @@ class MockAzureClient:
     def __init__(self) -> None:
         self._storage_accounts: List[Any] = []
         self._network_security_groups: List[Any] = []
+        self._express_route_ports: Optional[List[Any]] = []
         self._virtual_machines: List[Any] = []
         self._key_vaults: List[Any] = []
         self._sql_servers: List[Any] = []
@@ -55,7 +56,10 @@ class MockAzureClient:
         self._sql_firewall_rules: Dict[Tuple[str, str], List[Any]] = {}
         # --- Additional state added for full rule-coverage tests ---------- #
         self._network_interfaces: Dict[Tuple[str, str], Any] = {}
+        self._all_network_interfaces: Optional[List[Any]] = []
+        self._route_tables: Optional[List[Any]] = []
         self._vm_extensions: Dict[Tuple[str, str], Optional[List[Any]]] = {}
+        self._disks: Dict[str, Optional[Any]] = {}
         self._storage_lifecycle: Dict[Tuple[str, str], Optional[bool]] = {}
         self._storage_logging: Dict[Tuple[str, str, str], Optional[bool]] = {}
         self._virtual_networks: List[Any] = []
@@ -97,6 +101,28 @@ class MockAzureClient:
     def set_storage_accounts(self, accounts: List[Any]) -> "MockAzureClient":
         self._storage_accounts = accounts
         return self
+
+    def set_express_route_ports(self, ports: Optional[List[Any]]) -> "MockAzureClient":
+        """Configure ExpressRoute Direct inventory; ``None`` represents an API failure."""
+        self._express_route_ports = ports
+        return self
+
+    def get_express_route_ports(self) -> Optional[List[Any]]:
+        return self._express_route_ports
+
+    def set_network_interfaces(self, interfaces: Optional[List[Any]]) -> "MockAzureClient":
+        self._all_network_interfaces = interfaces
+        return self
+
+    def get_network_interfaces(self) -> Optional[List[Any]]:
+        return self._all_network_interfaces
+
+    def set_route_tables(self, route_tables: Optional[List[Any]]) -> "MockAzureClient":
+        self._route_tables = route_tables
+        return self
+
+    def get_route_tables(self) -> Optional[List[Any]]:
+        return self._route_tables
 
     def set_managed_clusters(self, clusters: Optional[List[Any]]) -> "MockAzureClient":
         """Configure AKS inventory; ``None`` represents an API failure."""
@@ -222,6 +248,14 @@ class MockAzureClient:
     def get_vm_extensions(self, resource_group: str, vm_name: str) -> Optional[List[Any]]:
         # Default to an empty list (compliant-by-default) unless configured.
         return self._vm_extensions.get((resource_group, vm_name), [])
+
+    def set_disk(self, disk_id: str, disk: Optional[Any]) -> "MockAzureClient":
+        """Configure the Disk resource returned for a managed disk ID; ``None`` represents an unreadable disk."""
+        self._disks[disk_id] = disk
+        return self
+
+    def get_disk(self, disk_id: str) -> Optional[Any]:
+        return self._disks.get(disk_id)
 
     # ------------------------------------------------------------------ #
     # Storage — lifecycle & service logging (three-state: True/False/None) #
