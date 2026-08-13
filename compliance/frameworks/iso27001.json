@@ -352,6 +352,56 @@
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "Default routes must preserve the approved controlled egress boundary."
+    },
+    "AZ-SECOPS-001": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "The subscription's Activity Log is not exported to an approved central destination. A.12.4.1 requires event logs recording user activities, exceptions, faults, and information security events to be produced, kept, and regularly reviewed; a log that is never centrally exported cannot be reviewed or retained beyond the platform default."
+    },
+    "AZ-SECOPS-002": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "The Activity Log export omits organisation-required categories (Administrative, Security, Policy, ServiceHealth). A.12.4.1 requires event logging to capture the events relevant to information security; a partial category export leaves gaps in the recorded evidence base."
+    },
+    "AZ-SECOPS-003": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "A critical resource has no diagnostic setting exporting to an approved destination. A.12.4.1 requires event logs to be produced for systems, and resource-level activity that is never logged cannot support later review, investigation, or evidence of misuse."
+    },
+    "AZ-SECOPS-004": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "A security-relevant log export's retention is below the organisation's minimum. A.12.4.1 requires logs to be kept for an agreed period; retention that expires before an incident is discovered defeats the control's purpose of supporting later investigation."
+    },
+    "AZ-SECOPS-005": {
+      "control_id": "A.12.4.2",
+      "control_name": "Protection of log information",
+      "description": "A critical resource's only log export sits in a destination the workload's own administrators can modify. A.12.4.2 requires logging facilities and log information to be protected against tampering and unauthorised access, including by administrators of the systems being logged, which this single-destination, same-resource-group export does not achieve."
+    },
+    "AZ-SECOPS-006": {
+      "control_id": "A.12.6.1",
+      "control_name": "Management of technical vulnerabilities",
+      "description": "A required Microsoft Defender for Cloud plan is not enabled for a critical workload type. A.12.6.1 requires timely information about technical vulnerabilities to be obtained and the organisation's exposure evaluated; Defender for Cloud is the Azure-native control providing that vulnerability and threat information, and an unlicensed workload type receives none of it."
+    },
+    "AZ-SECOPS-007": {
+      "control_id": "A.12.6.1",
+      "control_name": "Management of technical vulnerabilities",
+      "description": "A High-severity Defender recommendation remains unresolved beyond the organisation's SLA. A.12.6.1 requires timely action to address identified technical vulnerabilities according to the organisation's associated risk; an SLA breach on a High-severity item is direct evidence that this control's timeliness requirement was not met."
+    },
+    "AZ-SECOPS-008": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "A required Sentinel data connector is missing or unhealthy on an onboarded workspace. A.12.4.1 requires the systems that generate security-relevant events to have their logs actually collected; a disconnected connector means the corresponding event source produces no logs for the SIEM to review."
+    },
+    "AZ-SECOPS-009": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Sentinel lacks enabled High-severity analytics coverage for a required detection use case. A.12.4.1's objective of recording and reviewing security-relevant events is not met when the events are ingested but no analytics rule evaluates them for the specific threat pattern the organisation has identified as high-risk."
+    },
+    "AZ-SECOPS-010": {
+      "control_id": "A.16.1.2",
+      "control_name": "Reporting information security events",
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. A.16.1.2 requires information security events to be reported through appropriate management channels as quickly as possible; an alert with no notified recipient cannot be reported or acted on."
     }
   }
 }

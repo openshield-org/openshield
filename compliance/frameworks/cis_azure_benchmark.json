@@ -352,6 +352,56 @@
       "control_id": "N/A-NET-017",
       "control_name": "Direct Internet default route review (no direct CIS Azure Foundations 2.0.0 control)",
       "description": "Azure exposes and documents user-defined Internet next hops, but CIS Azure Foundations 2.0.0 does not assign this route check a direct recommendation number."
+    },
+    "AZ-SECOPS-001": {
+      "control_id": "5.1.1",
+      "control_name": "Ensure that a 'Diagnostic Setting' exists",
+      "description": "The subscription's Activity Log has no diagnostic setting exporting it to an organisation-approved central destination. CIS 5.1.1 requires a diagnostic setting exporting the Activity Log so administrative, security, and policy events are retained beyond the platform default and available for centralized analysis."
+    },
+    "AZ-SECOPS-002": {
+      "control_id": "5.1.2",
+      "control_name": "Ensure Diagnostic Setting captures appropriate categories",
+      "description": "An Activity Log diagnostic setting exists but does not enable every required category (Administrative, Security, Policy, ServiceHealth). CIS 5.1.2 requires the diagnostic setting to capture all appropriate categories, not just an arbitrary subset."
+    },
+    "AZ-SECOPS-003": {
+      "control_id": "5.4",
+      "control_name": "Ensure that Azure Monitor Resource Logging is Enabled for All Services that Support it",
+      "description": "A critical resource (as defined by the organisation's security-operations policy) has no diagnostic setting exporting to an approved destination. CIS 5.4 requires resource-level logging to be enabled for all services that support it so activity on individual resources is captured, not just subscription-level events."
+    },
+    "AZ-SECOPS-004": {
+      "control_id": "N/A-SECOPS-004",
+      "control_name": "Security log retention below organisation minimum",
+      "description": "A Storage Account log export's retention_policy is disabled or set below the organisation's minimum retention requirement. The CIS Azure Foundations Benchmark addresses diagnostic-setting existence (5.1.1) and category coverage (5.1.2) as distinct numbered controls but does not assign its own control ID to the specific retention-duration value, so no single CIS control maps 1:1 to this rule."
+    },
+    "AZ-SECOPS-005": {
+      "control_id": "N/A-SECOPS-005",
+      "control_name": "Security logs stored only in a workload-administrator-modifiable destination",
+      "description": "A critical resource's only log export destination sits in the same resource group as the workload, so an administrator of that workload can alter or delete the exported logs. The CIS Azure Foundations Benchmark does not have a numbered control for log-destination ownership or tamper-protection separation of duties."
+    },
+    "AZ-SECOPS-006": {
+      "control_id": "N/A-SECOPS-006",
+      "control_name": "Required Microsoft Defender for Cloud plan not enabled",
+      "description": "An organisation-required Microsoft Defender for Cloud plan is not set to the 'Standard' pricing tier. CIS assigns each Defender plan its own leaf control (e.g. 2.1.1 Servers, 2.1.7 Storage, 2.1.4 Azure SQL Databases); because this rule evaluates whichever plans the organisation configures as required, no single fixed CIS control ID applies at the rule level (the matching per-plan CIS control is recorded on each finding's metadata instead)."
+    },
+    "AZ-SECOPS-007": {
+      "control_id": "2.1.13",
+      "control_name": "Ensure that Microsoft Defender Recommendation for 'Apply system updates' status is 'Completed'",
+      "description": "A High-severity Microsoft Defender for Cloud recommendation remains Unhealthy beyond the organisation's remediation SLA. CIS 2.1.13 requires Defender recommendations to reach a 'Completed'/remediated status rather than being left open indefinitely; this rule generalizes that expectation to all High-severity recommendations against an organisation-defined SLA rather than only the update-management recommendation."
+    },
+    "AZ-SECOPS-008": {
+      "control_id": "N/A-SECOPS-008",
+      "control_name": "Required Microsoft Sentinel data connector disconnected or unhealthy",
+      "description": "A required Microsoft Sentinel data connector is missing or has no enabled data type on a Sentinel-onboarded workspace. The CIS Azure Foundations Benchmark is an infrastructure-configuration benchmark and does not include SIEM/XDR operational controls such as Sentinel connector health."
+    },
+    "AZ-SECOPS-009": {
+      "control_id": "N/A-SECOPS-009",
+      "control_name": "Sentinel missing required high-severity analytics coverage",
+      "description": "A Sentinel-onboarded workspace has no enabled High-severity analytics rule covering an organisation-required detection use case. The CIS Azure Foundations Benchmark does not evaluate SIEM detection content or analytics coverage."
+    },
+    "AZ-SECOPS-010": {
+      "control_id": "2.1.20",
+      "control_name": "Ensure That 'Notify about alerts with the following severity' is Set to 'High'",
+      "description": "No enabled Azure Monitor action group with a notification receiver exists, and no Sentinel automation rule routes incidents onward. CIS 2.1.20 requires Defender security alerts to notify a monitored destination; this rule generalizes that requirement to the concrete Azure notification primitive (action groups) and the Sentinel-native incident routing mechanism (automation rules)."
     }
   }
 }

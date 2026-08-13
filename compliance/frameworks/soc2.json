@@ -352,6 +352,56 @@
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
       "description": "User-defined default routes preserve approved inspected egress paths."
+    },
+    "AZ-SECOPS-001": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "The subscription's Activity Log is not exported to an approved central destination. CC7.2 requires the entity to monitor system components for anomalies; an unexported Activity Log removes the raw evidence that monitoring depends on."
+    },
+    "AZ-SECOPS-002": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "Required Activity Log categories are missing from the central export. CC7.2 requires monitoring to cover the events relevant to detecting security anomalies; a partial category export leaves gaps in what can be monitored."
+    },
+    "AZ-SECOPS-003": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "A critical resource lacks diagnostic settings exporting to an approved destination. CC7.2 requires monitoring of infrastructure and software for anomalies; a critical resource with no export is not being monitored at all."
+    },
+    "AZ-SECOPS-004": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "A security-relevant log export's retention is below the organisation's minimum. CC7.2's monitoring objective depends on evidence remaining available long enough to detect and investigate anomalies; retention below the organisation's minimum shortens that window."
+    },
+    "AZ-SECOPS-005": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "A critical resource's only log export sits in a destination its own workload administrators can modify. CC7.2 requires monitoring information to be reliable; a destination the monitored workload's own administrators can alter undermines that reliability."
+    },
+    "AZ-SECOPS-006": {
+      "control_id": "CC7.1",
+      "control_name": "Detection and Monitoring of New Vulnerabilities",
+      "description": "A required Microsoft Defender for Cloud plan is not enabled for a critical workload type. CC7.1 requires the entity to use detection and monitoring procedures to identify changes and vulnerabilities; Defender for Cloud is the mechanism providing that detection for the affected workload type."
+    },
+    "AZ-SECOPS-007": {
+      "control_id": "CC7.1",
+      "control_name": "Detection and Monitoring of New Vulnerabilities",
+      "description": "A High-severity Defender recommendation remains unresolved beyond the organisation's SLA. CC7.1 requires identified vulnerabilities to be evaluated and addressed; an SLA breach indicates the vulnerability-management process required by CC7.1 is not operating effectively."
+    },
+    "AZ-SECOPS-008": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "A required Sentinel data connector is missing or unhealthy. CC7.2 requires monitoring of system components for anomalies; a disconnected connector is a monitored source that has stopped contributing data without detection."
+    },
+    "AZ-SECOPS-009": {
+      "control_id": "CC7.2",
+      "control_name": "System Monitoring",
+      "description": "Sentinel lacks enabled High-severity analytics coverage for a required detection use case. CC7.2 requires monitoring to actually evaluate collected data for anomalies; ingested logs with no analytics rule evaluating a known high-risk pattern do not fulfil that requirement for that use case."
+    },
+    "AZ-SECOPS-010": {
+      "control_id": "CC7.4",
+      "control_name": "Incident Response",
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. CC7.4 requires the entity to respond to identified security incidents; an alert nobody is notified of cannot trigger the incident-response process CC7.4 requires."
     }
   }
 }

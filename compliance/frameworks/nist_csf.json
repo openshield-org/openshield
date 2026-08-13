@@ -352,6 +352,56 @@
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
       "description": "An explicit default Internet UDR can bypass the approved inspected egress path."
+    },
+    "AZ-SECOPS-001": {
+      "control_id": "PR.PT-1",
+      "control_name": "Audit/log records are determined, documented, implemented, and reviewed in accordance with policy",
+      "description": "The subscription's Activity Log is not exported to an approved central destination. PR.PT-1 requires audit/log records to be implemented in accordance with policy; an unexported Activity Log is not available to the review process the policy requires."
+    },
+    "AZ-SECOPS-002": {
+      "control_id": "PR.PT-1",
+      "control_name": "Audit/log records are determined, documented, implemented, and reviewed in accordance with policy",
+      "description": "Required Activity Log categories are missing from the central export. PR.PT-1 requires audit/log records to be determined and implemented per policy; an export missing organisation-required categories does not implement the full policy-defined log scope."
+    },
+    "AZ-SECOPS-003": {
+      "control_id": "DE.AE-3",
+      "control_name": "Event data are collected and correlated from multiple sources and sensors",
+      "description": "A critical resource lacks diagnostic settings exporting to an approved destination. DE.AE-3 requires event data to be collected and correlated from multiple sources; a critical resource with no export is a source contributing no data to that correlation."
+    },
+    "AZ-SECOPS-004": {
+      "control_id": "PR.PT-1",
+      "control_name": "Audit/log records are determined, documented, implemented, and reviewed in accordance with policy",
+      "description": "A security-relevant log export's retention is below the organisation's minimum. PR.PT-1 requires audit/log records to be reviewed in accordance with policy, which presumes the records still exist at review time; retention shorter than the policy's minimum breaks that assumption."
+    },
+    "AZ-SECOPS-005": {
+      "control_id": "PR.DS-6",
+      "control_name": "Integrity checking mechanisms are used to verify software, firmware, and information integrity",
+      "description": "A critical resource's only log export sits in a destination its own workload administrators can modify. PR.DS-6 requires integrity-checking mechanisms to verify information integrity; a single, workload-owned destination provides no independent verification that the exported logs have not been altered or deleted by the resource's own administrators."
+    },
+    "AZ-SECOPS-006": {
+      "control_id": "DE.CM-8",
+      "control_name": "Vulnerability scans are performed",
+      "description": "A required Microsoft Defender for Cloud plan is not enabled for a critical workload type. DE.CM-8 requires vulnerability scans to be performed; Defender for Cloud performs this scanning for the workload types it protects, and an unlicensed type receives no such scanning."
+    },
+    "AZ-SECOPS-007": {
+      "control_id": "RS.MI-3",
+      "control_name": "Newly identified vulnerabilities are mitigated or documented as accepted risks",
+      "description": "A High-severity Defender recommendation remains unresolved beyond the organisation's SLA. RS.MI-3 requires newly identified vulnerabilities to be mitigated or documented as accepted risk; an SLA breach with no recorded exception means neither has happened."
+    },
+    "AZ-SECOPS-008": {
+      "control_id": "DE.AE-3",
+      "control_name": "Event data are collected and correlated from multiple sources and sensors",
+      "description": "A required Sentinel data connector is missing or unhealthy. DE.AE-3 requires event data to be collected and correlated from multiple sources and sensors; a disconnected connector is a required sensor that is not contributing data."
+    },
+    "AZ-SECOPS-009": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored to detect potential cybersecurity events",
+      "description": "Sentinel lacks enabled High-severity analytics coverage for a required detection use case. DE.CM-1 requires the network to be monitored to detect potential cybersecurity events; ingested logs with no analytics rule evaluating them for a known high-risk pattern do not achieve that monitoring outcome for that use case."
+    },
+    "AZ-SECOPS-010": {
+      "control_id": "RS.CO-2",
+      "control_name": "Incidents are reported consistent with established criteria",
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. RS.CO-2 requires incidents to be reported consistent with established criteria; an alert with no notified recipient is never reported to anyone who can act on it."
     }
   }
 }
