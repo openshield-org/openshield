@@ -250,8 +250,8 @@ def _normalise_resource(
     if subscription_id not in authorised_subscriptions:
         raise ValueError("resource belongs to an unauthorised subscription")
 
-    returned_tenant = str(row.get("tenantId") or "").strip()
-    if returned_tenant and _normalise_uuid(returned_tenant, "tenantId") != tenant_id:
+    returned_tenant = _normalise_uuid(_required_string(row, "tenantId"), "tenantId")
+    if returned_tenant != tenant_id:
         raise ValueError("resource belongs to a different tenant")
 
     tags = row.get("tags") or {}

@@ -155,6 +155,28 @@ def test_rejects_cross_tenant_and_unauthorised_subscription_rows():
     assert any("unauthorised subscription" in error for error in snapshot.errors)
 
 
+def test_rejects_missing_blank_and_invalid_tenant_ids():
+    client = MagicMock()
+    missing_tenant = _row("/subscriptions/a/resourceGroups/rg/providers/type/missing-tenant")
+    missing_tenant.pop("tenantId")
+    blank_tenant = _row("/subscriptions/a/resourceGroups/rg/providers/type/blank-tenant")
+    blank_tenant["tenantId"] = ""
+    invalid_tenant = _row("/subscriptions/a/resourceGroups/rg/providers/type/invalid-tenant")
+    invalid_tenant["tenantId"] = "not-a-uuid"
+    client.resources.return_value = _response([missing_tenant, blank_tenant, invalid_tenant])
+
+    snapshot = ArgInventoryClient(client=client).collect(
+        tenant_id=TENANT_ID,
+        subscription_ids=[SUBSCRIPTION_A],
+    )
+
+    assert snapshot.status is InventoryStatus.PARTIAL
+    assert snapshot.resources == ()
+    assert len(snapshot.errors) == 3
+    assert sum("tenantId must be a non-empty string" in error for error in snapshot.errors) == 2
+    assert sum("tenantId must be a valid UUID" in error for error in snapshot.errors) == 1
+
+
 def test_repeated_pagination_token_stops_with_partial_status():
     client = MagicMock()
     client.resources.side_effect = [_response([], "same"), _response([], "same")]

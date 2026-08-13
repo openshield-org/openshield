@@ -9,6 +9,7 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Azure Network Layer Assurance API with 20-domain coverage, network-rule classification, and authoritative IP forwarding and direct Internet route checks
 - Azure Resource Graph inventory snapshots as the first OpenShield Evidence Graph foundation
 - Azure Data Link Layer Assurance API with LLC and MAC coverage plus ExpressRoute Direct MACsec checks
 - Azure public-cloud Physical Layer Assurance API with complete OSI and IEEE PHY domain, sublayer, and provider-evidence coverage
