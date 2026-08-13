@@ -58,6 +58,7 @@ class MockAzureClient:
         self._network_interfaces: Dict[Tuple[str, str], Any] = {}
         self._all_network_interfaces: Optional[List[Any]] = []
         self._route_tables: Optional[List[Any]] = []
+        self._subnets: Dict[str, Optional[Any]] = {}
         self._vm_extensions: Dict[Tuple[str, str], Optional[List[Any]]] = {}
         self._disks: Dict[str, Optional[Any]] = {}
         self._storage_lifecycle: Dict[Tuple[str, str], Optional[bool]] = {}
@@ -238,6 +239,14 @@ class MockAzureClient:
 
     def get_network_interface(self, resource_group: str, nic_name: str) -> Optional[Any]:
         return self._network_interfaces.get((resource_group, nic_name))
+
+    def set_subnet(self, subnet_id: str, subnet: Optional[Any]) -> "MockAzureClient":
+        """Configure the Subnet resource returned for a subnet ID; ``None`` represents an unreadable subnet."""
+        self._subnets[subnet_id] = subnet
+        return self
+
+    def get_subnet(self, subnet_id: str) -> Optional[Any]:
+        return self._subnets.get(subnet_id)
 
     def set_vm_extensions(
         self, resource_group: str, vm_name: str, extensions: Optional[List[Any]]

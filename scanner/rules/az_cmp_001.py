@@ -24,8 +24,31 @@ PLAYBOOK = "playbooks/cli/fix_az_cmp_001.sh"
 logger = logging.getLogger(__name__)
 
 
+def _subnet_has_nsg(azure_client: Any, nic: Any) -> bool:
+    """Return whether any subnet backing this NIC's IP configurations carries its own NSG.
+
+    A NIC without a NIC-level NSG can still be protected by an NSG attached
+    to its subnet - that is a common, valid Azure pattern, not a
+    misconfiguration. An unresolvable subnet (missing ID, permissions, SDK
+    error) is treated the same as "no subnet NSG" - it must never be read as
+    protection, only as "could not confirm", which keeps this check from
+    introducing new false negatives.
+    """
+    for ip_cfg in getattr(nic, "ip_configurations", []) or []:
+        subnet_ref = getattr(ip_cfg, "subnet", None)
+        subnet_id = getattr(subnet_ref, "id", None)
+        if not subnet_id:
+            continue
+
+        subnet = azure_client.get_subnet(subnet_id)
+        if subnet is not None and getattr(subnet, "network_security_group", None):
+            return True
+
+    return False
+
+
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
-    """Detect VMs whose NIC has a public IP but no NSG attached."""
+    """Detect VMs whose NIC has a public IP but no NSG at the NIC or subnet level."""
     findings: List[Dict[str, Any]] = []
 
     for vm in azure_client.get_virtual_machines():
@@ -51,9 +74,13 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             has_public_ip = any(
                 getattr(ip_cfg, "public_ip_address", None) for ip_cfg in (getattr(nic, "ip_configurations", []) or [])
             )
-            has_nsg = bool(getattr(nic, "network_security_group", None))
+            has_nic_nsg = bool(getattr(nic, "network_security_group", None))
 
-            if has_public_ip and not has_nsg:
+            has_subnet_nsg = False
+            if has_public_ip and not has_nic_nsg:
+                has_subnet_nsg = _subnet_has_nsg(azure_client, nic)
+
+            if has_public_ip and not has_nic_nsg and not has_subnet_nsg:
                 findings.append(
                     {
                         "rule_id": RULE_ID,
@@ -70,6 +97,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "metadata": {
                             "nic_id": nic_id,
                             "nic_name": nic_name,
+                            "nic_nsg_attached": has_nic_nsg,
+                            "subnet_nsg_attached": has_subnet_nsg,
                         },
                     }
                 )

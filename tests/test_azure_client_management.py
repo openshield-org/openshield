@@ -59,6 +59,19 @@ def test_single_resource_and_policy_wrappers(client):
         constructor.return_value.network_interfaces.get.side_effect = RuntimeError("denied")
         assert client.get_network_interface("rg", "nic") is None
 
+    subnet_id = "/subscriptions/s/resourceGroups/RG/providers/Microsoft.Network/virtualNetworks/vnet1/subnets/subnet1"
+    with patch("scanner.azure_client.NetworkManagementClient") as constructor:
+        constructor.return_value.subnets.get.return_value = SimpleNamespace(name="subnet1")
+        result = client.get_subnet(subnet_id)
+        assert result.name == "subnet1"
+        constructor.return_value.subnets.get.assert_called_once_with("RG", "vnet1", "subnet1")
+
+        constructor.return_value.subnets.get.side_effect = RuntimeError("denied")
+        assert client.get_subnet(subnet_id) is None
+
+    assert client.get_subnet("") is None
+    assert client.get_subnet("/not/a/valid/subnet/id") is None
+
     with patch("scanner.azure_client.SqlManagementClient") as constructor:
         policy = SimpleNamespace(state="Enabled")
         constructor.return_value.server_blob_auditing_policies.get.return_value = policy

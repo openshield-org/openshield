@@ -287,6 +287,45 @@ class AzureClient:
             logger.error("get_route_tables failed: %s", exc)
             return None
 
+    def get_subnet(self, subnet_id: str) -> Optional[Any]:
+        """Resolve the Subnet resource referenced by a NIC's IP configuration.
+
+        A NIC's ip_configuration only embeds the subnet's resource ID
+        (.../virtualNetworks/{vnet}/subnets/{subnet}) - whether that subnet
+        carries its own NSG must be fetched separately via the Network
+        management client.
+
+        Returns:
+            The Subnet resource, or ``None`` when the ID is missing/malformed
+            or Azure cannot return it (permissions, deletion, SDK error).
+            Callers must never interpret ``None`` as "subnet has no NSG".
+        """
+        if not subnet_id:
+            return None
+        try:
+            resource_group = ""
+            vnet_name = ""
+            subnet_name = ""
+            parts = subnet_id.split("/")
+            for idx, segment in enumerate(parts):
+                lowered = segment.lower()
+                if lowered == "resourcegroups" and idx + 1 < len(parts):
+                    resource_group = parts[idx + 1]
+                elif lowered == "virtualnetworks" and idx + 1 < len(parts):
+                    vnet_name = parts[idx + 1]
+                elif lowered == "subnets" and idx + 1 < len(parts):
+                    subnet_name = parts[idx + 1]
+
+            if not (resource_group and vnet_name and subnet_name):
+                logger.error("get_subnet failed: could not parse %s", subnet_id)
+                return None
+
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return client.subnets.get(resource_group, vnet_name, subnet_name)
+        except Exception as exc:
+            logger.error("get_subnet failed for %s: %s", subnet_id, exc)
+            return None
+
     def get_virtual_networks(self) -> List[Any]:
         """List all virtual networks in the subscription."""
         try:
