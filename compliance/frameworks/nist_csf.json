@@ -342,6 +342,16 @@
       "control_id": "PR.DS-2",
       "control_name": "Data in transit is protected",
       "description": "XPN MACsec avoids packet-number exhaustion risk on high-speed ExpressRoute Direct links."
+    },
+    "AZ-NET-016": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Unnecessary NIC IP forwarding weakens Azure source and destination validation and can create an unintended transit path."
+    },
+    "AZ-NET-017": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "An explicit default Internet UDR can bypass the approved inspected egress path."
     }
   }
 }

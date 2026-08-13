@@ -51,3 +51,18 @@ def test_all_rule_files_agree_with_the_cis_mapping_file():
             mismatches.append((rule_id, rule_cis, control["control_id"]))
 
     assert mismatches == [], f"rule_id, rule_FRAMEWORKS[CIS], json control_id: {mismatches}"
+
+
+def test_cis_mapping_has_no_legacy_tbd_control_ids():
+    """Unresolved TBD identifiers must never reach scoring or findings.
+
+    N/A-* is the explicit, reviewed representation for controls that have no
+    direct CIS recommendation; the old TBD-* prefix was only a placeholder.
+    """
+    controls = _load_controls()
+    legacy = {
+        rule_id: control["control_id"]
+        for rule_id, control in controls.items()
+        if control["control_id"].startswith("TBD-")
+    }
+    assert legacy == {}

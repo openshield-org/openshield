@@ -342,6 +342,16 @@
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
       "description": "XPN MACsec provides appropriate packet-number capacity for high-speed ExpressRoute Direct links."
+    },
+    "AZ-NET-016": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "NIC IP forwarding must be restricted to approved routing functions."
+    },
+    "AZ-NET-017": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Default routes must preserve the approved controlled egress boundary."
     }
   }
 }

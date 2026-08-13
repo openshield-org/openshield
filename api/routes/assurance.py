@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify
 
 from api.services.physical_assurance import CatalogValidationError, get_physical_assurance_report
 from api.services.data_link_assurance import get_data_link_assurance_report
+from api.services.network_layer_assurance import get_network_layer_assurance_report
 
 
 assurance_bp = Blueprint("assurance", __name__)
@@ -36,3 +37,16 @@ def get_data_link_layer_assurance():
     except Exception as exc:
         logger.error("Failed to build Data Link assurance report: %s", exc)
         return jsonify({"error": "Data Link assurance report generation failed"}), 500
+
+
+@assurance_bp.get("/api/assurance/network-layer")
+def get_network_layer_assurance():
+    """Return Azure public-cloud OSI Layer 3 responsibility and evidence coverage."""
+    try:
+        return jsonify(get_network_layer_assurance_report())
+    except CatalogValidationError as exc:
+        logger.error("Network Layer assurance catalog validation failed: %s", exc)
+        return jsonify({"error": "Network Layer assurance catalog is unavailable"}), 500
+    except Exception as exc:
+        logger.error("Failed to build Network Layer assurance report: %s", exc)
+        return jsonify({"error": "Network Layer assurance report generation failed"}), 500

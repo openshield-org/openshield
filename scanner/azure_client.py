@@ -266,6 +266,24 @@ class AzureClient:
             logger.error("get_network_interface(%s) failed: %s", nic_name, exc)
             return None
 
+    def get_network_interfaces(self) -> Optional[List[Any]]:
+        """List NICs while preserving API failure as indeterminate."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.network_interfaces.list_all())
+        except Exception as exc:
+            logger.error("get_network_interfaces failed: %s", exc)
+            return None
+
+    def get_route_tables(self) -> Optional[List[Any]]:
+        """List route tables while preserving API failure as indeterminate."""
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            return list(client.route_tables.list_all())
+        except Exception as exc:
+            logger.error("get_route_tables failed: %s", exc)
+            return None
+
     def get_virtual_networks(self) -> List[Any]:
         """List all virtual networks in the subscription."""
         try:

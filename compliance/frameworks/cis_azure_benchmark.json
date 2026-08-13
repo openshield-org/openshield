@@ -134,9 +134,9 @@
       "description": "The virtual machine does not have automatic OS patching enabled. CIS 8.3 requires that OS patches are applied in a timely manner. Unpatched VMs are vulnerable to known exploits targeting unpatched OS vulnerabilities."
     },
     "AZ-KV-001": {
-      "control_id": "8.8",
-      "control_name": "Ensure the Key Vault is Recoverable",
-      "description": "Azure Key Vault soft delete should be enabled on all Key Vaults. The soft delete feature allows recovery of deleted vaults and vault objects (keys, secrets, certificates) for a configurable retention period (7–90 days), protecting against accidental or malicious deletion."
+      "control_id": "N/A-KV-001",
+      "control_name": "Key Vault soft-delete baseline (covered by the repository's CIS 8.5 purge-protection rule)",
+      "description": "Soft delete is part of CIS Azure Foundations 2.0.0 recommendation 8.5, which is assigned to AZ-KV-004 under the repository's one-CIS-ID-per-rule convention. This overlapping prerequisite check is explicitly not assigned a second numbered mapping."
     },
     "AZ-STOR-003": {
       "control_id": "3.7",
@@ -179,8 +179,8 @@
       "description": "SSL enforcement should be enabled on PostgreSQL Flexible Server to ensure data in transit is encrypted. Without SSL, database connections transmit data in plaintext, exposing it to interception."
     },
     "AZ-KV-004": {
-      "control_id": "8.6",
-      "control_name": "Ensure that Azure Key Vault Purge Protection is Enabled",
+      "control_id": "8.5",
+      "control_name": "Ensure the Key Vault is Recoverable",
       "description": "Azure Key Vaults without purge protection enabled allow permanent deletion of vaults and their secrets, keys, and certificates during the soft-delete retention period. Even with soft delete enabled, a malicious insider or privileged account can purge vault objects before the retention period expires. Enabling purge protection prevents this by blocking purge operations for the full retention period."
     },
     "AZ-DB-004": {
@@ -194,14 +194,14 @@
       "description": "Privileged Identity Management provides time-based and approval-based role activation to mitigate the risk of excessive, unnecessary, or misused access permissions on resources. Without PIM, admin roles are permanently assigned with no just-in-time controls or approval workflows."
     },
     "AZ-KV-005": {
-      "control_id": "8.5",
-      "control_name": "Ensure that the expiration date is set on all certificates",
-      "description": "A certificate stored in Azure Key Vault is expiring within 30 days and does not have auto-renewal configured. CIS 8.5 requires that expiration dates are monitored and certificates are renewed before expiry to prevent service outages and broken authentication flows."
+      "control_id": "N/A-KV-005",
+      "control_name": "Key Vault certificate renewal baseline (not directly mapped in CIS Azure Foundations 2.0.0)",
+      "description": "This rule detects certificates expiring within 30 days without automatic renewal. CIS Azure Foundations 2.0.0 contains certificate expiration-date recommendations, but does not directly prescribe this proactive 30-day renewal check, so no numbered mapping is claimed."
     },
     "AZ-KV-006": {
-      "control_id": "TBD-KV-006",
+      "control_id": "8.6",
       "control_name": "Ensure that Azure Key Vault Uses Azure RBAC for Data Plane Authorization",
-      "description": "Key Vaults authorizing access through legacy vault access policies instead of Azure RBAC lack scoped, auditable role assignments. Access policies grant broad permissions per permission type and are not tracked through Azure RBAC's centralized role-assignment audit trail, increasing the risk of over-privileged access to secrets, keys, and certificates. Note for maintainers: the official CIS Azure Foundations Benchmark control for this check is 8.6 (\"Enable Role Based Access Control for Azure Key Vault\"), but 8.6 is already assigned to AZ-KV-004 (purge protection) in this file — likely a pre-existing mapping error unrelated to this change. Left as TBD pending a maintainer decision on how to resolve the collision, following the same TBD-* convention used elsewhere in this file."
+      "description": "CIS Azure Foundations Benchmark 2.0.0 recommendation 8.6 requires Azure Key Vault to use the Azure RBAC permission model. Key Vaults using legacy access policies lack centrally auditable, scoped role assignments and increase the risk of over-privileged access to secrets, keys, and certificates."
     },
     "AZ-NET-013": {
       "control_id": "6.4",
@@ -264,84 +264,94 @@
       "description": "Microsoft recommends a managed node OS upgrade channel for timely security patches. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-IDN-010": {
-      "control_id": "TBD-IDN-010",
+      "control_id": "N/A-IDN-010",
       "control_name": "App Registration ownership (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends accountable App Registration ownership. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-IDN-011": {
-      "control_id": "TBD-IDN-011",
+      "control_id": "N/A-IDN-011",
       "control_name": "App Registration redirect URI security (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft requires secure redirect URI handling. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-IDN-012": {
-      "control_id": "TBD-IDN-012",
+      "control_id": "N/A-IDN-012",
       "control_name": "OAuth implicit grant security (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends authorization code flow instead of implicit grant. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-IDN-013": {
-      "control_id": "TBD-IDN-013",
+      "control_id": "N/A-IDN-013",
       "control_name": "App Registration password credentials (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends managed identity, federation, or certificates instead of client secrets. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-IDN-014": {
-      "control_id": "TBD-IDN-014",
+      "control_id": "N/A-IDN-014",
       "control_name": "Application-instance property lock (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends locking sensitive service-principal instance properties. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-IDN-015": {
-      "control_id": "TBD-IDN-015",
+      "control_id": "N/A-IDN-015",
       "control_name": "Managed Identity least privilege (not mapped in CIS Azure Foundations 2.0.0)",
       "description": "Microsoft recommends least-privilege roles and scopes for managed identities. This check has no direct control in the repository's CIS Azure Foundations 2.0.0 benchmark."
     },
     "AZ-SC-001": {
-      "control_id": "TBD-SC-001",
-      "control_name": "Container Registry Admin User Enabled placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-001",
+      "control_name": "Container Registry admin user baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends disabling the Azure Container Registry admin account in favor of individual Microsoft Entra identities. This check has no direct recommendation in CIS Azure Foundations 2.0.0."
     },
     "AZ-SC-002": {
-      "control_id": "TBD-SC-002",
-      "control_name": "Container Registry Public Network Access Enabled placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-002",
+      "control_name": "Container Registry public network baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends restricting Azure Container Registry network access with private endpoints or selected networks. This check has no direct recommendation in CIS Azure Foundations 2.0.0."
     },
     "AZ-SC-003": {
-      "control_id": "TBD-SC-003",
-      "control_name": "Container Registry Allows Anonymous Pull placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-003",
+      "control_name": "Container Registry anonymous pull baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends disabling anonymous pull unless a registry intentionally distributes public images. This check has no direct recommendation in CIS Azure Foundations 2.0.0."
     },
     "AZ-SC-004": {
-      "control_id": "TBD-SC-004",
-      "control_name": "Container Registry Missing Retention or Quarantine Policy placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-004",
+      "control_name": "Container Registry retention and quarantine baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft documents retention and quarantine policies for managing untagged and potentially unsafe artifacts. This combined check has no direct recommendation in CIS Azure Foundations 2.0.0."
     },
     "AZ-SC-005": {
-      "control_id": "TBD-SC-005",
-      "control_name": "Terraform State Storage Container Publicly Readable placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-005",
+      "control_name": "Terraform state container access baseline (not directly mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Terraform state can contain sensitive infrastructure data and must not be anonymously readable. The repository does not claim a direct CIS recommendation because this rule specifically identifies Terraform state rather than evaluating every blob container."
     },
     "AZ-SC-006": {
-      "control_id": "TBD-SC-006",
-      "control_name": "Terraform State Storage Account Missing Versioning or Soft Delete placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-006",
+      "control_name": "Terraform state recovery baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends blob versioning and soft delete to recover Terraform state from accidental or malicious changes. This combined Terraform-specific check has no direct recommendation in CIS Azure Foundations 2.0.0."
     },
     "AZ-SC-007": {
-      "control_id": "TBD-SC-007",
-      "control_name": "Pipeline Service Connection Scoped to Subscription placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-007",
+      "control_name": "Pipeline service connection scope baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends least-privilege scopes for Azure DevOps service connections. Azure DevOps pipeline connection scope is outside the direct recommendations in CIS Azure Foundations 2.0.0."
     },
     "AZ-SC-008": {
-      "control_id": "TBD-SC-008",
-      "control_name": "Pipeline Service Connection Uses Password Instead of Federated Credential placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-SC-008",
+      "control_name": "Pipeline workload identity federation baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft recommends workload identity federation instead of stored service-principal secrets for Azure DevOps service connections. This check has no direct recommendation in CIS Azure Foundations 2.0.0."
     },
     "AZ-DL-001": {
-      "control_id": "TBD-DL-001",
-      "control_name": "ExpressRoute Direct MACsec placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-DL-001",
+      "control_name": "ExpressRoute Direct MACsec baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft supports MACsec for encrypting ExpressRoute Direct physical links. CIS Azure Foundations 2.0.0 has no direct recommendation for ExpressRoute Direct MACsec."
     },
     "AZ-DL-002": {
-      "control_id": "TBD-DL-002",
-      "control_name": "ExpressRoute Direct XPN MACsec placeholder",
-      "description": "Numbered placeholder pending maintainer approval of a direct CIS mapping."
+      "control_id": "N/A-DL-002",
+      "control_name": "ExpressRoute Direct XPN MACsec baseline (not mapped in CIS Azure Foundations 2.0.0)",
+      "description": "Microsoft requires the XPN cipher for MACsec on 100-Gbps ExpressRoute Direct ports. CIS Azure Foundations 2.0.0 has no direct recommendation for this link-layer setting."
+    },
+    "AZ-NET-016": {
+      "control_id": "N/A-NET-016",
+      "control_name": "Network interface IP forwarding review (no direct CIS Azure Foundations 2.0.0 control)",
+      "description": "Azure recommends disabling NIC IP forwarding unless the interface belongs to a reviewed routing function, but CIS Azure Foundations 2.0.0 does not assign this check a direct recommendation number."
+    },
+    "AZ-NET-017": {
+      "control_id": "N/A-NET-017",
+      "control_name": "Direct Internet default route review (no direct CIS Azure Foundations 2.0.0 control)",
+      "description": "Azure exposes and documents user-defined Internet next hops, but CIS Azure Foundations 2.0.0 does not assign this route check a direct recommendation number."
     }
   }
 }
