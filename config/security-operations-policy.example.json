@@ -1,0 +1,32 @@
+{
+  "critical_resource_types": [
+    "Microsoft.KeyVault/vaults",
+    "Microsoft.Sql/servers",
+    "Microsoft.Storage/storageAccounts"
+  ],
+  "approved_destination_ids": [
+    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/security/providers/Microsoft.OperationalInsights/workspaces/central-security"
+  ],
+  "required_activity_categories": [
+    "Administrative",
+    "Security",
+    "Policy",
+    "ServiceHealth"
+  ],
+  "minimum_retention_days": 90,
+  "required_defender_plans": [
+    "VirtualMachines",
+    "StorageAccounts",
+    "SqlServers"
+  ],
+  "defender_recommendation_sla_days": 30,
+  "required_sentinel_connectors": [
+    "AzureActiveDirectory",
+    "AzureSecurityCenter"
+  ],
+  "required_high_severity_analytics": [
+    "privileged-role-change",
+    "credential-abuse"
+  ],
+  "approved_exclusions": []
+}
