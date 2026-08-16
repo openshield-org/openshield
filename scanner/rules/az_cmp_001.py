@@ -1,7 +1,7 @@
 """AZ-CMP-001: Virtual machine has a public IP with no associated NSG."""
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 RULE_ID = "AZ-CMP-001"
 RULE_NAME = "VM with Public IP and No Associated NSG on Network Interface"
@@ -21,19 +21,44 @@ REMEDIATION = (
 )
 PLAYBOOK = "playbooks/cli/fix_az_cmp_001.sh"
 
+# An unresolvable subnet says nothing about whether it actually has an NSG, so
+# it must not be read as "confirmed unprotected" and carry the same HIGH
+# severity as a real finding -- that would let a permissions gap or a
+# transient API failure masquerade as a genuine misconfiguration. Mirrors the
+# same confirmed/indeterminate split already used by AZ-CMP-002.
+INDETERMINATE_SEVERITY = "LOW"
+INDETERMINATE_DESCRIPTION = (
+    "A virtual machine has a public IP address assigned to its network interface with no "
+    "NSG on the interface itself, and the subnet backing at least one IP configuration "
+    "could not be resolved, so subnet-level protection could not be verified. This is not "
+    "a confirmed violation -- the scanning principal could not resolve the Subnet resource "
+    "(missing Microsoft.Network/virtualNetworks/subnets/read, transient API failure, or the "
+    "subnet no longer exists)."
+)
+INDETERMINATE_REMEDIATION = (
+    "Grant the scanning principal Microsoft.Network/virtualNetworks/subnets/read on the "
+    "affected subnet(s) and re-run the scan to determine whether the subnet actually has "
+    "an NSG attached."
+)
+
 logger = logging.getLogger(__name__)
 
 
-def _subnet_has_nsg(azure_client: Any, nic: Any) -> bool:
-    """Return whether any subnet backing this NIC's IP configurations carries its own NSG.
+def _subnet_nsg_status(azure_client: Any, nic: Any) -> Optional[bool]:
+    """Resolve whether any subnet backing this NIC's IP configurations carries its own NSG.
 
     A NIC without a NIC-level NSG can still be protected by an NSG attached
     to its subnet - that is a common, valid Azure pattern, not a
-    misconfiguration. An unresolvable subnet (missing ID, permissions, SDK
-    error) is treated the same as "no subnet NSG" - it must never be read as
-    protection, only as "could not confirm", which keeps this check from
-    introducing new false negatives.
+    misconfiguration.
+
+    Returns:
+        True  - at least one backing subnet was resolved and has an NSG (protected).
+        False - every backing subnet was resolved and none has an NSG (confirmed unprotected).
+        None  - at least one backing subnet could not be resolved (missing ID, permissions,
+                SDK error) and none of the resolvable ones confirmed protection, so
+                subnet-level protection cannot be confirmed either way.
     """
+    unresolved = False
     for ip_cfg in getattr(nic, "ip_configurations", []) or []:
         subnet_ref = getattr(ip_cfg, "subnet", None)
         subnet_id = getattr(subnet_ref, "id", None)
@@ -41,10 +66,14 @@ def _subnet_has_nsg(azure_client: Any, nic: Any) -> bool:
             continue
 
         subnet = azure_client.get_subnet(subnet_id)
-        if subnet is not None and getattr(subnet, "network_security_group", None):
+        if subnet is None:
+            unresolved = True
+            continue
+
+        if getattr(subnet, "network_security_group", None):
             return True
 
-    return False
+    return None if unresolved else False
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
@@ -76,29 +105,31 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             )
             has_nic_nsg = bool(getattr(nic, "network_security_group", None))
 
-            has_subnet_nsg = False
+            subnet_status: Optional[bool] = None
             if has_public_ip and not has_nic_nsg:
-                has_subnet_nsg = _subnet_has_nsg(azure_client, nic)
+                subnet_status = _subnet_nsg_status(azure_client, nic)
 
-            if has_public_ip and not has_nic_nsg and not has_subnet_nsg:
+            if has_public_ip and not has_nic_nsg and subnet_status is not True:
+                confirmed = subnet_status is False
                 findings.append(
                     {
                         "rule_id": RULE_ID,
                         "rule_name": RULE_NAME,
-                        "severity": SEVERITY,
+                        "severity": SEVERITY if confirmed else INDETERMINATE_SEVERITY,
                         "category": CATEGORY,
                         "resource_id": vm.id,
                         "resource_name": vm.name,
                         "resource_type": "Microsoft.Compute/virtualMachines",
-                        "description": DESCRIPTION,
-                        "remediation": REMEDIATION,
+                        "description": DESCRIPTION if confirmed else INDETERMINATE_DESCRIPTION,
+                        "remediation": REMEDIATION if confirmed else INDETERMINATE_REMEDIATION,
                         "playbook": PLAYBOOK,
                         "frameworks": FRAMEWORKS,
                         "metadata": {
                             "nic_id": nic_id,
                             "nic_name": nic_name,
                             "nic_nsg_attached": has_nic_nsg,
-                            "subnet_nsg_attached": has_subnet_nsg,
+                            "subnet_nsg_attached": False,
+                            "determination": "non_compliant" if confirmed else "indeterminate",
                         },
                     }
                 )

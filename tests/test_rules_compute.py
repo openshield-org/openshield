@@ -146,10 +146,13 @@ def test_cmp_001_noncompliant_no_nic_nsg_no_subnet_nsg_returns_one_finding(mock_
     assert f["severity"] == "HIGH"
     assert f["metadata"]["nic_nsg_attached"] is False
     assert f["metadata"]["subnet_nsg_attached"] is False
+    assert f["metadata"]["determination"] == "non_compliant"
 
 
-def test_cmp_001_unresolvable_subnet_still_flags(mock_azure, subscription_id):
-    """A subnet that fails to resolve (permissions/deleted) must not be read as protection."""
+def test_cmp_001_unresolvable_subnet_is_indeterminate_not_confirmed_high(mock_azure, subscription_id):
+    """A subnet that fails to resolve (permissions/deleted) must not be read as a confirmed
+    HIGH violation — the scanning principal simply couldn't verify subnet-level protection,
+    which is a different, lower-confidence result than a real misconfiguration."""
     subnet_id = _subnet_id("vnet1", "subnet1")
     nic = make_resource(
         ip_configurations=[
@@ -167,6 +170,38 @@ def test_cmp_001_unresolvable_subnet_still_flags(mock_azure, subscription_id):
     # No set_subnet() call -> get_subnet() returns None, simulating an unreadable subnet.
     findings = az_cmp_001.scan(mock_azure, subscription_id)
     assert len(findings) == 1
+    f = findings[0]
+    assert _REQUIRED_FIELDS.issubset(f.keys())
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+
+
+def test_cmp_001_mixed_resolvable_and_unresolvable_subnets_is_indeterminate(mock_azure, subscription_id):
+    """When one IP config's subnet resolves with no NSG but another IP config's subnet can't
+    be read at all, the unresolved one might have had an NSG — so the overall result must stay
+    indeterminate rather than being reported as a confirmed HIGH violation."""
+    resolvable_subnet_id = _subnet_id("vnet1", "subnet-resolvable")
+    unresolvable_subnet_id = _subnet_id("vnet1", "subnet-unresolvable")
+    nic = make_resource(
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=resolvable_subnet_id)),
+            make_resource(public_ip_address=make_resource(id="pip2"), subnet=make_resource(id=unresolvable_subnet_id)),
+        ],
+        network_security_group=None,
+    )
+    subnet = make_resource(id=resolvable_subnet_id, network_security_group=None)
+    vm = make_resource(
+        id=_vm_id("vm-mixed-subnets"),
+        name="vm-mixed-subnets",
+        network_profile=make_resource(network_interfaces=[make_resource(id=_nic_id("nic1"))]),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_network_interface(_RG, "nic1", nic)
+    mock_azure.set_subnet(resolvable_subnet_id, subnet)
+    # unresolvable_subnet_id is intentionally never registered via set_subnet().
+    findings = az_cmp_001.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["determination"] == "indeterminate"
 
 
 # ── AZ-CMP-002: disk using platform-managed encryption only ─────────────────
