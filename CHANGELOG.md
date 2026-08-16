@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add all ten evidence-rich enterprise network and perimeter controls `AZ-NET-018` through `AZ-NET-027` for issue #253, preserving API failures and incomplete data as indeterminate.
+
 All notable changes to OpenShield are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).

@@ -482,6 +482,56 @@
       "control_id": "RS.CO-2",
       "control_name": "Incidents are reported consistent with established criteria",
       "description": "No monitored destination exists for security alerts or Sentinel incidents. RS.CO-2 requires incidents to be reported consistent with established criteria; an alert with no notified recipient is never reported to anyone who can act on it."
+    },
+    "AZ-NET-018": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Disabling unnecessary public access ensures the Private Endpoint is the managed remote access path."
+    },
+    "AZ-NET-019": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Approved Private Endpoint connections preserve the intended private network boundary."
+    },
+    "AZ-NET-020": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Private DNS zone association directs service names through the intended private endpoint path."
+    },
+    "AZ-NET-021": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Private address resolution provides evidence that service traffic follows the private network boundary."
+    },
+    "AZ-NET-022": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Critical PaaS public access is disabled unless an explicit approved exception exists."
+    },
+    "AZ-NET-023": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored",
+      "description": "Azure Firewall threat intelligence alerts on and denies traffic involving known malicious infrastructure."
+    },
+    "AZ-NET-024": {
+      "control_id": "PR.PT-4",
+      "control_name": "Communications and control networks are protected",
+      "description": "Application Gateway WAF Prevention mode actively blocks matching application attacks."
+    },
+    "AZ-NET-025": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored",
+      "description": "Application Gateway access, performance, and firewall logs provide perimeter monitoring evidence."
+    },
+    "AZ-NET-026": {
+      "control_id": "PR.PT-4",
+      "control_name": "Communications and control networks are protected",
+      "description": "Current base and bot managed rules protect the web application perimeter."
+    },
+    "AZ-NET-027": {
+      "control_id": "PR.PT-4",
+      "control_name": "Communications and control networks are protected",
+      "description": "Rate-limit rules protect internet-facing applications from abusive request volume."
     }
   }
 }
