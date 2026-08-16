@@ -500,6 +500,88 @@ def test_cmp_003_missing_provisioning_state_falls_back_to_name_based_pass(mock_a
     assert az_cmp_003.scan(mock_azure, subscription_id) == []
 
 
+# ── AZ-CMP-003: Defender for Cloud endpoint-protection assessment ───────────
+
+
+def _assessment(
+    resource_id, display_name="Endpoint protection should be installed on virtual machines", status_code="Healthy"
+):
+    """A SecurityAssessmentResponse-shaped stub, as returned by AzureClient.get_security_assessments()."""
+    return make_resource(
+        resource_details=make_resource(id=resource_id),
+        display_name=display_name,
+        status=make_resource(code=status_code),
+    )
+
+
+def test_cmp_003_defender_healthy_overrides_missing_extension_returns_no_findings(mock_azure, subscription_id):
+    """Defender for Cloud confirming Healthy is authoritative, even with no matching extension
+    installed - it is real agent telemetry, stronger than extension-name presence."""
+    vm_id = _vm_id("vm-defender-healthy")
+    vm = make_resource(id=vm_id, name="vm-defender-healthy")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(_RG, "vm-defender-healthy", [])
+    mock_azure.set_security_assessments([_assessment(vm_id, status_code="Healthy")])
+    assert az_cmp_003.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_003_defender_unhealthy_returns_confirmed_high_finding_even_with_extension(mock_azure, subscription_id):
+    """Defender reporting Unhealthy is a confirmed violation, overriding a merely-installed,
+    successfully-provisioned extension - name presence never proved effective protection."""
+    vm_id = _vm_id("vm-defender-unhealthy")
+    vm = make_resource(id=vm_id, name="vm-defender-unhealthy")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(
+        _RG,
+        "vm-defender-unhealthy",
+        [make_resource(type_properties_type="IaaSAntimalware", provisioning_state="Succeeded")],
+    )
+    mock_azure.set_security_assessments([_assessment(vm_id, status_code="Unhealthy")])
+    findings = az_cmp_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert _REQUIRED_FIELDS.issubset(f.keys())
+    assert f["severity"] == "HIGH"
+    assert f["metadata"]["signal"] == "defender_assessment"
+    assert f["metadata"]["determination"] == "non_compliant"
+
+
+def test_cmp_003_defender_not_applicable_falls_back_to_extension_check(mock_azure, subscription_id):
+    """A NotApplicable Defender status carries no usable signal - the extension-based check
+    still governs the result."""
+    vm_id = _vm_id("vm-defender-na")
+    vm = make_resource(id=vm_id, name="vm-defender-na")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(_RG, "vm-defender-na", [make_resource(type_properties_type="IaaSAntimalware")])
+    mock_azure.set_security_assessments([_assessment(vm_id, status_code="NotApplicable")])
+    assert az_cmp_003.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_003_defender_unavailable_falls_back_to_extension_check_with_signal_metadata(mock_azure, subscription_id):
+    """No Defender data at all (subscription never onboarded, or the assessments API failed) -
+    the fallback path is explicitly tagged in metadata so callers can see which signal fired."""
+    vm = make_resource(id=_vm_id("vm-no-defender"), name="vm-no-defender")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(_RG, "vm-no-defender", [make_resource(type_properties_type="CustomScript")])
+    # set_security_assessments not called -> None, matching an unonboarded subscription.
+    findings = az_cmp_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["signal"] == "extension_fallback"
+    assert findings[0]["metadata"]["determination"] == "non_compliant"
+
+
+def test_cmp_003_defender_assessment_for_different_resource_is_ignored(mock_azure, subscription_id):
+    """An assessment for a different resource ID must not be mistaken for this VM's signal -
+    the subscription-wide assessments list has to be filtered by resource_details.id."""
+    vm_id = _vm_id("vm-target")
+    vm = make_resource(id=vm_id, name="vm-target")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(_RG, "vm-target", [make_resource(type_properties_type="IaaSAntimalware")])
+    mock_azure.set_security_assessments([_assessment(_vm_id("vm-other"), status_code="Unhealthy")])
+    # Falls back to the extension check (which passes) rather than picking up the other VM's Unhealthy status.
+    assert az_cmp_003.scan(mock_azure, subscription_id) == []
+
+
 # ── AZ-CMP-004: VM without automatic OS patching ────────────────────────────
 
 
@@ -535,3 +617,117 @@ def test_cmp_004_noncompliant_no_patching_returns_one_finding(mock_azure, subscr
     assert f["rule_id"] == "AZ-CMP-004"
     assert f["severity"] == "HIGH"
     assert f["resource_name"] == "vm-stale"
+    assert f["metadata"]["signal"] == "config_flags"
+    assert f["metadata"]["determination"] == "non_compliant"
+
+
+# ── AZ-CMP-004: real patch-assessment evidence override ─────────────────────
+
+
+def _patch_summary(status="Succeeded", critical_and_security_patch_count=0, other_patch_count=0):
+    """An AvailablePatchSummary-shaped stub, as returned by AzureClient.get_vm_patch_status()."""
+    return make_resource(
+        status=status,
+        critical_and_security_patch_count=critical_and_security_patch_count,
+        other_patch_count=other_patch_count,
+    )
+
+
+def test_cmp_004_config_ok_but_assessment_shows_pending_critical_patches_returns_finding(mock_azure, subscription_id):
+    """Config says auto-patching is on, but the real Update Manager assessment shows pending
+    critical/security patches - config alone never proved patches were actually applied."""
+    vm = make_resource(
+        id=_vm_id("vm-config-ok-but-behind"),
+        name="vm-config-ok-but-behind",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG, "vm-config-ok-but-behind", _patch_summary(status="Succeeded", critical_and_security_patch_count=3)
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert _REQUIRED_FIELDS.issubset(f.keys())
+    assert f["severity"] == "HIGH"
+    assert f["metadata"]["signal"] == "patch_assessment_override"
+    assert f["metadata"]["determination"] == "non_compliant"
+    assert f["metadata"]["critical_and_security_patch_count"] == 3
+
+
+def test_cmp_004_config_ok_and_assessment_clean_returns_no_findings(mock_azure, subscription_id):
+    """Config OK and a completed assessment showing zero pending critical/security patches
+    is a genuinely compliant VM."""
+    vm = make_resource(
+        id=_vm_id("vm-config-ok-and-clean"),
+        name="vm-config-ok-and-clean",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG, "vm-config-ok-and-clean", _patch_summary(status="Succeeded", critical_and_security_patch_count=0)
+    )
+    assert az_cmp_004.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_004_config_ok_but_assessment_in_progress_does_not_override(mock_azure, subscription_id):
+    """An assessment that hasn't conclusively finished is not reliable evidence - it must not
+    override a config-based pass even if it happens to carry a nonzero patch count so far."""
+    vm = make_resource(
+        id=_vm_id("vm-assessment-in-progress"),
+        name="vm-assessment-in-progress",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG, "vm-assessment-in-progress", _patch_summary(status="InProgress", critical_and_security_patch_count=5)
+    )
+    assert az_cmp_004.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_004_config_ok_and_no_assessment_data_returns_no_findings(mock_azure, subscription_id):
+    """No real assessment evidence available (never run, API failure) - behaves exactly like
+    the pre-existing config-only check with nothing to override."""
+    vm = make_resource(
+        id=_vm_id("vm-no-assessment-data"),
+        name="vm-no-assessment-data",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    # set_vm_patch_status not called -> None, matching "no assessment has ever run".
+    assert az_cmp_004.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_004_config_disabled_finding_unaffected_by_clean_assessment(mock_azure, subscription_id):
+    """Config-disabled auto-patching is itself an unmanaged-drift risk - a clean point-in-time
+    assessment must not suppress the config-based finding."""
+    vm = make_resource(
+        id=_vm_id("vm-config-disabled-but-currently-clean"),
+        name="vm-config-disabled-but-currently-clean",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=False, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-config-disabled-but-currently-clean",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=0),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["signal"] == "config_flags"
+    assert findings[0]["metadata"]["determination"] == "non_compliant"

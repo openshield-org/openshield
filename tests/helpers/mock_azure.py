@@ -93,6 +93,8 @@ class MockAzureClient:
         self._container_registries: Optional[List[Any]] = []
         self._blob_containers: Dict[Tuple[str, str], Optional[List[Any]]] = {}
         self._blob_service_properties: Dict[Tuple[str, str], Optional[Any]] = {}
+        self._security_assessments: Optional[List[Any]] = None
+        self._vm_patch_status: Dict[Tuple[str, str], Optional[Any]] = {}
         # None by default, matching AzureClient.devops_client's "not configured" state.
         self.devops_client: Optional[Any] = None
         # Some rules read azure_client.subscription_id when constructing an
@@ -265,6 +267,28 @@ class MockAzureClient:
 
     def get_disk(self, disk_id: str) -> Optional[Any]:
         return self._disks.get(disk_id)
+
+    def set_vm_patch_status(self, resource_group: str, vm_name: str, summary: Optional[Any]) -> "MockAzureClient":
+        """Configure the AvailablePatchSummary returned for a VM; ``None`` means no real
+        assessment evidence is available."""
+        self._vm_patch_status[(resource_group, vm_name)] = summary
+        return self
+
+    def get_vm_patch_status(self, resource_group: str, vm_name: str) -> Optional[Any]:
+        return self._vm_patch_status.get((resource_group, vm_name))
+
+    # ------------------------------------------------------------------ #
+    # Microsoft Defender for Cloud                                          #
+    # ------------------------------------------------------------------ #
+
+    def set_security_assessments(self, assessments: Optional[List[Any]]) -> "MockAzureClient":
+        """Configure Defender for Cloud assessments; ``None`` represents an API failure
+        or a subscription that was never onboarded to Defender for Cloud."""
+        self._security_assessments = assessments
+        return self
+
+    def get_security_assessments(self) -> Optional[List[Any]]:
+        return self._security_assessments
 
     # ------------------------------------------------------------------ #
     # Storage — lifecycle & service logging (three-state: True/False/None) #

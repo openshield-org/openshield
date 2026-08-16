@@ -59,6 +59,7 @@ class AzureClient:
         self._subscription_role_assignments_cache: Any = _UNSET
         self._container_registries_cache: Any = _UNSET
         self._disks_cache: Dict[str, Any] = {}
+        self._security_assessments_cache: Any = _UNSET
         self.devops_client = self._build_devops_client()
 
     def _build_devops_client(self) -> Optional[Any]:
@@ -651,6 +652,32 @@ class AzureClient:
             logger.error("get_vm_extensions failed for %s/%s: %s", resource_group, vm_name, exc)
             return None
 
+    def get_vm_patch_status(self, resource_group: str, vm_name: str) -> Optional[Any]:
+        """Fetch a VM's live patch assessment from its runtime instance view.
+
+        This surfaces Azure's actual patch-assessment evidence (populated by
+        Azure Update Manager / Microsoft.Maintenance whenever patch
+        orchestration has run) rather than the VM's config-only patch_mode
+        setting - a VM can be configured for automatic patching yet still be
+        months behind if the platform hasn't actually applied anything.
+
+        Returns:
+            The nested ``AvailablePatchSummary`` (instance_view.patch_status.
+            available_patch_summary), or ``None`` when the instance view
+            could not be fetched, no ``patch_status`` is present, or no
+            assessment has ever run for this VM. Callers must never
+            interpret ``None`` as "confirmed no missing patches" - only as
+            "no real assessment evidence available".
+        """
+        try:
+            client = ComputeManagementClient(self.credential, self.subscription_id)
+            instance_view = client.virtual_machines.instance_view(resource_group, vm_name)
+            patch_status = getattr(instance_view, "patch_status", None)
+            return getattr(patch_status, "available_patch_summary", None)
+        except Exception as exc:
+            logger.error("get_vm_patch_status(%s/%s) failed: %s", resource_group, vm_name, exc)
+            return None
+
     def get_disk(self, disk_id: str) -> Optional[Any]:
         """Resolve the Disk resource referenced by a VM's ManagedDiskParameters.
 
@@ -687,6 +714,42 @@ class AzureClient:
 
         self._disks_cache[disk_id] = disk
         return disk
+
+    # ------------------------------------------------------------------ #
+    # Microsoft Defender for Cloud                                          #
+    # ------------------------------------------------------------------ #
+
+    def get_security_assessments(self) -> Optional[List[Any]]:
+        """List Microsoft Defender for Cloud security assessments for the subscription.
+
+        Cached for the lifetime of this client because every rule that
+        consults Defender health (e.g. AZ-CMP-003) re-evaluates the same
+        subscription-wide collection rather than querying per resource -
+        the assessments API only supports subscription/management-group
+        scope, not a single resource ID.
+
+        Returns:
+            A list (including an empty list, e.g. Defender for Cloud was
+            never onboarded) when Azure responds successfully, or ``None``
+            when permissions (Microsoft.Security/assessments/read) or an
+            API failure prevent the collection from being evaluated.
+            Callers must never interpret ``None`` as "no assessment exists"
+            - only as "Defender health signal unavailable".
+        """
+        if self._security_assessments_cache is not _UNSET:
+            return self._security_assessments_cache
+
+        try:
+            from azure.mgmt.security import SecurityCenter
+
+            client = SecurityCenter(self.credential, self.subscription_id)
+            scope = f"/subscriptions/{self.subscription_id}"
+            self._security_assessments_cache = list(client.assessments.list(scope))
+        except Exception as exc:
+            logger.error("get_security_assessments failed: %s", exc)
+            self._security_assessments_cache = None
+
+        return self._security_assessments_cache
 
     # ------------------------------------------------------------------ #
     # Databases                                                             #

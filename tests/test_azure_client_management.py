@@ -253,6 +253,62 @@ def test_function_app_security_posture_one_app_failure_does_not_drop_others(clie
     assert names == {"good"}
 
 
+def test_get_vm_patch_status_returns_summary_and_fails_closed(client):
+    with patch("scanner.azure_client.ComputeManagementClient") as constructor:
+        summary = SimpleNamespace(status="Succeeded", critical_and_security_patch_count=2)
+        constructor.return_value.virtual_machines.instance_view.return_value = SimpleNamespace(
+            patch_status=SimpleNamespace(available_patch_summary=summary)
+        )
+        assert client.get_vm_patch_status("rg", "vm") is summary
+
+        constructor.return_value.virtual_machines.instance_view.side_effect = RuntimeError("denied")
+        assert client.get_vm_patch_status("rg", "vm") is None
+
+
+def test_get_vm_patch_status_missing_patch_status_returns_none(client):
+    with patch("scanner.azure_client.ComputeManagementClient") as constructor:
+        constructor.return_value.virtual_machines.instance_view.return_value = SimpleNamespace(patch_status=None)
+        assert client.get_vm_patch_status("rg", "vm") is None
+
+
+def test_get_security_assessments_returns_results_and_caches(client):
+    with patch("azure.mgmt.security.SecurityCenter") as constructor:
+        constructor.return_value.assessments.list.return_value = [SimpleNamespace(display_name="a")]
+        result = client.get_security_assessments()
+        assert result is not None
+        assert [a.display_name for a in result] == ["a"]
+
+        # cached: second call must not hit the SDK again
+        constructor.return_value.assessments.list.side_effect = RuntimeError("should not be called")
+        assert [a.display_name for a in client.get_security_assessments()] == ["a"]
+
+
+def test_get_security_assessments_failure_returns_none(client):
+    with patch("azure.mgmt.security.SecurityCenter") as constructor:
+        constructor.return_value.assessments.list.side_effect = RuntimeError("denied")
+        assert client.get_security_assessments() is None
+
+
+def test_patch_summary_and_assessment_real_sdk_models_have_expected_fields():
+    """SDK-shape guard: az_cmp_004/az_cmp_003 read attributes (status,
+    critical_and_security_patch_count, resource_details.id, display_name,
+    status.code) off real SDK models. This fails loudly if a future SDK bump
+    ever renames or drops one of them, instead of the rule silently treating
+    every VM as having no real evidence (the exact class of bug fixed for
+    AZ-CMP-002's ManagedDiskParameters)."""
+    from azure.mgmt.compute.models import AvailablePatchSummary
+    from azure.mgmt.security.v2021_06_01.models import AzureResourceDetails, SecurityAssessmentResponse
+
+    assert "critical_and_security_patch_count" in AvailablePatchSummary._attribute_map
+    assert "status" in AvailablePatchSummary._attribute_map
+    assert "other_patch_count" in AvailablePatchSummary._attribute_map
+
+    assert "resource_details" in SecurityAssessmentResponse._attribute_map
+    assert "display_name" in SecurityAssessmentResponse._attribute_map
+    assert "status" in SecurityAssessmentResponse._attribute_map
+    assert "id" in AzureResourceDetails._attribute_map
+
+
 def test_get_container_registries_returns_results_and_caches(client):
     with patch("azure.mgmt.containerregistry.ContainerRegistryManagementClient") as constructor:
         constructor.return_value.registries.list.return_value = [SimpleNamespace(name="acr1")]

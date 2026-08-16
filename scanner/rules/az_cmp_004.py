@@ -25,6 +25,31 @@ REMEDIATION = (
 )
 PLAYBOOK = "playbooks/cli/fix_az_cmp_004.sh"
 
+# A VM can look compliant by config (auto-updates/AutomaticByPlatform set)
+# while still being months behind on real patches, if the platform simply
+# hasn't applied anything yet. Real assessment evidence (Azure Update
+# Manager / Microsoft.Maintenance, surfaced through the VM's instance view)
+# can override a config-only pass into a confirmed finding. It never
+# suppresses a config-based finding: config with auto-patching disabled is
+# itself an unmanaged-drift risk regardless of today's patch snapshot, so
+# the config-flag check always remains the fallback/baseline signal.
+ASSESSMENT_OVERRIDE_DESCRIPTION = (
+    "VM is configured for automatic OS patching, but its latest Azure Update Manager patch "
+    "assessment shows critical or security patches are still pending installation. Config "
+    "alone does not prove patches have actually been applied - this is real assessment "
+    "evidence that the VM is currently unpatched."
+)
+ASSESSMENT_OVERRIDE_REMEDIATION = (
+    "Trigger an on-demand patch installation (Update Manager > Install now) or review why "
+    "the scheduled automatic patching run has not applied the pending critical/security "
+    "patches, then re-run the scan to confirm the assessment clears."
+)
+
+# An assessment run whose status confirms it actually completed and produced
+# real counts. Anything else (in progress, failed, unknown) is not reliable
+# enough evidence to override a config-based pass.
+_CONCLUSIVE_ASSESSMENT_STATUSES = {"succeeded", "completedwithwarnings"}
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,6 +100,43 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "frameworks": FRAMEWORKS,
                     "metadata": {
                         "resource_group": rg,
+                        "signal": "config_flags",
+                        "determination": "non_compliant",
+                    },
+                }
+            )
+            continue
+
+        # Config says patching is enabled - check real assessment evidence
+        # for the false-negative case: config correct, platform hasn't
+        # actually applied the pending critical/security patches.
+        patch_summary = azure_client.get_vm_patch_status(rg, vm_name)
+        if patch_summary is None:
+            continue
+
+        status = (getattr(patch_summary, "status", "") or "").lower()
+        critical_count = getattr(patch_summary, "critical_and_security_patch_count", None)
+        if status in _CONCLUSIVE_ASSESSMENT_STATUSES and critical_count is not None and critical_count > 0:
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vm.id,
+                    "resource_name": vm_name,
+                    "resource_type": "Microsoft.Compute/virtualMachines",
+                    "description": ASSESSMENT_OVERRIDE_DESCRIPTION,
+                    "remediation": ASSESSMENT_OVERRIDE_REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "resource_group": rg,
+                        "signal": "patch_assessment_override",
+                        "determination": "non_compliant",
+                        "critical_and_security_patch_count": critical_count,
+                        "other_patch_count": getattr(patch_summary, "other_patch_count", None),
+                        "assessment_status": status,
                     },
                 }
             )
