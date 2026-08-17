@@ -53,13 +53,20 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             if _has_immutability(container):
                 continue
             name = getattr(container, "name", "")
-            findings.append({
-                "rule_id": RULE_ID, "rule_name": RULE_NAME, "severity": SEVERITY,
-                "category": CATEGORY, "resource_id": f"{resource_id}/blobServices/default/containers/{name}",
-                "resource_name": f"{account_name}/{name}",
-                "resource_type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-                "description": DESCRIPTION, "remediation": REMEDIATION, "playbook": PLAYBOOK,
-                "frameworks": FRAMEWORKS,
-                "metadata": {"requirement_tag": "oshield:immutability-required"},
-            })
+            findings.append(
+                {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": f"{resource_id}/blobServices/default/containers/{name}",
+                    "resource_name": f"{account_name}/{name}",
+                    "resource_type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                    "description": DESCRIPTION,
+                    "remediation": REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {"requirement_tag": "oshield:immutability-required"},
+                }
+            )
     return findings

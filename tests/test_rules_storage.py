@@ -191,18 +191,14 @@ def test_stor_006_shared_key_enabled_returns_one_finding(mock_azure, subscriptio
 
 
 def test_stor_006_disabled_or_unknown_is_not_flagged(mock_azure, subscription_id):
-    disabled = make_resource(
-        id=_storage_id("sa-entra"), name="sa-entra", allow_shared_key_access=False
-    )
+    disabled = make_resource(id=_storage_id("sa-entra"), name="sa-entra", allow_shared_key_access=False)
     unknown = make_resource(id=_storage_id("sa-unknown"), name="sa-unknown")
     mock_azure.set_storage_accounts([disabled, unknown])
     assert az_stor_006.scan(mock_azure, subscription_id) == []
 
 
 def test_stor_007_tls_below_12_returns_one_finding(mock_azure, subscription_id):
-    account = make_resource(
-        id=_storage_id("sa-tls10"), name="sa-tls10", minimum_tls_version="TLS1_0"
-    )
+    account = make_resource(id=_storage_id("sa-tls10"), name="sa-tls10", minimum_tls_version="TLS1_0")
     mock_azure.set_storage_accounts([account])
     findings = az_stor_007.scan(mock_azure, subscription_id)
     assert len(findings) == 1
@@ -210,9 +206,7 @@ def test_stor_007_tls_below_12_returns_one_finding(mock_azure, subscription_id):
 
 
 def test_stor_007_secure_or_unknown_is_not_flagged(mock_azure, subscription_id):
-    secure = make_resource(
-        id=_storage_id("sa-tls12"), name="sa-tls12", minimum_tls_version="TLS1_2"
-    )
+    secure = make_resource(id=_storage_id("sa-tls12"), name="sa-tls12", minimum_tls_version="TLS1_2")
     unknown = make_resource(id=_storage_id("sa-tls-unknown"), name="sa-tls-unknown")
     mock_azure.set_storage_accounts([secure, unknown])
     assert az_stor_007.scan(mock_azure, subscription_id) == []

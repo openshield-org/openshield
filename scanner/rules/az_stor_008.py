@@ -36,11 +36,20 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if source != "microsoft.storage":
             logger.warning("%s: unknown encryption source %r; skipping", RULE_ID, key_source)
             continue
-        findings.append({
-            "rule_id": RULE_ID, "rule_name": RULE_NAME, "severity": SEVERITY,
-            "category": CATEGORY, "resource_id": account.id, "resource_name": account.name,
-            "resource_type": "Microsoft.Storage/storageAccounts", "description": DESCRIPTION,
-            "remediation": REMEDIATION, "playbook": PLAYBOOK, "frameworks": FRAMEWORKS,
-            "metadata": {"key_source": str(key_source), "requirement_tag": "oshield:cmk-required"},
-        })
+        findings.append(
+            {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": SEVERITY,
+                "category": CATEGORY,
+                "resource_id": account.id,
+                "resource_name": account.name,
+                "resource_type": "Microsoft.Storage/storageAccounts",
+                "description": DESCRIPTION,
+                "remediation": REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": {"key_source": str(key_source), "requirement_tag": "oshield:cmk-required"},
+            }
+        )
     return findings
