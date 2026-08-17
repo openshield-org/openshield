@@ -13,6 +13,32 @@
       "control_name": "Ensure that 'Secure transfer required' is set to 'Enabled'",
       "description": "Enabling 'Secure transfer required' on a storage account ensures that all requests made to the storage account use HTTPS. Any requests using HTTP are rejected, protecting data in transit from eavesdropping and man-in-the-middle attacks."
     },
+    "AZ-STOR-006": {
+      "control_id": "N/A-STOR-006",
+      "control_name": "Storage Account Shared-Key Authorization Enabled",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated CIS recommendation."
+    },
+    "AZ-STOR-007": {
+      "control_id": "N/A-STOR-007",
+      "control_name": "Storage Account Allows TLS Below 1.2",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated CIS recommendation."
+    },
+    "AZ-STOR-008": {
+      "control_id": "N/A-STOR-008",
+      "control_name": "Required Storage Customer-Managed Key Protection Missing",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated CIS recommendation."
+    },
+    "AZ-STOR-009": {
+      "control_id": "N/A-STOR-009",
+      "control_name": "Required Blob Container Immutability Missing",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated CIS recommendation."
+    },
+    "AZ-DB-005": {"control_id": "N/A-DB-005", "control_name": "SQL Server Microsoft Entra-Only Authentication Not Enforced", "description": "Service-specific OpenShield control."},
+    "AZ-DB-006": {"control_id": "N/A-DB-006", "control_name": "SQL Vulnerability Assessment Not Configured", "description": "Service-specific OpenShield control."},
+    "AZ-DB-007": {"control_id": "N/A-DB-007", "control_name": "SQL Auditing Retention Below Minimum", "description": "Service-specific OpenShield control."},
+    "AZ-COSMOS-001": {"control_id": "N/A-COSMOS-001", "control_name": "Cosmos DB Local Authentication Enabled", "description": "Service-specific OpenShield control."},
+    "AZ-COSMOS-002": {"control_id": "N/A-COSMOS-002", "control_name": "Cosmos DB Public Network Access Enabled", "description": "Service-specific OpenShield control."},
+    "AZ-CACHE-001": {"control_id": "N/A-CACHE-001", "control_name": "Managed Cache Public or Non-TLS Access", "description": "Service-specific OpenShield control."},
     "AZ-NET-001": {
       "control_id": "6.2",
       "control_name": "Ensure that SSH access from the Internet is evaluated and restricted",

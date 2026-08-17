@@ -55,6 +55,16 @@ OpenShield currently ships 80 Azure scan rules. This table is generated from the
 | AZ-STOR-003 | Storage Account Has No Lifecycle Management Policy | MEDIUM | Storage | 3.7 | PR.DS-3 | A.8.3.1 |
 | AZ-STOR-004 | Storage Account Diagnostic Logging Disabled | MEDIUM | Storage | 3.3 | DE.CM-7 | A.12.4.1 |
 | AZ-STOR-005 | Storage Account Not Using Geo-Redundant Replication | MEDIUM | Storage | 3.8 | PR.IP-4 | A.17.2.1 |
+| AZ-STOR-006 | Storage Account Shared-Key Authorization Enabled | HIGH | Storage | N/A-STOR-006 | N/A-STOR-006 | N/A-STOR-006 |
+| AZ-STOR-007 | Storage Account Allows TLS Below 1.2 | HIGH | Storage | N/A-STOR-007 | N/A-STOR-007 | N/A-STOR-007 |
+| AZ-STOR-008 | Required Storage Customer-Managed Key Protection Missing | HIGH | Storage | N/A-STOR-008 | N/A-STOR-008 | N/A-STOR-008 |
+| AZ-STOR-009 | Required Blob Container Immutability Missing | HIGH | Storage | N/A-STOR-009 | N/A-STOR-009 | N/A-STOR-009 |
+| AZ-DB-005 | SQL Server Microsoft Entra-Only Authentication Not Enforced | HIGH | Database | N/A-DB-005 | PR.AC-6 | A.9.4.2 |
+| AZ-DB-006 | SQL Vulnerability Assessment Not Configured | HIGH | Database | N/A-DB-006 | DE.CM-8 | A.12.6.1 |
+| AZ-DB-007 | SQL Auditing Retention Below Minimum | MEDIUM | Database | N/A-DB-007 | A.12.4.1 | A.12.4.1 |
+| AZ-COSMOS-001 | Cosmos DB Local Authentication Enabled | HIGH | Database | N/A-COSMOS-001 | PR.AC-6 | A.9.4.2 |
+| AZ-COSMOS-002 | Cosmos DB Public Network Access Enabled | HIGH | Network | N/A-COSMOS-002 | PR.AC-5 | A.13.1.1 |
+| AZ-CACHE-001 | Managed Cache Public or Non-TLS Access | HIGH | Network | N/A-CACHE-001 | PR.AC-5 | A.13.1.1 |
 | AZ-AKS-001 | AKS Private Cluster Not Enabled | HIGH | Kubernetes | N/A-AKS-001 | PR.AC-3 | A.13.1.1 |
 | AZ-AKS-002 | AKS Local Accounts Enabled | HIGH | Kubernetes | N/A-AKS-002 | PR.AC-1 | A.9.2.1 |
 | AZ-AKS-003 | AKS Cluster Not Using Managed Identity | HIGH | Kubernetes | N/A-AKS-003 | PR.AC-1 | A.9.2.1 |

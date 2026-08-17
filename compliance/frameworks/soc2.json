@@ -13,6 +13,32 @@
       "control_name": "Protects Data in Transit",
       "description": "Allowing unencrypted HTTP traffic to a storage account exposes data in transit to interception and tampering. CC6.7 requires that data transmitted over networks is protected using encryption. Enforcing HTTPS-only ensures all storage traffic is encrypted in transit."
     },
+    "AZ-STOR-006": {
+      "control_id": "N/A-STOR-006",
+      "control_name": "Storage Account Shared-Key Authorization Enabled",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated SOC 2 recommendation."
+    },
+    "AZ-STOR-007": {
+      "control_id": "N/A-STOR-007",
+      "control_name": "Storage Account Allows TLS Below 1.2",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated SOC 2 recommendation."
+    },
+    "AZ-STOR-008": {
+      "control_id": "N/A-STOR-008",
+      "control_name": "Required Storage Customer-Managed Key Protection Missing",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated SOC 2 recommendation."
+    },
+    "AZ-STOR-009": {
+      "control_id": "N/A-STOR-009",
+      "control_name": "Required Blob Container Immutability Missing",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated SOC 2 recommendation."
+    },
+    "AZ-DB-005": {"control_id": "CC6.3", "control_name": "Logical access security", "description": "SQL authentication is restricted to approved Entra identities."},
+    "AZ-DB-006": {"control_id": "CC7.1", "control_name": "Detection of security events", "description": "Required SQL vulnerability assessment is configured."},
+    "AZ-DB-007": {"control_id": "CC7.2", "control_name": "System monitoring", "description": "SQL audit logs are retained according to policy."},
+    "AZ-COSMOS-001": {"control_id": "CC6.3", "control_name": "Logical access security", "description": "Cosmos authentication is restricted to approved Entra identities."},
+    "AZ-COSMOS-002": {"control_id": "CC6.6", "control_name": "Logical access security measures", "description": "Cosmos public network access is restricted according to policy."},
+    "AZ-CACHE-001": {"control_id": "CC6.6", "control_name": "Logical access security measures", "description": "Managed cache access is private and uses approved TLS."},
     "AZ-STOR-003": {
       "control_id": "CC8.1",
       "control_name": "Change Management",

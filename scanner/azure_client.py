@@ -706,6 +706,37 @@ class AzureClient:
             logger.error("get_sql_server_firewall_rules(%s) failed: %s", server_name, exc)
             return []
 
+    def get_sql_server_vulnerability_assessment(self, resource_group: str, server_name: str) -> Optional[Any]:
+        """Fetch the default vulnerability-assessment configuration for a SQL server."""
+        try:
+            client = SqlManagementClient(self.credential, self.subscription_id)
+            return client.server_vulnerability_assessments.get(resource_group, server_name, "default")
+        except Exception as exc:
+            logger.error("get_sql_server_vulnerability_assessment(%s) failed: %s", server_name, exc)
+            return None
+
+    def get_cosmos_accounts(self) -> List[Any]:
+        """List Cosmos DB accounts, if the optional management SDK is available."""
+        try:
+            from azure.mgmt.cosmosdb import CosmosDBManagementClient
+
+            client = CosmosDBManagementClient(self.credential, self.subscription_id)
+            return list(client.database_accounts.list())
+        except Exception as exc:
+            logger.error("get_cosmos_accounts failed: %s", exc)
+            return []
+
+    def get_managed_caches(self) -> List[Any]:
+        """List Azure Managed Redis/Cache accounts, if the SDK is available."""
+        try:
+            from azure.mgmt.redis import RedisManagementClient
+
+            client = RedisManagementClient(self.credential, self.subscription_id)
+            return list(client.redis.list())
+        except Exception as exc:
+            logger.error("get_managed_caches failed: %s", exc)
+            return []
+
     # ------------------------------------------------------------------ #
     # Key Vault                                                             #
     # ------------------------------------------------------------------ #

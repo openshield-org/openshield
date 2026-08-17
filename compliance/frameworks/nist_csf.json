@@ -13,6 +13,32 @@
       "control_name": "Data-in-transit is protected",
       "description": "Requiring secure transfer ensures data in transit between clients and Azure Storage is encrypted using HTTPS, protecting against interception and tampering."
     },
+    "AZ-STOR-006": {
+      "control_id": "N/A-STOR-006",
+      "control_name": "Storage Account Shared-Key Authorization Enabled",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated NIST recommendation."
+    },
+    "AZ-STOR-007": {
+      "control_id": "N/A-STOR-007",
+      "control_name": "Storage Account Allows TLS Below 1.2",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated NIST recommendation."
+    },
+    "AZ-STOR-008": {
+      "control_id": "N/A-STOR-008",
+      "control_name": "Required Storage Customer-Managed Key Protection Missing",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated NIST recommendation."
+    },
+    "AZ-STOR-009": {
+      "control_id": "N/A-STOR-009",
+      "control_name": "Required Blob Container Immutability Missing",
+      "description": "OpenShield checks this service-specific control without claiming an unrelated NIST recommendation."
+    },
+    "AZ-DB-005": {"control_id": "PR.AC-6", "control_name": "Identity proofing and authentication", "description": "SQL authentication is restricted to approved Entra identities."},
+    "AZ-DB-006": {"control_id": "DE.CM-8", "control_name": "Vulnerability scans are performed", "description": "Required SQL vulnerability assessment is configured."},
+    "AZ-DB-007": {"control_id": "A.12.4.1", "control_name": "Event logging", "description": "SQL audit logs are retained according to policy."},
+    "AZ-COSMOS-001": {"control_id": "PR.AC-6", "control_name": "Identity proofing and authentication", "description": "Cosmos authentication is restricted to approved Entra identities."},
+    "AZ-COSMOS-002": {"control_id": "PR.AC-5", "control_name": "Network integrity is protected", "description": "Cosmos public network access is restricted according to policy."},
+    "AZ-CACHE-001": {"control_id": "PR.AC-5", "control_name": "Network integrity is protected", "description": "Managed cache access is private and uses approved TLS."},
     "AZ-NET-001": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
