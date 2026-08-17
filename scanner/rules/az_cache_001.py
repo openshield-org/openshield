@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from scanner.rules._storage_policy import policy_required
+from scanner.rules._storage_common import policy_required
 
 RULE_ID = "AZ-CACHE-001"
 RULE_NAME = "Managed Cache Public or Non-TLS Access"

@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, List
 
-from scanner.rules._storage_policy import policy_required
+from scanner.rules._storage_common import policy_required
 
 logger = logging.getLogger(__name__)
 

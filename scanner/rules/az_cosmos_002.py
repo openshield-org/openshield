@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from scanner.rules._storage_policy import policy_required
+from scanner.rules._storage_common import policy_required
 
 RULE_ID = "AZ-COSMOS-002"
 RULE_NAME = "Cosmos DB Public Network Access Enabled"
