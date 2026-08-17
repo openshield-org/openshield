@@ -76,14 +76,6 @@ OpenShield currently ships 80 Azure scan rules. This table is generated from the
 | AZ-PE-004 | Web or Function App Public Network Access Enabled | HIGH | Network | N/A-PE-004 | PR.AC-5 | A.13.1.1 |
 | AZ-PE-005 | Recovery Vault Public Network Access Enabled | HIGH | Network | N/A-PE-005 | PR.AC-5 | A.13.1.1 |
 | AZ-PE-006 | Private Endpoint Connection Not Approved | MEDIUM | Network | N/A-PE-006 | PR.AC-5 | A.13.1.1 |
-| AZ-SC-001 | Container Registry Admin User Enabled | HIGH | Supply Chain | TBD-SC-001 | PR.AC-1 | A.9.2.1 |
-| AZ-SC-002 | Container Registry Public Network Access Enabled | HIGH | Supply Chain | TBD-SC-002 | PR.AC-5 | A.13.1.1 |
-| AZ-SC-003 | Container Registry Allows Anonymous Pull | HIGH | Supply Chain | TBD-SC-003 | PR.AC-1 | A.9.2.1 |
-| AZ-SC-004 | Container Registry Missing Retention or Quarantine Policy | MEDIUM | Supply Chain | TBD-SC-004 | PR.IP-1 | A.12.1.2 |
-| AZ-SC-005 | Terraform State Storage Container Publicly Readable | CRITICAL | Supply Chain | TBD-SC-005 | PR.AC-5 | A.13.1.1 |
-| AZ-SC-006 | Terraform State Storage Account Missing Versioning or Soft Delete | HIGH | Supply Chain | TBD-SC-006 | PR.IP-4 | A.12.3.1 |
-| AZ-SC-007 | Pipeline Service Connection Scoped to Subscription | HIGH | Supply Chain | TBD-SC-007 | PR.AC-4 | A.9.2.3 |
-| AZ-SC-008 | Pipeline Service Connection Uses Password Instead of Federated Credential | MEDIUM | Supply Chain | TBD-SC-008 | PR.AC-1 | A.9.4.3 |
 | AZ-SC-001 | Container Registry Admin User Enabled | HIGH | Supply Chain | N/A-SC-001 | PR.AC-1 | A.9.2.1 |
 | AZ-SC-002 | Container Registry Public Network Access Enabled | HIGH | Supply Chain | N/A-SC-002 | PR.AC-5 | A.13.1.1 |
 | AZ-SC-003 | Container Registry Allows Anonymous Pull | HIGH | Supply Chain | N/A-SC-003 | PR.AC-1 | A.9.2.1 |
