@@ -2,6 +2,10 @@ FROM python:3.11-slim-trixie
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get dist-upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade \
         pip==26.1.2 \
