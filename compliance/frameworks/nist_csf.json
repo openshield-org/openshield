@@ -399,6 +399,17 @@
       "control_name": "Network integrity is protected",
       "description": "A private endpoint connection is pending, rejected, or disconnected and does not provide an active private path, leaving traffic to traverse the public network boundary instead."
     },
+    "AZ-IDN-016": {"control_id": "PR.AC-7", "control_name": "Users, devices, and other assets are authenticated", "description": "Privileged users must register phishing-resistant authentication methods."},
+    "AZ-IDN-017": {"control_id": "PR.AC-4", "control_name": "Access permissions and authorizations are managed", "description": "Global Administrator assignments must be time-bound and managed through PIM."},
+    "AZ-IDN-018": {"control_id": "PR.AC-4", "control_name": "Access permissions and authorizations are managed", "description": "All privileged role assignments must be governed through Privileged Identity Management."},
+    "AZ-IDN-019": {"control_id": "PR.AC-1", "control_name": "Identities and credentials are managed", "description": "Dormant privileged accounts must be reviewed and disabled."},
+    "AZ-IDN-020": {"control_id": "PR.AC-4", "control_name": "Access permissions and authorizations are managed", "description": "At least two correctly configured emergency access accounts must exist."},
+    "AZ-IDN-021": {"control_id": "PR.AC-7", "control_name": "Users, devices, and other assets are authenticated", "description": "Legacy authentication protocols that bypass MFA must be blocked."},
+    "AZ-IDN-022": {"control_id": "PR.AC-4", "control_name": "Access permissions and authorizations are managed", "description": "Azure management interfaces require MFA enforcement via Conditional Access."},
+    "AZ-IDN-023": {"control_id": "DE.CM-3", "control_name": "Personnel activity is monitored to detect potential cybersecurity events", "description": "Identity Protection risk policies must be enabled to detect and respond to compromised accounts."},
+    "AZ-IDN-024": {"control_id": "PR.AC-4", "control_name": "Access permissions and authorizations are managed", "description": "Workload identities with privileged roles must not be broadly excluded from CA policies."},
+    "AZ-IDN-025": {"control_id": "PR.AC-4", "control_name": "Access permissions and authorizations are managed", "description": "Role-assignable groups must have designated owners to control privileged group membership."},
+
     "AZ-SC-001": {
       "control_id": "PR.AC-1",
       "control_name": "Identities and credentials are issued, managed, verified, revoked, and audited",

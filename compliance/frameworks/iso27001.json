@@ -399,6 +399,17 @@
       "control_name": "Network controls",
       "description": "A private endpoint connection is pending, rejected, or disconnected and does not provide an active private path, leaving traffic to traverse the public network boundary instead."
     },
+    "AZ-IDN-016": {"control_id": "A.9.4.2", "control_name": "Secure log-on procedures", "description": "Privileged users must use phishing-resistant multi-factor authentication."},
+    "AZ-IDN-017": {"control_id": "A.9.2.3", "control_name": "Management of privileged access rights", "description": "Global Administrator access must be time-bound through PIM rather than permanently assigned."},
+    "AZ-IDN-018": {"control_id": "A.9.2.3", "control_name": "Management of privileged access rights", "description": "Privileged role assignments must be managed and audited through PIM."},
+    "AZ-IDN-019": {"control_id": "A.9.2.5", "control_name": "Review of user access rights", "description": "Dormant privileged accounts must be periodically reviewed and revoked."},
+    "AZ-IDN-020": {"control_id": "A.9.1.2", "control_name": "Access to networks and network services", "description": "Emergency access accounts ensure administrative access during lockout scenarios."},
+    "AZ-IDN-021": {"control_id": "A.9.4.2", "control_name": "Secure log-on procedures", "description": "Legacy authentication protocols that bypass MFA controls must be blocked."},
+    "AZ-IDN-022": {"control_id": "A.9.4.1", "control_name": "Information access restriction", "description": "Azure management interfaces must require MFA via Conditional Access."},
+    "AZ-IDN-023": {"control_id": "A.12.4.1", "control_name": "Event logging", "description": "Identity Protection risk policies detect and respond to anomalous sign-in activity."},
+    "AZ-IDN-024": {"control_id": "A.9.2.3", "control_name": "Management of privileged access rights", "description": "Workload identities must not be broadly excluded from Conditional Access enforcement."},
+    "AZ-IDN-025": {"control_id": "A.9.2.5", "control_name": "Review of user access rights", "description": "Role-assignable groups must have owners to govern privileged membership changes."},
+
     "AZ-SC-001": {
       "control_id": "A.9.2.1",
       "control_name": "User registration and de-registration",

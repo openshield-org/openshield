@@ -27,6 +27,16 @@ OpenShield currently ships 80 Azure scan rules. This table is generated from the
 | AZ-IDN-013 | App Registration Uses Password Credentials | MEDIUM | Identity | N/A-IDN-013 | PR.AC-1 | A.9.4.3 |
 | AZ-IDN-014 | Multi-Tenant App Registration Lacks Property Lock | HIGH | Identity | N/A-IDN-014 | PR.IP-1 | A.12.1.2 |
 | AZ-IDN-015 | Managed Identity Has Privileged Subscription Role | HIGH | Identity | N/A-IDN-015 | PR.AC-4 | A.9.2.3 |
+| AZ-IDN-016 | Privileged User Missing Phishing-Resistant MFA | CRITICAL | Identity | N/A-IDN-016 | PR.AC-7 | A.9.4.2 |
+| AZ-IDN-017 | Global Administrator Permanently Assigned Outside PIM | HIGH | Identity | N/A-IDN-017 | PR.AC-4 | A.9.2.3 |
+| AZ-IDN-018 | Privileged Role Assigned Outside Privileged Identity Management | HIGH | Identity | N/A-IDN-018 | PR.AC-4 | A.9.2.3 |
+| AZ-IDN-019 | Stale Privileged Account Retains Active Access | HIGH | Identity | N/A-IDN-019 | PR.AC-1 | A.9.2.5 |
+| AZ-IDN-020 | Emergency Access Accounts Missing or Incorrectly Configured | HIGH | Identity | N/A-IDN-020 | PR.AC-4 | A.9.1.2 |
+| AZ-IDN-021 | Legacy Authentication Not Blocked by Conditional Access | HIGH | Identity | N/A-IDN-021 | PR.AC-7 | A.9.4.2 |
+| AZ-IDN-022 | Azure Management Not Protected by Conditional Access | HIGH | Identity | N/A-IDN-022 | PR.AC-4 | A.9.4.1 |
+| AZ-IDN-023 | Identity Protection Risk Policies Not Enabled | MEDIUM | Identity | N/A-IDN-023 | DE.CM-3 | A.12.4.1 |
+| AZ-IDN-024 | Workload Identities Excluded From Conditional Access Policies | MEDIUM | Identity | N/A-IDN-024 | PR.AC-4 | A.9.2.3 |
+| AZ-IDN-025 | Privileged Role-Assignable Group Has No Owner | MEDIUM | Identity | N/A-IDN-025 | PR.AC-4 | A.9.2.5 |
 | AZ-KV-001 | Key Vault with Soft Delete Disabled | MEDIUM | KeyVault | N/A-KV-001 | PR.IP-4 | A.17.2.1 |
 | AZ-KV-002 | Key Vault Allows Public Network Access Without Private Endpoint | HIGH | Key Vault | 8.7 | AC-17 | A.13.1.1 |
 | AZ-KV-003 | Key Vault Without Diagnostic Logging Enabled | MEDIUM | Key Vault | 8.4 | DE.CM-7 | A.12.4.1 |

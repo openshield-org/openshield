@@ -1083,3 +1083,164 @@ class AzureClient:
                 exc,
             )
             return None
+
+    # ------------------------------------------------------------------ #
+    # Privileged Access & Identity (issue #258)                            #
+    # ------------------------------------------------------------------ #
+
+    def get_privileged_role_members(self) -> Optional[List[Dict[str, Any]]]:
+        """Return users assigned to top privileged directory roles.
+
+        Each item: {userId, userDisplayName, userPrincipalName, accountEnabled,
+                    lastSignInDateTime, roleId, roleName}
+
+        Requires RoleManagement.Read.Directory and AuditLog.Read.All.
+        Returns None on permission failure so rules return no findings.
+        """
+        _PRIVILEGED_ROLE_IDS = {
+            "62e90394-69f5-4237-9190-012177145e10": "Global Administrator",
+            "e8611ab8-c189-46e8-94e1-60213ab1f814": "Privileged Role Administrator",
+            "194ae4cb-b126-40b2-bd5b-6091b380977d": "Security Administrator",
+            "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3": "Application Administrator",
+            "29232cdf-9323-42fd-ade2-1d097af3e4de": "Exchange Administrator",
+            "f28a1f50-f6e7-4571-818b-6a12f2af6b6c": "SharePoint Administrator",
+        }
+        url = (
+            "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments"
+            "?$expand=principal($select=id,displayName,userPrincipalName,accountEnabled,signInActivity)"
+            "&$filter=roleDefinitionId ne null&$top=100"
+        )
+        raw = self._get_graph_collection(url, "get_privileged_role_members")
+        if raw is None:
+            return None
+        members = []
+        for assignment in raw:
+            role_def_id = (assignment.get("roleDefinitionId") or "").split("/")[-1].lower()
+            role_name = _PRIVILEGED_ROLE_IDS.get(role_def_id)
+            if not role_name:
+                continue
+            principal = assignment.get("principal") or {}
+            user_id = principal.get("id") or assignment.get("principalId", "")
+            if not user_id:
+                continue
+            sign_in = principal.get("signInActivity") or {}
+            members.append(
+                {
+                    "userId": user_id,
+                    "userDisplayName": principal.get("displayName", user_id),
+                    "userPrincipalName": principal.get("userPrincipalName", ""),
+                    "accountEnabled": principal.get("accountEnabled", True),
+                    "lastSignInDateTime": sign_in.get("lastSignInDateTime"),
+                    "roleId": role_def_id,
+                    "roleName": role_name,
+                }
+            )
+        return members
+
+    def get_privileged_users_mfa_methods(self) -> Optional[List[Dict[str, Any]]]:
+        """Return authentication method types registered for admin users.
+
+        Each item: {userId, userDisplayName, userPrincipalName, authMethodTypes: [...]}
+
+        Requires UserAuthenticationMethod.Read.All.
+        Returns None on permission failure.
+        """
+        url = (
+            "https://graph.microsoft.com/v1.0/reports/authenticationMethods"
+            "/userRegistrationDetails?$filter=isAdmin eq true&$top=100"
+        )
+        raw = self._get_graph_collection(url, "get_privileged_users_mfa_methods")
+        if raw is None:
+            return None
+        return [
+            {
+                "userId": item.get("id", ""),
+                "userDisplayName": item.get("userDisplayName", item.get("userPrincipalName", "")),
+                "userPrincipalName": item.get("userPrincipalName", ""),
+                "authMethodTypes": item.get("methodsRegistered") or [],
+            }
+            for item in raw
+        ]
+
+    def get_pim_role_assignments(self) -> Optional[List[Dict[str, Any]]]:
+        """Return PIM eligible and active role assignment schedules.
+
+        Each item: {userId, roleId, assignmentType} where assignmentType is
+        'Eligible' or 'Active'.
+
+        Requires RoleManagement.Read.Directory.
+        Returns None on permission failure.
+        """
+        url = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentSchedules?$top=100"
+        raw = self._get_graph_collection(url, "get_pim_role_assignments")
+        if raw is None:
+            return None
+        results = []
+        for item in raw:
+            role_def_id = (item.get("roleDefinitionId") or "").split("/")[-1].lower()
+            results.append(
+                {
+                    "userId": item.get("principalId", ""),
+                    "roleId": role_def_id,
+                    "assignmentType": item.get("assignmentType", "Active"),
+                }
+            )
+        return results
+
+    def get_identity_protection_policies(self) -> Optional[Dict[str, Any]]:
+        """Return Identity Protection risk policy enablement state.
+
+        Returns dict with keys: userRiskPolicy, signInRiskPolicy — each with
+        {isEnabled, riskLevel}.
+
+        Requires Policy.Read.All.
+        Returns None on permission failure.
+        """
+        import requests as _requests
+
+        try:
+            token = self.credential.get_token("https://graph.microsoft.com/.default")
+            headers = {"Authorization": f"Bearer {token.token}"}
+            result: Dict[str, Any] = {}
+            for key, path in (
+                ("userRiskPolicy", "identityProtection/policies/userRiskPolicy"),
+                ("signInRiskPolicy", "identityProtection/policies/signInRiskPolicy"),
+            ):
+                url = f"https://graph.microsoft.com/v1.0/{path}"
+                resp = _requests.get(url, headers=headers, timeout=30)
+                resp.raise_for_status()
+                data = resp.json()
+                result[key] = {
+                    "isEnabled": data.get("isEnabled", False),
+                    "riskLevel": data.get("riskLevel", "none"),
+                }
+            return result
+        except Exception as exc:
+            logger.error("get_identity_protection_policies failed: %s", exc)
+            return None
+
+    def get_privileged_groups(self) -> Optional[List[Dict[str, Any]]]:
+        """Return Entra ID groups that are assignable to directory roles.
+
+        Each item: {id, displayName, ownerCount}
+
+        Requires GroupMember.Read.All and RoleManagement.Read.Directory.
+        Returns None on permission failure.
+        """
+        url = (
+            "https://graph.microsoft.com/v1.0/groups"
+            "?$filter=isAssignableToRole eq true"
+            "&$select=id,displayName&$expand=owners($select=id)&$top=100"
+        )
+        raw = self._get_graph_collection(url, "get_privileged_groups")
+        if raw is None:
+            return None
+        return [
+            {
+                "id": grp.get("id", ""),
+                "displayName": grp.get("displayName", ""),
+                "ownerCount": len(grp.get("owners") or []),
+            }
+            for grp in raw
+            if grp.get("id")
+        ]
