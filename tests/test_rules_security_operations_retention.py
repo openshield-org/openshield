@@ -151,6 +151,27 @@ def test_secops_005_only_same_resource_group_destination_is_noncompliant(monkeyp
     assert findings[0]["metadata"]["ownership"] == "workload-administrator"
 
 
+def test_secops_005_same_resource_group_event_hub_is_noncompliant(monkeypatch, tmp_path):
+    """An Event Hub destination in the workload RG is evaluated like Storage and Log Analytics."""
+    set_policy_env(monkeypatch, tmp_path)
+    local_event_hub_rule = (
+        "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.EventHub/namespaces/app-hub/"
+        "authorizationRules/diagnostics"
+    )
+    monitor = SimpleNamespace(
+        diagnostic_settings=SimpleNamespace(
+            list=lambda resource_id: [diagnostic_setting(event_hub_authorization_rule_id=local_event_hub_rule)]
+        )
+    )
+    collector = make_collector(monitor_client=monitor, resource_inventory=_resource_inventory)
+    stub_collector(monkeypatch, az_secops_005, collector)
+
+    findings = az_secops_005.scan(_client(), _SUB)
+
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["ownership"] == "workload-administrator"
+
+
 def test_secops_005_no_export_defers_to_secops_003(monkeypatch, tmp_path):
     set_policy_env(monkeypatch, tmp_path)
     monitor = SimpleNamespace(diagnostic_settings=SimpleNamespace(list=lambda resource_id: []))

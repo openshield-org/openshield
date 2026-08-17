@@ -66,7 +66,7 @@ def _only_same_resource_group_destination(settings: Any, resource_id: str) -> bo
     workload_rg = _resource_group_of(resource_id)
     destinations = []
     for setting in settings or ():
-        for field in ("workspace_id", "storage_account_id"):
+        for field in ("workspace_id", "storage_account_id", "event_hub_authorization_rule_id"):
             dest = value(setting, field)
             if dest:
                 destinations.append(str(dest))
