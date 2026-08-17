@@ -28,9 +28,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         policy = get_assessment(parsed["resource_group"], server.name)
         if policy is None:
             continue
-        enabled = getattr(policy, "is_enabled", None)
-        if enabled is None:
-            enabled = str(getattr(policy, "state", "") or "").strip().lower() in {"enabled", "active"}
+        enabled = False if policy is False else getattr(policy, "is_enabled", True)
         if enabled:
             continue
         findings.append(

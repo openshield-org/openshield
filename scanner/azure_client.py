@@ -693,8 +693,31 @@ class AzureClient:
         try:
             client = SqlManagementClient(self.credential, self.subscription_id)
             return client.server_blob_auditing_policies.get(resource_group, server_name)
+        except ResourceNotFoundError:
+            return False
         except Exception as exc:
             logger.error("get_sql_server_auditing_policy(%s) failed: %s", server_name, exc)
+            return None
+
+    def get_sql_server_azure_ad_only_authentication(self, resource_group: str, server_name: str) -> Optional[bool]:
+        """Return whether Microsoft Entra-only authentication is enabled.
+
+        The setting is a child resource and is not populated on objects from
+        ``servers.list()``. ``False`` represents a confirmed absent/disabled
+        configuration; ``None`` preserves an indeterminate API failure.
+        """
+        try:
+            client = SqlManagementClient(self.credential, self.subscription_id)
+            authentication = client.server_azure_ad_only_authentications.get(resource_group, server_name, "Default")
+            return bool(getattr(authentication, "azure_ad_only_authentication", False))
+        except ResourceNotFoundError:
+            return False
+        except Exception as exc:
+            logger.error(
+                "get_sql_server_azure_ad_only_authentication(%s) failed: %s",
+                server_name,
+                exc,
+            )
             return None
 
     def get_sql_server_firewall_rules(self, resource_group: str, server_name: str) -> List[Any]:
@@ -711,6 +734,8 @@ class AzureClient:
         try:
             client = SqlManagementClient(self.credential, self.subscription_id)
             return client.server_vulnerability_assessments.get(resource_group, server_name, "default")
+        except ResourceNotFoundError:
+            return False
         except Exception as exc:
             logger.error("get_sql_server_vulnerability_assessment(%s) failed: %s", server_name, exc)
             return None

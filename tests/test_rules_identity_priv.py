@@ -173,11 +173,10 @@ def test_idn_017_non_global_admin_role_not_flagged(mock_azure, subscription_id):
     assert az_idn_017.scan(mock_azure, subscription_id) == []
 
 
-def test_idn_017_pim_unavailable_still_returns_finding(mock_azure, subscription_id):
+def test_idn_017_pim_unavailable_is_unknown(mock_azure, subscription_id):
     mock_azure.set_privileged_role_members([priv_user()])
     mock_azure.set_pim_role_assignments(None)
-    findings = az_idn_017.scan(mock_azure, subscription_id)
-    assert len(findings) == 1
+    assert az_idn_017.scan(mock_azure, subscription_id) == []
 
 
 def test_idn_017_member_inventory_failure_returns_no_findings(mock_azure, subscription_id):
@@ -389,6 +388,15 @@ def test_idn_021_mfa_policy_not_blocking_is_non_compliant(mock_azure, subscripti
     assert len(findings) == 1
 
 
+def test_idn_021_mfa_only_policy_for_legacy_clients_is_non_compliant(mock_azure, subscription_id):
+    policy = ca_policy(
+        conditions={"clientAppTypes": ["exchangeActiveSync", "other"]},
+        grantControls={"operator": "OR", "builtInControls": ["mfa"]},
+    )
+    mock_azure.set_conditional_access_policies([policy])
+    assert len(az_idn_021.scan(mock_azure, subscription_id)) == 1
+
+
 # ── AZ-IDN-022: CA protects Azure management ──────────────────────────────────
 
 
@@ -498,14 +506,20 @@ def test_idn_023_api_failure_returns_no_findings(mock_azure, subscription_id):
 
 def test_idn_024_policy_including_service_principals_is_compliant(mock_azure, subscription_id):
     policy = ca_policy()
-    policy["conditions"]["users"]["excludeServicePrincipals"] = []
+    policy["conditions"]["clientApplications"] = {
+        "includeServicePrincipals": ["All"],
+        "excludeServicePrincipals": [],
+    }
     mock_azure.set_conditional_access_policies([policy])
     assert az_idn_024.scan(mock_azure, subscription_id) == []
 
 
 def test_idn_024_all_sps_excluded_returns_finding(mock_azure, subscription_id):
     policy = ca_policy()
-    policy["conditions"]["users"]["excludeServicePrincipals"] = ["All"]
+    policy["conditions"]["clientApplications"] = {
+        "includeServicePrincipals": ["All"],
+        "excludeServicePrincipals": ["All"],
+    }
     mock_azure.set_conditional_access_policies([policy])
     findings = az_idn_024.scan(mock_azure, subscription_id)
     assert len(findings) == 1
@@ -520,7 +534,21 @@ def test_idn_024_no_enforcing_policies_returns_no_findings(mock_azure, subscript
 
 def test_idn_024_disabled_policy_not_counted(mock_azure, subscription_id):
     policy = ca_policy(state="disabled")
-    policy["conditions"]["users"]["excludeServicePrincipals"] = ["All"]
+    policy["conditions"]["clientApplications"] = {
+        "includeServicePrincipals": ["All"],
+        "excludeServicePrincipals": ["All"],
+    }
+    mock_azure.set_conditional_access_policies([policy])
+    assert az_idn_024.scan(mock_azure, subscription_id) == []
+
+
+def test_idn_024_guest_user_exclusion_is_not_workload_exclusion(mock_azure, subscription_id):
+    policy = ca_policy()
+    policy["conditions"]["users"]["excludeUsers"] = ["GuestsOrExternalUsers"]
+    policy["conditions"]["clientApplications"] = {
+        "includeServicePrincipals": ["All"],
+        "excludeServicePrincipals": [],
+    }
     mock_azure.set_conditional_access_policies([policy])
     assert az_idn_024.scan(mock_azure, subscription_id) == []
 

@@ -41,12 +41,14 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     if members is None:
         logger.warning("%s: privileged role member inventory unavailable", RULE_ID)
         return findings
+    if pim is None:
+        logger.warning("%s: PIM assignment inventory unavailable; result is UNKNOWN", RULE_ID)
+        return findings
 
     pim_eligible_users: Set[str] = set()
-    if pim is not None:
-        for a in pim:
-            if a.get("roleId", "").lower() == GLOBAL_ADMIN_ROLE_ID and a.get("assignmentType") == "Eligible":
-                pim_eligible_users.add(a.get("userId", ""))
+    for a in pim:
+        if a.get("roleId", "").lower() == GLOBAL_ADMIN_ROLE_ID and a.get("assignmentType") == "Eligible":
+            pim_eligible_users.add(a.get("userId", ""))
 
     for member in members:
         if member.get("roleId", "").lower() != GLOBAL_ADMIN_ROLE_ID:
@@ -72,7 +74,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "metadata": {
                     "user_principal_name": member.get("userPrincipalName", ""),
                     "role_name": member.get("roleName", "Global Administrator"),
-                    "pim_coverage": pim is None,
+                    "pim_coverage": False,
                 },
             }
         )

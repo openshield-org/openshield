@@ -26,15 +26,19 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if not parsed.get("resource_group"):
             continue
         policy = get_audit(parsed["resource_group"], server.name)
-        if policy is None or str(getattr(policy, "state", "") or "").lower() != "enabled":
+        if policy is None:
             continue
-        retention = getattr(policy, "retention_days", None)
-        if retention is None:
-            retention = getattr(policy, "retention_period", None)
-        if retention is None or not isinstance(retention, int):
-            continue
-        if retention >= 90:
-            continue
+        state = "missing" if policy is False else str(getattr(policy, "state", "") or "").lower()
+        if state != "enabled":
+            retention = 0
+        else:
+            retention = getattr(policy, "retention_days", None)
+            if retention is None:
+                retention = getattr(policy, "retention_period", None)
+            if retention is None or not isinstance(retention, int):
+                continue
+            if retention == 0 or retention >= 90:
+                continue
         findings.append(
             {
                 "rule_id": RULE_ID,
@@ -48,7 +52,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "remediation": REMEDIATION,
                 "playbook": PLAYBOOK,
                 "frameworks": FRAMEWORKS,
-                "metadata": {"retention_days": retention, "minimum_days": 90},
+                "metadata": {"state": state, "retention_days": retention, "minimum_days": 90},
             }
         )
     return findings

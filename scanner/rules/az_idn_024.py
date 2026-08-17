@@ -35,12 +35,12 @@ def _enforcing_policy_excludes_workloads(policy: Dict[str, Any]) -> bool:
         return False
     grant = policy.get("grantControls") or {}
     built_in = grant.get("builtInControls") or []
-    if not built_in or built_in == ["block"]:
+    if not built_in:
         return False
     conditions = policy.get("conditions") or {}
-    users = conditions.get("users") or {}
-    excluded_sps = users.get("excludeServicePrincipals") or []
-    return "All" in excluded_sps or "GuestsOrExternalUsers" in (users.get("excludeUsers") or [])
+    client_applications = conditions.get("clientApplications") or {}
+    excluded_sps = client_applications.get("excludeServicePrincipals") or []
+    return "All" in excluded_sps
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
@@ -48,11 +48,14 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     if not policies:
         return []
 
-    enforcing = [
-        p
-        for p in policies
-        if p.get("state") == "enabled" and "mfa" in ((p.get("grantControls") or {}).get("builtInControls") or [])
-    ]
+    enforcing = []
+    for policy in policies:
+        conditions = policy.get("conditions") or {}
+        if policy.get("state") != "enabled" or not conditions.get("clientApplications"):
+            continue
+        if not ((policy.get("grantControls") or {}).get("builtInControls") or []):
+            continue
+        enforcing.append(policy)
     if not enforcing:
         return []
 

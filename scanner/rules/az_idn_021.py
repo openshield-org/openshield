@@ -35,10 +35,9 @@ def _blocks_legacy_auth(policy: Dict[str, Any]) -> bool:
     if policy.get("state") != "enabled":
         return False
     grant = policy.get("grantControls") or {}
-    if grant.get("operator") != "OR" and grant.get("builtInControls", []) != ["block"]:
-        built_in = grant.get("builtInControls") or []
-        if "block" not in built_in:
-            return False
+    built_in = grant.get("builtInControls") or []
+    if "block" not in built_in:
+        return False
     conditions = policy.get("conditions") or {}
     client_apps = conditions.get("clientAppTypes") or []
     if "all" in [c.lower() for c in client_apps]:

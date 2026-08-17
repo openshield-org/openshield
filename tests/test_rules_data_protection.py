@@ -28,6 +28,9 @@ class Client:
     def get_sql_server_vulnerability_assessment(self, *_):
         return self.va
 
+    def get_sql_server_azure_ad_only_authentication(self, *_):
+        return self.server.azure_ad_only_authentication
+
     def get_sql_server_auditing_policy(self, *_):
         return self.audit
 
@@ -61,11 +64,18 @@ def test_sql_identity_and_vulnerability_rules_are_opt_in():
     assert az_db_005.scan(Client(server(azure_ad_only_authentication=False)), "s") == []
 
 
+def test_sql_missing_vulnerability_assessment_is_noncompliant():
+    s = server(tags={"oshield:sql-va-required": "true"}, azure_ad_only_authentication=True)
+    assert az_db_006.scan(Client(s, va=False), "s")[0]["rule_id"] == "AZ-DB-006"
+
+
 def test_sql_audit_retention_flags_only_explicitly_short_retention():
     s = server(tags={"oshield:sql-audit-required": "true"})
     c = Client(s, audit=SimpleNamespace(state="Enabled", retention_days=30))
     assert az_db_007.scan(c, "s")[0]["metadata"]["retention_days"] == 30
     assert az_db_007.scan(Client(s, audit=SimpleNamespace(state="Enabled", retention_days=90)), "s") == []
+    assert az_db_007.scan(Client(s, audit=SimpleNamespace(state="Enabled", retention_days=0)), "s") == []
+    assert az_db_007.scan(Client(s, audit=False), "s")[0]["metadata"]["state"] == "missing"
 
 
 def test_cosmos_rules_honor_opt_in_tags_and_secure_values():

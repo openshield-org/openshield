@@ -19,13 +19,19 @@ PLAYBOOK = "playbooks/cli/fix_az_db_005.sh"
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
+    get_authentication = getattr(azure_client, "get_sql_server_azure_ad_only_authentication", None)
+    if get_authentication is None:
+        return findings
     for server in azure_client.get_sql_servers():
         if not policy_required(server, "oshield:entra-only-required"):
             continue
-        value = getattr(server, "azure_ad_only_authentication", None)
+        parsed = azure_client.parse_resource_id(getattr(server, "id", ""))
+        if not parsed.get("resource_group"):
+            continue
+        value = get_authentication(parsed["resource_group"], server.name)
         if value is None:
             continue
-        if bool(value):
+        if value:
             continue
         findings.append(
             {
