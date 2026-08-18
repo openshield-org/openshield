@@ -196,7 +196,8 @@ def render_readme(content: str, rule_count: int, playbook_count: int) -> Tuple[s
     feature_row = (
         r"(\| \*\*Misconfiguration Scanner\*\* \| Runs )\d+"
         r"( Azure security rules across storage, network, identity, database, "
-        r"compute, Key Vault, AKS, supply chain, and post-quantum cryptography \|)"
+        r"compute, Key Vault, AKS, post-quantum cryptography, backup, serverless, "
+        r"private endpoint, and supply chain posture \|)"
     )
     playbook_row = (
         r"(\| \*\*Remediation Playbooks\*\* \| Every rule ships with a matching "
