@@ -1,27 +1,32 @@
-# OpenShield
+<div align="center">
+
+<img src="docs/assets/openshield-logo.png" alt="OpenShield" width="100%" />
+
+<br/>
+
+**Open source Cloud Security Posture Management (CSPM) for Azure** — detect misconfigurations, map them to CIS / NIST / ISO 27001 / SOC 2, remediate with one command, and identify cryptographic assets requiring quantum-safe migration.
+
+[**Website**](https://openshield-website.vercel.app) · [**Documentation**](docs/) · [**Roadmap**](ROADMAP.md) · [**Changelog**](CHANGELOG.md) · [**Security Policy**](.github/SECURITY.md) · [**Discord**](https://discord.gg/openshield)
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/13618/badge)](https://www.bestpractices.dev/projects/13618)
 [![OpenShield CI](https://github.com/openshield-org/openshield/actions/workflows/ci.yml/badge.svg)](https://github.com/openshield-org/openshield/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/openshield-org/openshield/actions/workflows/codeql.yml/badge.svg)](https://github.com/openshield-org/openshield/actions/workflows/codeql.yml)
+[![Deploy](https://github.com/openshield-org/openshield/actions/workflows/deploy.yml/badge.svg?branch=dev)](https://github.com/openshield-org/openshield/actions/workflows/deploy.yml)
+[![OWASP](https://img.shields.io/badge/OWASP-listing%20review-orange.svg)](https://owasp.org)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CHANGELOG](https://img.shields.io/badge/changelog-here-blue)](CHANGELOG.md)
-
-Release artifacts include SHA-256 checksums, an SBOM, and identity-bound
-provenance attestations. See [release verification](docs/release-verification.md).
-
-> **Open source Cloud Security Posture Management (CSPM) for Azure - detect misconfigurations, map to CIS/NIST/ISO27001/SOC2, fix them with one command, and identify cryptographic assets requiring quantum-safe migration.**
-
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![GitHub Repo stars](https://img.shields.io/github/stars/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/network/members)
 [![GitHub contributors](https://img.shields.io/github/contributors/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/graphs/contributors)
 [![GitHub last commit](https://img.shields.io/github/last-commit/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/openshield-org/openshield?style=flat-square)](https://github.com/openshield-org/openshield/issues)
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![Deploy](https://github.com/openshield-org/openshield/actions/workflows/deploy.yml/badge.svg?branch=dev)](https://github.com/openshield-org/openshield/actions/workflows/deploy.yml)
-[![Security Policy](https://img.shields.io/badge/security-policy-green.svg)](.github/SECURITY.md)
-[![OWASP](https://img.shields.io/badge/OWASP-listing%20review-orange.svg)](https://owasp.org)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da)](https://discord.gg/openshield)
+
+</div>
+
+Release artifacts include SHA-256 checksums, an SBOM, and identity-bound
+provenance attestations. See [release verification](docs/release-verification.md).
 
 ---
 
