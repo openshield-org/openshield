@@ -248,6 +248,23 @@ def main() -> int:
             file=sys.stderr,
         )
 
+    chart_severities = {"HIGH", "MEDIUM", "LOW"}
+    excluded_severities = {
+        severity: count
+        for severity, count in severities.items()
+        if severity not in chart_severities and count
+    }
+    if excluded_severities:
+        excluded_detail = ", ".join(
+            f"{severity}: {count}" for severity, count in sorted(excluded_severities.items())
+        )
+        excluded_total = sum(excluded_severities.values())
+        print(
+            f"Warning: {excluded_total} rule(s) with severities outside the "
+            f"HIGH/MEDIUM/LOW chart are excluded from the severity boxes: {excluded_detail}",
+            file=sys.stderr,
+        )
+
     category_rows = render_category_rows(categories)
 
     learn_original = LEARN_PAGE.read_text(encoding="utf-8")
