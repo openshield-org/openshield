@@ -184,9 +184,7 @@ def test_cmp_001_unresolvable_subnet_is_indeterminate_not_confirmed_high(mock_az
 def test_cmp_001_missing_subnet_id_is_indeterminate_not_confirmed_high(mock_azure, subscription_id):
     """A subnet reference with no ID cannot confirm that subnet protection is absent."""
     nic = make_resource(
-        ip_configurations=[
-            make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=""))
-        ],
+        ip_configurations=[make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=""))],
         network_security_group=None,
     )
     vm = make_resource(
