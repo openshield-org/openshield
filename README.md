@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="docs/assets/openshield-logo.png" alt="OpenShield" width="100%" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/openshield-logo-dark.png">
+  <img src="docs/assets/openshield-logo-light.png" alt="OpenShield" width="640" />
+</picture>
 
 <br/>
 
