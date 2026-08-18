@@ -63,6 +63,7 @@ def _subnet_nsg_status(azure_client: Any, nic: Any) -> Optional[bool]:
         subnet_ref = getattr(ip_cfg, "subnet", None)
         subnet_id = getattr(subnet_ref, "id", None)
         if not subnet_id:
+            unresolved = True
             continue
 
         subnet = azure_client.get_subnet(subnet_id)
@@ -128,7 +129,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                             "nic_id": nic_id,
                             "nic_name": nic_name,
                             "nic_nsg_attached": has_nic_nsg,
-                            "subnet_nsg_attached": False,
+                            "subnet_nsg_attached": False if confirmed else None,
                             "determination": "non_compliant" if confirmed else "indeterminate",
                         },
                     }

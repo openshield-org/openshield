@@ -59,6 +59,7 @@ class AzureClient:
         self._subscription_role_assignments_cache: Any = _UNSET
         self._container_registries_cache: Any = _UNSET
         self._disks_cache: Dict[str, Any] = {}
+        self._subnets_cache: Dict[str, Any] = {}
         self._security_assessments_cache: Any = _UNSET
         self.devops_client = self._build_devops_client()
 
@@ -296,6 +297,9 @@ class AzureClient:
         carries its own NSG must be fetched separately via the Network
         management client.
 
+        The result is cached for the lifetime of this client because the same
+        subnet can back IP configurations on many NICs in a scan.
+
         Returns:
             The Subnet resource, or ``None`` when the ID is missing/malformed
             or Azure cannot return it (permissions, deletion, SDK error).
@@ -303,6 +307,11 @@ class AzureClient:
         """
         if not subnet_id:
             return None
+
+        if subnet_id in self._subnets_cache:
+            return self._subnets_cache[subnet_id]
+
+        subnet = None
         try:
             resource_group = ""
             vnet_name = ""
@@ -319,13 +328,14 @@ class AzureClient:
 
             if not (resource_group and vnet_name and subnet_name):
                 logger.error("get_subnet failed: could not parse %s", subnet_id)
-                return None
+            else:
+                client = NetworkManagementClient(self.credential, self.subscription_id)
+                subnet = client.subnets.get(resource_group, vnet_name, subnet_name)
 
-            client = NetworkManagementClient(self.credential, self.subscription_id)
-            return client.subnets.get(resource_group, vnet_name, subnet_name)
         except Exception as exc:
             logger.error("get_subnet failed for %s: %s", subnet_id, exc)
-            return None
+        self._subnets_cache[subnet_id] = subnet
+        return subnet
 
     def get_virtual_networks(self) -> List[Any]:
         """List all virtual networks in the subscription."""

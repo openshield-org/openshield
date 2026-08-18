@@ -65,9 +65,15 @@ def test_single_resource_and_policy_wrappers(client):
         result = client.get_subnet(subnet_id)
         assert result.name == "subnet1"
         constructor.return_value.subnets.get.assert_called_once_with("RG", "vnet1", "subnet1")
+        assert client.get_subnet(subnet_id) is result
+        constructor.return_value.subnets.get.assert_called_once_with("RG", "vnet1", "subnet1")
 
+        failed_client = AzureClient("sub-1", credential=MagicMock())
+        constructor.return_value.subnets.get.reset_mock()
         constructor.return_value.subnets.get.side_effect = RuntimeError("denied")
-        assert client.get_subnet(subnet_id) is None
+        assert failed_client.get_subnet(subnet_id) is None
+        assert failed_client.get_subnet(subnet_id) is None
+        constructor.return_value.subnets.get.assert_called_once_with("RG", "vnet1", "subnet1")
 
     assert client.get_subnet("") is None
     assert client.get_subnet("/not/a/valid/subnet/id") is None

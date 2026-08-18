@@ -1,7 +1,7 @@
 """AZ-CMP-003: VM without endpoint protection installed."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 RULE_ID = "AZ-CMP-003"
 RULE_NAME = "VM Without Endpoint Protection Installed"
@@ -149,7 +149,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if exts is None:
             continue
 
-        installed: Dict[str, Any] = {}
+        installed: List[Tuple[str, Any]] = []
         for e in exts:
             t = (
                 getattr(e, "type_properties_type", None)
@@ -157,9 +157,10 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 or getattr(e, "type", "")
             )
             if t:
-                installed[t.lower()] = e
+                installed.append((t.lower(), e))
 
-        matched = {name: ext for name, ext in installed.items() if name in KNOWN_EP_EXTENSIONS}
+        installed_names = sorted({name for name, _ in installed})
+        matched = [(name, ext) for name, ext in installed if name in KNOWN_EP_EXTENSIONS]
 
         if not matched:
             findings.append(
@@ -177,7 +178,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     "frameworks": FRAMEWORKS,
                     "metadata": {
                         "resource_group": rg,
-                        "installed_extensions": sorted(installed.keys()),
+                        "installed_extensions": installed_names,
                         "signal": "extension_fallback",
                         "determination": "non_compliant",
                     },
@@ -193,7 +194,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         # indeterminate rather than silently passed.
         unhealthy_names = []
         confirmed_healthy = False
-        for name, ext in matched.items():
+        for name, ext in matched:
             provisioning_state = (getattr(ext, "provisioning_state", None) or "").lower()
             if not provisioning_state or provisioning_state == "succeeded":
                 confirmed_healthy = True
@@ -218,8 +219,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "frameworks": FRAMEWORKS,
                 "metadata": {
                     "resource_group": rg,
-                    "installed_extensions": sorted(installed.keys()),
-                    "unhealthy_extensions": sorted(unhealthy_names),
+                    "installed_extensions": installed_names,
+                    "unhealthy_extensions": sorted(set(unhealthy_names)),
                     "signal": "extension_fallback",
                     "determination": "indeterminate",
                 },

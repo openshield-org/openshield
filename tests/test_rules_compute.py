@@ -79,8 +79,11 @@ def test_cmp_001_compliant_nic_with_nsg_returns_no_findings(mock_azure, subscrip
 
 def test_cmp_001_noncompliant_public_ip_no_nsg_returns_one_finding(mock_azure, subscription_id):
     """A NIC with a public IP and no NSG must produce exactly one finding."""
+    subnet_id = _subnet_id("vnet1", "subnet1")
     nic = make_resource(
-        ip_configurations=[make_resource(public_ip_address=make_resource(id="pip1"))],
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=subnet_id))
+        ],
         network_security_group=None,
     )
     vm = make_resource(
@@ -90,6 +93,7 @@ def test_cmp_001_noncompliant_public_ip_no_nsg_returns_one_finding(mock_azure, s
     )
     mock_azure.set_virtual_machines([vm])
     mock_azure.set_network_interface(_RG, "nic1", nic)
+    mock_azure.set_subnet(subnet_id, make_resource(id=subnet_id, network_security_group=None))
     findings = az_cmp_001.scan(mock_azure, subscription_id)
     assert len(findings) == 1
     f = findings[0]
@@ -174,6 +178,31 @@ def test_cmp_001_unresolvable_subnet_is_indeterminate_not_confirmed_high(mock_az
     assert _REQUIRED_FIELDS.issubset(f.keys())
     assert f["severity"] == "LOW"
     assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["subnet_nsg_attached"] is None
+
+
+def test_cmp_001_missing_subnet_id_is_indeterminate_not_confirmed_high(mock_azure, subscription_id):
+    """A subnet reference with no ID cannot confirm that subnet protection is absent."""
+    nic = make_resource(
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=""))
+        ],
+        network_security_group=None,
+    )
+    vm = make_resource(
+        id=_vm_id("vm-missing-subnet-id"),
+        name="vm-missing-subnet-id",
+        network_profile=make_resource(network_interfaces=[make_resource(id=_nic_id("nic1"))]),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_network_interface(_RG, "nic1", nic)
+
+    findings = az_cmp_001.scan(mock_azure, subscription_id)
+
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "LOW"
+    assert findings[0]["metadata"]["determination"] == "indeterminate"
+    assert findings[0]["metadata"]["subnet_nsg_attached"] is None
 
 
 def test_cmp_001_mixed_resolvable_and_unresolvable_subnets_is_indeterminate(mock_azure, subscription_id):
@@ -486,6 +515,25 @@ def test_cmp_003_extension_present_but_unhealthy_returns_indeterminate_finding(m
     assert f["severity"] == "LOW"
     assert f["metadata"]["determination"] == "indeterminate"
     assert f["metadata"]["unhealthy_extensions"] == ["iaasantimalware"]
+
+
+def test_cmp_003_duplicate_extension_types_use_healthy_record_regardless_of_order(mock_azure, subscription_id):
+    """Duplicate API records must not make the result depend on dict overwrite order."""
+    vm = make_resource(id=_vm_id("vm-duplicate-extensions"), name="vm-duplicate-extensions")
+    mock_azure.set_virtual_machines([vm])
+
+    for extensions in (
+        [
+            make_resource(type_properties_type="IaaSAntimalware", provisioning_state="Succeeded"),
+            make_resource(type_properties_type="iaasantimalware", provisioning_state="Failed"),
+        ],
+        [
+            make_resource(type_properties_type="iaasantimalware", provisioning_state="Failed"),
+            make_resource(type_properties_type="IaaSAntimalware", provisioning_state="Succeeded"),
+        ],
+    ):
+        mock_azure.set_vm_extensions(_RG, "vm-duplicate-extensions", extensions)
+        assert az_cmp_003.scan(mock_azure, subscription_id) == []
 
 
 def test_cmp_003_missing_provisioning_state_falls_back_to_name_based_pass(mock_azure, subscription_id):
