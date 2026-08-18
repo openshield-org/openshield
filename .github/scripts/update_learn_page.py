@@ -250,14 +250,10 @@ def main() -> int:
 
     chart_severities = {"HIGH", "MEDIUM", "LOW"}
     excluded_severities = {
-        severity: count
-        for severity, count in severities.items()
-        if severity not in chart_severities and count
+        severity: count for severity, count in severities.items() if severity not in chart_severities and count
     }
     if excluded_severities:
-        excluded_detail = ", ".join(
-            f"{severity}: {count}" for severity, count in sorted(excluded_severities.items())
-        )
+        excluded_detail = ", ".join(f"{severity}: {count}" for severity, count in sorted(excluded_severities.items()))
         excluded_total = sum(excluded_severities.values())
         print(
             f"Warning: {excluded_total} rule(s) with severities outside the "
