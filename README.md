@@ -7,7 +7,7 @@
 
 <br/>
 
-**Open source Cloud Security Posture Management (CSPM) for Azure** — detect misconfigurations, map them to CIS / NIST / ISO 27001 / SOC 2, remediate with one command, and identify cryptographic assets requiring quantum-safe migration.
+**Open source Cloud Security Posture Management (CSPM) for Azure** detect misconfigurations, map them to CIS / NIST / ISO 27001 / SOC 2, remediate with one command, and identify cryptographic assets requiring quantum-safe migration.
 
 [**Website**](https://openshield-website.vercel.app) · [**Documentation**](docs/) · [**Roadmap**](ROADMAP.md) · [**Changelog**](CHANGELOG.md) · [**Security Policy**](.github/SECURITY.md) · [**Discord**](https://discord.gg/openshield)
 
