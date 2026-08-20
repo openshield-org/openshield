@@ -170,6 +170,14 @@ def _workloads(evidence: Any, policy: AksSecurityPolicy | None) -> list[Mapping[
     return result
 
 
+def _normalize_image_registry(image: str) -> str:
+    normalized = image.lower()
+    registry = normalized.split("/", 1)[0]
+    if "/" not in normalized or not ("." in registry or ":" in registry or registry == "localhost"):
+        return f"docker.io/{normalized}"
+    return normalized
+
+
 def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> list[dict[str, Any]]:
     rule_id = module["RULE_ID"]
     evidence_items = azure_client.get_aks_security_posture()
@@ -181,21 +189,18 @@ def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> 
         return []
     policy_required = control in {
         "api_restrictions",
-        "network_policy_namespaces",
-        "secret_protection",
-        "privileged",
-        "host_network",
-        "host_pid",
-        "host_ipc",
-        "host_path",
         "cluster_admin",
         "untrusted_registry",
-        "latest_image",
         "mutable_image",
     }
     policy = policy_from_env(rule_id) if policy_required else None
     if policy_required and policy is None:
         return []
+    approved_networks = (
+        [ipaddress.ip_network(item) for item in policy.approved_authorized_ip_ranges]
+        if control == "api_restrictions" and policy
+        else []
+    )
     findings: list[dict[str, Any]] = []
     for evidence in evidence_items:
         cluster = value(evidence, "cluster")
@@ -219,9 +224,8 @@ def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> 
             except ValueError:
                 logger.warning("%s: malformed authorized IP evidence for %s", rule_id, resource_name)
                 continue
-            approved = [ipaddress.ip_network(item) for item in policy.approved_authorized_ip_ranges]
             if normalized and all(
-                any(actual.version == allowed.version and actual.subnet_of(allowed) for allowed in approved)
+                any(actual.version == allowed.version and actual.subnet_of(allowed) for allowed in approved_networks)
                 for actual in normalized
             ):
                 continue
@@ -399,14 +403,16 @@ def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> 
                     if not image:
                         logger.warning("%s: image evidence missing for %s", rule_id, value(workload, "name"))
                         continue
-                    normalized = image.lower()
-                    trusted = any(normalized.startswith(prefix) for prefix in policy.trusted_registry_prefixes)
+                    normalized = _normalize_image_registry(image)
+                    trusted = control != "untrusted_registry" or any(
+                        normalized.startswith(prefix) for prefix in policy.trusted_registry_prefixes
+                    )
                     digest = "@sha256:" in normalized
                     latest = normalized.endswith(":latest") or (":" not in normalized.rsplit("/", 1)[-1] and not digest)
                     violates = {
                         "untrusted_registry": not trusted,
                         "latest_image": latest,
-                        "mutable_image": policy.require_image_digests and not digest and not latest,
+                        "mutable_image": bool(policy and policy.require_image_digests and not digest and not latest),
                     }[control]
                     if not violates:
                         continue

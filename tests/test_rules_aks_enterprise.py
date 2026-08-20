@@ -331,12 +331,65 @@ def test_incomplete_evidence_never_creates_false_findings(rule, field, policy_fi
     assert rule.scan(client, "sub") == []
 
 
-def test_missing_policy_is_unknown_for_policy_driven_rules(monkeypatch):
+@pytest.mark.parametrize("rule", (az_aks_007, az_aks_018, az_aks_019, az_aks_021))
+def test_missing_policy_is_unknown_for_policy_driven_rules(rule, monkeypatch):
     monkeypatch.delenv("OPENSHIELD_AKS_SECURITY_POLICY", raising=False)
     client = MagicMock()
     client.get_aks_security_posture.return_value = [evidence()]
-    for rule in (az_aks_007, az_aks_009, az_aks_013, az_aks_018, az_aks_019, az_aks_020, az_aks_021):
-        assert rule.scan(client, "sub") == []
+    assert rule.scan(client, "sub") == []
+
+
+@pytest.mark.parametrize(
+    ("rule", "item"),
+    [
+        (
+            az_aks_009,
+            evidence(namespaces=("payments", "orders"), network_policy_namespaces=("payments",)),
+        ),
+        (
+            az_aks_011,
+            evidence(
+                control_plane={"kms_enabled": False},
+                workloads=(workload(native_secret_references=("database-password",)),),
+            ),
+        ),
+        (az_aks_013, evidence(workloads=(workload(containers=(container(privileged=True),)),))),
+        (az_aks_014, evidence(workloads=(workload(host_network=True),))),
+        (az_aks_015, evidence(workloads=(workload(host_pid=True),))),
+        (az_aks_016, evidence(workloads=(workload(host_ipc=True),))),
+        (az_aks_017, evidence(workloads=(workload(host_paths=("/var/run",)),))),
+        (
+            az_aks_020,
+            evidence(workloads=(workload(containers=(container(image="contoso.azurecr.io/app/api:latest"),)),)),
+        ),
+    ],
+)
+def test_policy_independent_workload_rules_run_without_policy(rule, item, monkeypatch):
+    monkeypatch.delenv("OPENSHIELD_AKS_SECURITY_POLICY", raising=False)
+    client = MagicMock()
+    client.get_aks_security_posture.return_value = [item]
+
+    assert len(rule.scan(client, "sub")) == 1
+
+
+@pytest.mark.parametrize("image", ("nginx", "redis:7", "library/nginx:1.29"))
+def test_docker_hub_short_form_images_match_trusted_registry(image, policy_file):
+    policy_file.write_text(
+        """{
+  "approved_authorized_ip_ranges": ["203.0.113.0/24"],
+  "trusted_registry_prefixes": ["docker.io/"],
+  "allowed_cluster_admin_subjects": ["Group:aks-platform-admins"],
+  "excluded_namespaces": ["kube-system"],
+  "require_image_digests": true
+}""",
+        encoding="utf-8",
+    )
+    client = MagicMock()
+    client.get_aks_security_posture.return_value = [
+        evidence(workloads=(workload(containers=(container(image=image),)),))
+    ]
+
+    assert az_aks_019.scan(client, "sub") == []
 
 
 def test_policy_validation_rejects_unknown_fields(policy_file):
