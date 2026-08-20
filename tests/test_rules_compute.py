@@ -588,6 +588,8 @@ def test_cmp_007_subnet_level_nsg_exposure_is_flagged(mock_azure, subscription_i
     assert len(findings) == 1
     assert findings[0]["resource_name"] == "vm-subnet"
     assert findings[0]["metadata"]["open_management_ports"] == ["22"]
+
+
 # ── AZ-CMP-005: VM without Trusted Launch (Secure Boot + vTPM) ───────────────
 #
 # A VM's list_all() representation does not carry its Hyper-V generation, so the

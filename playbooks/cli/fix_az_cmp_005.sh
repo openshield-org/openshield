@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-RG=$1
-VM=$2
+RG="${1:-}"
+VM="${2:-}"
 
 if [ -z "$RG" ] || [ -z "$VM" ]; then
   echo "Usage: $0 <resource-group> <vm-name>"
