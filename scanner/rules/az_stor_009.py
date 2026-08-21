@@ -48,9 +48,9 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if containers is None:
             logger.warning("%s: blob containers unavailable for %s; skipping", RULE_ID, account_name)
             continue
+        if not policy_required(account, "oshield:immutability-required"):
+            continue
         for container in containers:
-            if not policy_required(container, "oshield:immutability-required"):
-                continue
             if _has_immutability(container):
                 continue
             name = getattr(container, "name", "")
