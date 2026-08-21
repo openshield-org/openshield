@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from dataclasses import dataclass, field
@@ -12,7 +13,12 @@ from typing import Any, Iterable, Mapping
 logger = logging.getLogger(__name__)
 
 KUBECONFIG_ENV_VAR = "OPENSHIELD_AKS_KUBECONFIG"
+KUBECONFIG_CONTEXTS_ENV_VAR = "OPENSHIELD_AKS_KUBECONFIG_CONTEXTS"
 SYSTEM_NAMESPACES = frozenset({"kube-system", "kube-public", "kube-node-lease", "gatekeeper-system"})
+
+
+class KubeconfigContextUnresolvedError(ValueError):
+    """Raised when an explicit resource-ID mapping names no kubeconfig context."""
 
 
 @dataclass(frozen=True)
@@ -49,6 +55,46 @@ def _nested(item: Any, *names: str, default: Any = None) -> Any:
 
 def _enum(value: Any) -> str:
     return str(getattr(value, "value", value) or "").strip()
+
+
+def _normalize_cluster_id(resource_id: str) -> str:
+    normalized = resource_id.strip().rstrip("/").lower()
+    parts = normalized.split("/")
+    if (
+        len(parts) != 9
+        or parts[0]
+        or parts[1] != "subscriptions"
+        or not parts[2]
+        or parts[3] != "resourcegroups"
+        or not parts[4]
+        or parts[5] != "providers"
+        or parts[6] != "microsoft.containerservice"
+        or parts[7] != "managedclusters"
+        or not parts[8]
+    ):
+        raise ValueError("kubeconfig context keys must be complete AKS resource IDs")
+    return normalized
+
+
+def load_kubeconfig_contexts(path: str | Path) -> dict[str, str]:
+    with Path(path).open(encoding="utf-8") as handle:
+        raw = json.load(handle)
+    if not isinstance(raw, dict):
+        raise ValueError("AKS kubeconfig context mapping must be a JSON object")
+    mapping: dict[str, str] = {}
+    assigned_contexts: set[str] = set()
+    for resource_id, context in raw.items():
+        if not isinstance(resource_id, str) or not isinstance(context, str) or not context.strip():
+            raise ValueError("AKS kubeconfig context mapping must contain non-empty string keys and values")
+        normalized_id = _normalize_cluster_id(resource_id)
+        normalized_context = context.strip()
+        if normalized_id in mapping:
+            raise ValueError("AKS kubeconfig context mapping contains duplicate resource IDs")
+        if normalized_context in assigned_contexts:
+            raise ValueError("AKS kubeconfig contexts must map to only one cluster resource ID")
+        mapping[normalized_id] = normalized_context
+        assigned_contexts.add(normalized_context)
+    return mapping
 
 
 def _container(container: Any) -> dict[str, Any]:
@@ -95,6 +141,10 @@ def _workload(kind: str, item: Any) -> dict[str, Any]:
         secret_name = _nested(volume, "secret", "secret_name")
         if secret_name:
             native_secret_references.add(str(secret_name))
+        for source in _nested(volume, "projected", "sources", default=[]) or []:
+            projected_secret_name = _nested(source, "secret", "name")
+            if projected_secret_name:
+                native_secret_references.add(str(projected_secret_name))
         csi = _value(volume, "csi")
         if str(_value(csi, "driver", "") or "") == "secrets-store.csi.k8s.io":
             attributes = _value(csi, "volume_attributes", {}) or {}
@@ -125,14 +175,36 @@ def _workload(kind: str, item: Any) -> dict[str, Any]:
 class AksSecurityCollector:
     """Collect AKS ARM, Defender, and Kubernetes API evidence without secrets."""
 
-    def __init__(self, credential: Any, subscription_id: str, *, kubeconfig_path: str | None = None) -> None:
+    def __init__(
+        self,
+        credential: Any,
+        subscription_id: str,
+        *,
+        kubeconfig_path: str | None = None,
+        kubeconfig_contexts_path: str | None = None,
+    ) -> None:
         self.credential = credential
         self.subscription_id = subscription_id
         self.kubeconfig_path = kubeconfig_path or os.environ.get(KUBECONFIG_ENV_VAR)
+        self.kubeconfig_contexts_path = kubeconfig_contexts_path or os.environ.get(KUBECONFIG_CONTEXTS_ENV_VAR)
 
     def collect(self, clusters: Iterable[Any]) -> list[AksClusterEvidence]:
         defender_enabled = self._defender_for_containers()
-        return [self._collect_cluster(cluster, defender_enabled) for cluster in clusters]
+        context_mapping, mapping_error = self._load_context_mapping()
+        return [
+            self._collect_cluster(cluster, defender_enabled, context_mapping, mapping_error) for cluster in clusters
+        ]
+
+    def _load_context_mapping(self) -> tuple[Mapping[str, str], str | None]:
+        if not self.kubeconfig_contexts_path:
+            return {}, "KUBECONFIG_CONTEXTS_NOT_CONFIGURED"
+        if not Path(self.kubeconfig_contexts_path).is_file():
+            return {}, "KUBECONFIG_CONTEXTS_NOT_FOUND"
+        try:
+            return load_kubeconfig_contexts(self.kubeconfig_contexts_path), None
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            logger.warning("AKS kubeconfig context mapping is invalid: %s", type(exc).__name__)
+            return {}, "KUBECONFIG_CONTEXTS_INVALID"
 
     def _defender_for_containers(self) -> bool | None:
         try:
@@ -171,7 +243,13 @@ class AksSecurityCollector:
             "provisioning_state": provisioning_state,
         }
 
-    def _collect_cluster(self, cluster: Any, defender_enabled: bool | None) -> AksClusterEvidence:
+    def _collect_cluster(
+        self,
+        cluster: Any,
+        defender_enabled: bool | None,
+        context_mapping: Mapping[str, str],
+        mapping_error: str | None,
+    ) -> AksClusterEvidence:
         timestamp = datetime.now(timezone.utc).isoformat()
         control_plane = self._control_plane(cluster, defender_enabled)
         if control_plane["power_state"].lower() == "stopped":
@@ -205,8 +283,41 @@ class AksSecurityCollector:
                 "KUBECONFIG_NOT_FOUND",
                 control_plane=control_plane,
             )
+        if mapping_error:
+            return AksClusterEvidence(
+                cluster,
+                "UNKNOWN",
+                "ARM and Kubernetes API",
+                timestamp,
+                mapping_error,
+                control_plane=control_plane,
+            )
         try:
-            return self._collect_kubernetes(cluster, control_plane, timestamp)
+            cluster_id = _normalize_cluster_id(str(_value(cluster, "id", "") or ""))
+        except ValueError:
+            context = None
+        else:
+            context = context_mapping.get(cluster_id)
+        if not context:
+            return AksClusterEvidence(
+                cluster,
+                "UNKNOWN",
+                "ARM and Kubernetes API",
+                timestamp,
+                "KUBECONFIG_CONTEXT_UNRESOLVED",
+                control_plane=control_plane,
+            )
+        try:
+            return self._collect_kubernetes(cluster, context, control_plane, timestamp)
+        except KubeconfigContextUnresolvedError:
+            return AksClusterEvidence(
+                cluster,
+                "UNKNOWN",
+                "ARM and Kubernetes API",
+                timestamp,
+                "KUBECONFIG_CONTEXT_UNRESOLVED",
+                control_plane=control_plane,
+            )
         except Exception as exc:
             logger.warning(
                 "Kubernetes evidence unavailable for %s: %s",
@@ -222,11 +333,20 @@ class AksSecurityCollector:
                 control_plane=control_plane,
             )
 
-    def _collect_kubernetes(self, cluster: Any, control_plane: Mapping[str, Any], timestamp: str) -> AksClusterEvidence:
+    def _collect_kubernetes(
+        self,
+        cluster: Any,
+        context: str,
+        control_plane: Mapping[str, Any],
+        timestamp: str,
+    ) -> AksClusterEvidence:
         from kubernetes import client, config
 
-        cluster_name = str(_value(cluster, "name", "") or "")
-        config.load_kube_config(config_file=self.kubeconfig_path, context=cluster_name)
+        contexts, _ = config.list_kube_config_contexts(config_file=self.kubeconfig_path)
+        available_contexts = {str(item.get("name", "")) for item in contexts or () if isinstance(item, Mapping)}
+        if context not in available_contexts:
+            raise KubeconfigContextUnresolvedError("mapped kubeconfig context does not exist")
+        config.load_kube_config(config_file=self.kubeconfig_path, context=context)
         core = client.CoreV1Api()
         apps = client.AppsV1Api()
         batch = client.BatchV1Api()

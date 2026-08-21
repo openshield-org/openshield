@@ -242,6 +242,43 @@ def test_broad_cluster_admin_and_missing_namespace_policy_are_detected(policy_fi
     assert namespace["metadata"]["namespace"] == "orders"
 
 
+def test_service_account_allowlist_is_namespace_scoped(policy_file):
+    policy_file.write_text(
+        """{
+  "approved_authorized_ip_ranges": ["203.0.113.0/24"],
+  "trusted_registry_prefixes": ["contoso.azurecr.io/"],
+  "allowed_cluster_admin_subjects": ["ServiceAccount:platform:builder"],
+  "excluded_namespaces": ["kube-system"],
+  "require_image_digests": true
+}""",
+        encoding="utf-8",
+    )
+    client = MagicMock()
+    client.get_aks_security_posture.return_value = [
+        evidence(
+            cluster_admin_bindings=(
+                {
+                    "binding": "platform-builder",
+                    "kind": "ServiceAccount",
+                    "namespace": "platform",
+                    "name": "builder",
+                },
+                {
+                    "binding": "attacker-builder",
+                    "kind": "ServiceAccount",
+                    "namespace": "attacker",
+                    "name": "builder",
+                },
+            )
+        )
+    ]
+
+    findings = az_aks_018.scan(client, "sub")
+
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["subject"] == "ServiceAccount:attacker:builder"
+
+
 def test_positive_evidence_survives_partial_collection(policy_file):
     client = MagicMock()
     client.get_aks_security_posture.return_value = [
@@ -396,6 +433,22 @@ def test_policy_validation_rejects_unknown_fields(policy_file):
     assert load_policy(policy_file).require_image_digests is True
     policy_file.write_text('{"unexpected": true}', encoding="utf-8")
     with pytest.raises(ValueError, match="missing or unsupported"):
+        load_policy(policy_file)
+
+
+def test_policy_validation_rejects_service_account_without_namespace(policy_file):
+    policy_file.write_text(
+        """{
+  "approved_authorized_ip_ranges": ["203.0.113.0/24"],
+  "trusted_registry_prefixes": ["contoso.azurecr.io/"],
+  "allowed_cluster_admin_subjects": ["ServiceAccount:builder"],
+  "excluded_namespaces": ["kube-system"],
+  "require_image_digests": true
+}""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="include a namespace"):
         load_policy(policy_file)
 
 

@@ -42,7 +42,8 @@ The policy defines:
 
 - Approved API server CIDR ranges.
 - Trusted registry and repository prefixes.
-- Approved `cluster-admin` subjects in `Kind:name` form.
+- Approved `cluster-admin` Groups and Users in `Kind:name` form.
+- Approved `cluster-admin` ServiceAccounts in `ServiceAccount:namespace:name` form.
 - Namespaces excluded from workload evaluation.
 - Whether image digest pinning is required.
 
@@ -50,7 +51,11 @@ Missing, malformed, or incomplete policy is UNKNOWN. OpenShield does not invent 
 
 ## Kubernetes credentials
 
-Set `OPENSHIELD_AKS_KUBECONFIG` to a read-only kubeconfig. Each kubeconfig context must match the corresponding AKS cluster name. The scanner never records kubeconfig content, tokens, Kubernetes Secrets, or environment variable values.
+Set `OPENSHIELD_AKS_KUBECONFIG` to a read-only kubeconfig. Set `OPENSHIELD_AKS_KUBECONFIG_CONTEXTS` to a strict JSON mapping from each complete AKS resource ID to its kubeconfig context name. Start from `config/aks-kubeconfig-contexts.example.json`.
+
+Resource IDs are matched case-insensitively. Each context may map to only one AKS resource ID, and every scanned cluster must have an explicit entry. Missing, malformed, unresolved, or ambiguous mappings remain UNKNOWN. This prevents clusters with the same resource-group-scoped name from sharing evidence accidentally.
+
+The scanner never records kubeconfig content, tokens, Kubernetes Secrets, or environment variable values.
 
 The Kubernetes identity needs read-only access equivalent to:
 

@@ -41,6 +41,32 @@ def value(item: Any, name: str, default: Any = None) -> Any:
     return getattr(item, name, default)
 
 
+def canonical_cluster_admin_subject(kind: str, name: str, namespace: str = "") -> str:
+    normalized_kind = kind.strip().lower()
+    normalized_name = name.strip()
+    normalized_namespace = namespace.strip()
+    if not normalized_name:
+        raise ValueError("cluster-admin subject name must not be empty")
+    if normalized_kind == "serviceaccount":
+        if not normalized_namespace:
+            raise ValueError("cluster-admin ServiceAccount subjects must include a namespace")
+        return f"ServiceAccount:{normalized_namespace}:{normalized_name}"
+    if normalized_kind == "group":
+        return f"Group:{normalized_name}"
+    if normalized_kind == "user":
+        return f"User:{normalized_name}"
+    raise ValueError("cluster-admin subjects must be Groups, Users, or ServiceAccounts")
+
+
+def _policy_subject(value: str) -> str:
+    parts = [part.strip() for part in value.split(":")]
+    if len(parts) == 3 and parts[0].lower() == "serviceaccount":
+        return canonical_cluster_admin_subject(parts[0], parts[2], parts[1]).lower()
+    if len(parts) == 2:
+        return canonical_cluster_admin_subject(parts[0], parts[1]).lower()
+    raise ValueError("cluster-admin subjects must use Group:name, User:name, or ServiceAccount:namespace:name")
+
+
 def load_policy(path: str | Path) -> AksSecurityPolicy:
     with Path(path).open(encoding="utf-8") as handle:
         raw = json.load(handle)
@@ -68,7 +94,7 @@ def load_policy(path: str | Path) -> AksSecurityPolicy:
         approved_authorized_ip_ranges=frozenset(approved_ranges),
         trusted_registry_prefixes=prefixes,
         allowed_cluster_admin_subjects=frozenset(
-            item.strip().lower() for item in raw["allowed_cluster_admin_subjects"]
+            _policy_subject(item) for item in raw["allowed_cluster_admin_subjects"]
         ),
         excluded_namespaces=frozenset(item.strip().lower() for item in raw["excluded_namespaces"]),
         require_image_digests=raw["require_image_digests"],
@@ -382,7 +408,15 @@ def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> 
                     )
         elif control == "cluster_admin":
             for binding in value(evidence, "cluster_admin_bindings", ()) or ():
-                subject = f"{value(binding, 'kind')}:{value(binding, 'name')}"
+                try:
+                    subject = canonical_cluster_admin_subject(
+                        str(value(binding, "kind", "") or ""),
+                        str(value(binding, "name", "") or ""),
+                        str(value(binding, "namespace", "") or ""),
+                    )
+                except ValueError:
+                    logger.warning("%s: ambiguous cluster-admin subject evidence for %s", rule_id, resource_name)
+                    continue
                 if subject.lower() in policy.allowed_cluster_admin_subjects:
                     continue
                 metadata = _metadata(
