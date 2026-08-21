@@ -18,6 +18,7 @@ Running the script against already-current files produces no changes, which
 lets CI commit only on a real diff.
 """
 
+import html
 import re
 import sys
 from pathlib import Path
@@ -50,11 +51,39 @@ def count_rules() -> int:
     return sum(1 for path in RULES_DIR.glob(RULE_GLOB) if RULE_ID_PATTERN.search(path.read_text(encoding="utf-8")))
 
 
-def count_playbooks() -> int:
-    """Return the number of CLI remediation playbooks."""
-    if not PLAYBOOKS_DIR.is_dir():
-        return 0
-    return len(list(PLAYBOOKS_DIR.glob("*.sh")))
+def find_matching_playbooks() -> Tuple[int, List[str], List[str]]:
+    """Return (playbook_count, missing_for_rules, orphan_playbook_files).
+
+    Counting every *.sh file in playbooks/cli/ (the previous approach) also
+    picks up shared helper scripts - e.g. review_enterprise_resilience.sh,
+    which several fix_*.sh wrappers `exec` into rather than a playbook any
+    single rule owns - silently inflating the count past rule_count and
+    breaking the "every rule ships with a matching playbook" claim.
+
+    Instead this mirrors the naming convention ci.yml's playbook_check step
+    already enforces: playbooks/cli/fix_<rule filename stem>.sh for every
+    counted rule module. missing_for_rules lists rule files whose expected
+    playbook is absent; orphan_playbook_files lists *.sh files on disk that
+    no counted rule expects (informational - shared helpers are expected to
+    show up here and are not themselves an error).
+    """
+    if not RULES_DIR.is_dir() or not PLAYBOOKS_DIR.is_dir():
+        return 0, [], []
+
+    expected_names = set()
+    missing_for_rules: List[str] = []
+    for path in sorted(RULES_DIR.glob(RULE_GLOB)):
+        if not RULE_ID_PATTERN.search(path.read_text(encoding="utf-8")):
+            continue
+        expected_name = f"fix_{path.stem}.sh"
+        expected_names.add(expected_name)
+        if not (PLAYBOOKS_DIR / expected_name).is_file():
+            missing_for_rules.append(path.name)
+
+    actual_names = {p.name for p in PLAYBOOKS_DIR.glob("*.sh")}
+    orphan_playbook_files = sorted(actual_names - expected_names)
+    playbook_count = len(expected_names) - len(missing_for_rules)
+    return playbook_count, missing_for_rules, orphan_playbook_files
 
 
 def collect_rule_stats() -> Tuple[Dict[str, int], Dict[str, int], List[str], List[str]]:
@@ -64,6 +93,11 @@ def collect_rule_stats() -> Tuple[Dict[str, int], Dict[str, int], List[str], Lis
     files_missing_category). Severities and categories outside the values
     seen so far are still counted, keyed by whatever string the rule
     declares, so a new value is never silently dropped.
+
+    Files with no parseable RULE_ID are skipped entirely, matching
+    count_rules() - otherwise a non-rule file (excluded from rule_count)
+    could still be counted into these totals, making the severity boxes
+    disagree with the headline rule count.
     """
     severities: Dict[str, int] = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "INFO": 0}
     categories: Dict[str, int] = {}
@@ -75,6 +109,8 @@ def collect_rule_stats() -> Tuple[Dict[str, int], Dict[str, int], List[str], Lis
 
     for path in sorted(RULES_DIR.glob(RULE_GLOB)):
         content = path.read_text(encoding="utf-8")
+        if not RULE_ID_PATTERN.search(content):
+            continue
 
         sev_match = SEVERITY_PATTERN.search(content)
         if sev_match:
@@ -109,7 +145,7 @@ def render_category_rows(categories: Dict[str, int]) -> str:
     for name, count in sorted(categories.items(), key=lambda item: (-item[1], item[0])):
         width = round(count / max_count * 100)
         rows.append(
-            f'            <div class="bar-row"><span>{name}</span>'
+            f'            <div class="bar-row"><span>{html.escape(name)}</span>'
             f'<div class="bar"><span style="width: {width}%;"></span></div>'
             f"<span>{count}</span></div>"
         )
@@ -224,7 +260,7 @@ def main() -> int:
             return 1
 
     rule_count = count_rules()
-    playbook_count = count_playbooks()
+    playbook_count, missing_playbooks, orphan_playbooks = find_matching_playbooks()
 
     if rule_count == 0 or playbook_count == 0:
         print(
@@ -232,6 +268,35 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
+
+    if missing_playbooks:
+        print(
+            f"Error: {len(missing_playbooks)} rule(s) have no matching playbook file: {', '.join(missing_playbooks)}",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Belt-and-suspenders: find_matching_playbooks() only counts playbooks
+    # that resolve to a counted rule, so this should be unreachable once
+    # missing_playbooks is empty. Failing loudly here catches a future bug
+    # in that derivation rather than silently writing mismatched docs -
+    # this is exactly the drift class (rules and playbooks disagreeing)
+    # this script exists to catch.
+    if rule_count != playbook_count:
+        print(
+            f"Error: rule/playbook count mismatch (rules: {rule_count}, playbooks: "
+            f"{playbook_count}); refusing to write inconsistent docs.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if orphan_playbooks:
+        print(
+            f"Warning: {len(orphan_playbooks)} playbook file(s) in playbooks/cli/ are not "
+            f"any rule's matching playbook and are excluded from the playbook count "
+            f"(expected for shared helpers other playbooks exec into): {', '.join(orphan_playbooks)}",
+            file=sys.stderr,
+        )
 
     severities, categories, missing_severity, missing_category = collect_rule_stats()
 
