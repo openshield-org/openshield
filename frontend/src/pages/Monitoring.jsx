@@ -10,47 +10,13 @@ import Loader, { CardLoader } from '../components/shared/Loader';
 import ErrorState from '../components/shared/ErrorState';
 import usePageData from '../hooks/usePageData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-
-function buildRgGroups(findings) {
-  const groups = {};
-  findings.forEach((f) => {
-    const rg = f.resourceGroup || 'unknown';
-    if (!groups[rg]) groups[rg] = { group: rg, HIGH: 0, MEDIUM: 0, LOW: 0 };
-    const sev = (f.severity || '').toUpperCase();
-    if (sev === 'HIGH' || sev === 'MEDIUM' || sev === 'LOW') groups[rg][sev]++;
-  });
-  return Object.values(groups).sort((a, b) => (b.HIGH + b.MEDIUM + b.LOW) - (a.HIGH + a.MEDIUM + a.LOW));
-}
-
-function buildCategoryScores(findings) {
-  const catMap = {};
-  findings.forEach((f) => {
-    const cat = f.category || 'Other';
-    if (!catMap[cat]) catMap[cat] = { high: 0, medium: 0, low: 0 };
-    const sev = (f.severity || '').toUpperCase();
-    if (sev === 'HIGH') catMap[cat].high++;
-    else if (sev === 'MEDIUM') catMap[cat].medium++;
-    else if (sev === 'LOW') catMap[cat].low++;
-  });
-  return Object.entries(catMap)
-    .map(([category, c]) => ({
-      category,
-      score: Math.max(0, 100 - c.high * 10 - c.medium * 5 - c.low * 2),
-    }))
-    .sort((a, b) => a.score - b.score);
-}
-
-function buildTrend(scans) {
-  return scans
-    .slice(0, 8)
-    .reverse()
-    .map((s) => ({
-      month: new Date(s.started_at || s.startedAt).toLocaleDateString(undefined, {
-        month: 'short', day: 'numeric',
-      }),
-      score: s.score ?? Math.max(0, 100 - (s.total_findings || 0) * 7),
-    }));
-}
+import {
+  buildCategoryScores,
+  buildFindingsDistribution,
+  buildResourceGroupGroups,
+  buildTrend,
+  countBySeverity,
+} from '../utils/monitoring';
 
 export default function Monitoring() {
   const loadMonitoring = useCallback(async () => {
@@ -60,27 +26,22 @@ export default function Monitoring() {
       api.getScans(),
     ]);
     const scans  = scansData.scans || [];
-    const high   = findings.filter((f) => f.severity?.toUpperCase() === 'HIGH').length;
-    const medium = findings.filter((f) => f.severity?.toUpperCase() === 'MEDIUM').length;
-    const low    = findings.filter((f) => f.severity?.toUpperCase() === 'LOW').length;
+    const counts = countBySeverity(findings);
 
     return {
       score:    scoreData.score    ?? scoreData,
       maxScore: scoreData.max_score ?? 100,
       stats: {
         totalFindings:  findings.length,
-        criticalIssues: high,
-        mediumRisk:     medium,
-        lowPriority:    low,
+        criticalIssues: counts.CRITICAL,
+        highRisk:       counts.HIGH,
+        mediumRisk:     counts.MEDIUM,
+        lowPriority:    counts.LOW,
       },
-      findingsDistribution: [
-        { name: 'High',   value: high,   color: '#ef4444' },
-        { name: 'Medium', value: medium, color: '#f97316' },
-        { name: 'Low',    value: low,    color: '#10b981' },
-      ],
+      findingsDistribution:    buildFindingsDistribution(counts),
       categoryScores:          buildCategoryScores(findings),
       trend:                   buildTrend(scans),
-      findingsByResourceGroup: buildRgGroups(findings),
+      findingsByResourceGroup: buildResourceGroupGroups(findings),
     };
   }, []);
   const { status, data, retry } = usePageData(loadMonitoring);
@@ -95,8 +56,8 @@ export default function Monitoring() {
 
   if (status === 'loading') return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => <CardLoader key={i} />)}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => <CardLoader key={i} />)}
       </div>
       <Loader rows={6} />
     </div>

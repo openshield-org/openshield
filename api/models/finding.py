@@ -12,6 +12,14 @@ import psycopg2
 import psycopg2.extras
 import psycopg2.pool
 
+from openshield.severity import (
+    CONTRACT_VERSION,
+    normalize_severity,
+    score_counts,
+    score_findings,
+    severity_rank,
+)
+
 logger = logging.getLogger(__name__)
 
 FRAMEWORKS_DIR = Path(__file__).parent.parent.parent / "compliance" / "frameworks"
@@ -37,8 +45,6 @@ def _get_pool(dsn: str) -> "psycopg2.pool.ThreadedConnectionPool":
             _POOLS[dsn] = pool
         return pool
 
-
-SEVERITY_WEIGHTS = {"HIGH": 10, "MEDIUM": 5, "LOW": 2, "INFO": 0}
 
 FRAMEWORK_FILE_MAP = {
     "cis": "cis_azure_benchmark.json",
@@ -159,9 +165,17 @@ class DatabaseManager:
 
     def save_scan(self, scan_result: Dict[str, Any]) -> None:
         """Persist a full scan result (scan header + all findings)."""
-        conn = self._get_conn()
         from datetime import datetime, timezone
 
+        # Validate and canonicalize the entire batch before issuing SQL. A bad
+        # severity must never be stored with a zero/default weight.
+        findings = []
+        for raw_finding in scan_result.get("findings", []):
+            finding = dict(raw_finding)
+            finding["severity"] = normalize_severity(finding.get("severity"))
+            findings.append(finding)
+
+        conn = self._get_conn()
         completed_at = scan_result.get("completed_at") or datetime.now(timezone.utc).isoformat()
         with conn.cursor() as cur:
             cur.execute(
@@ -169,30 +183,32 @@ class DatabaseManager:
                 INSERT INTO scans (
                     scan_id, subscription_id, started_at, completed_at,
                     total_findings, score, cve_enrichment_status, status,
-                    attempt_count, error_message
+                    attempt_count, error_message, severity_contract_version
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (scan_id) DO UPDATE SET
                     completed_at = EXCLUDED.completed_at,
                     total_findings = EXCLUDED.total_findings,
                     score = EXCLUDED.score,
                     status = EXCLUDED.status,
-                    error_message = EXCLUDED.error_message
+                    error_message = EXCLUDED.error_message,
+                    severity_contract_version = EXCLUDED.severity_contract_version
                 """,
                 (
                     scan_result["scan_id"],
                     scan_result["subscription_id"],
                     scan_result["started_at"],
                     completed_at,
-                    scan_result.get("total_findings", 0),
-                    scan_result.get("score"),
+                    len(findings),
+                    score_findings(findings),
                     scan_result.get("cve_enrichment_status", "PENDING"),
                     scan_result.get("status", "completed"),
                     scan_result.get("attempt_count", 0),
                     scan_result.get("error_message"),
+                    CONTRACT_VERSION,
                 ),
             )
-            for f in scan_result.get("findings", []):
+            for f in findings:
                 cur.execute(
                     """
                     INSERT INTO findings
@@ -227,7 +243,7 @@ class DatabaseManager:
         logger.info(
             "Saved scan %s with %d findings",
             scan_result["scan_id"],
-            scan_result["total_findings"],
+            len(findings),
         )
 
     # ------------------------------------------------------------------ #
@@ -238,7 +254,7 @@ class DatabaseManager:
         """Return findings, optionally filtered by severity, category, or rule_id."""
         filters = filters or {}
         severity = filters.get("severity")
-        severity = severity.upper() if severity is not None else None
+        severity = normalize_severity(severity) if severity is not None else None
         category = filters.get("category")
         rule_id = filters.get("rule_id")
         scan_id = filters.get("scan_id")
@@ -473,7 +489,8 @@ class DatabaseManager:
 
         Scoped to the most recent scan so historical findings from older scans
         do not accumulate and drive the score to zero.
-        HIGH findings deduct 10 points each, MEDIUM 5, LOW 2. Floors at 0.
+        CRITICAL findings deduct 20 points each, HIGH 10, MEDIUM 5,
+        LOW 2, and INFO 0. Floors at 0.
         """
         conn = self._get_conn()
         with conn.cursor() as cur:
@@ -489,8 +506,7 @@ class DatabaseManager:
             )
             rows = cur.fetchall()
 
-        deduction = sum(SEVERITY_WEIGHTS.get(sev.upper(), 0) * count for sev, count in rows)
-        return max(0, 100 - deduction)
+        return score_counts({severity: count for severity, count in rows})
 
     def get_cve_summary(self) -> Dict[str, Any]:
         """Return high-level summary of CVE findings for the dashboard."""
@@ -555,28 +571,52 @@ class DatabaseManager:
 
         controls = framework_data.get("controls", {})
 
-        # Get rule IDs that fired in the latest completed scan only
+        # Get failure detail from the latest completed scan only. This does
+        # not change the legacy absence-implies-PASS behavior tracked by #263;
+        # it prevents the frontend from inventing MEDIUM for failed controls.
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT DISTINCT rule_id FROM findings
+                SELECT rule_id, severity, category, COUNT(*)
+                FROM findings
                 WHERE scan_id = (
                     SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1
                 )
+                GROUP BY rule_id, severity, category
                 """
             )
-            failed_rule_ids = {row[0] for row in cur.fetchall()}
+            finding_rows = cur.fetchall()
+
+        failures: Dict[str, Dict[str, Any]] = {}
+        for rule_id, raw_severity, category, resource_count in finding_rows:
+            severity = normalize_severity(raw_severity)
+            current = failures.get(rule_id)
+            if current is None:
+                failures[rule_id] = {
+                    "severity": severity,
+                    "category": category,
+                    "resources": resource_count,
+                }
+                continue
+            current["resources"] += resource_count
+            if severity_rank(severity) > severity_rank(current["severity"]):
+                current["severity"] = severity
+                current["category"] = category
 
         results = []
         for rule_id, control in controls.items():
-            status = "FAIL" if rule_id in failed_rule_ids else "PASS"
+            failure = failures.get(rule_id)
+            status = "FAIL" if failure else "PASS"
             results.append(
                 {
                     "rule_id": rule_id,
                     "control_id": control["control_id"],
                     "control_name": control["control_name"],
                     "status": status,
+                    "severity": failure["severity"] if failure else None,
+                    "category": failure["category"] if failure else None,
+                    "resources": failure["resources"] if failure else 0,
                 }
             )
 

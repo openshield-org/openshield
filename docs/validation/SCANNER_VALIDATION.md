@@ -68,7 +68,7 @@ The expected finding fields are:
 |---|---|
 | `rule_id` | Stable OpenShield rule ID, for example `AZ-STOR-001` |
 | `rule_name` | Human-readable rule title |
-| `severity` | Severity label such as `HIGH`, `MEDIUM`, `LOW`, or `INFO` |
+| `severity` | Canonical severity: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, or `INFO` |
 | `category` | Rule category such as `Storage`, `Network`, or `Key Vault` |
 | `resource_id` | Full Azure resource ID when available |
 | `resource_name` | Azure resource name |

@@ -39,6 +39,12 @@ def test_normalise_accepts_bounded_finding():
     assert record["RuleId"] == "AZ-NET-001"
 
 
+def test_normalise_canonicalizes_informational_alias():
+    record = normalise({"severity": "INFORMATIONAL"}, "scan-1")
+    assert record["Severity"] == "Info"
+    assert record["SeverityScore"] == 0
+
+
 def test_main_handles_invalid_config_without_traceback(monkeypatch, capsys):
     monkeypatch.setattr(ingest, "WORKSPACE_ID", "")
     monkeypatch.setattr(ingest.sys, "argv", ["ingest.py"])

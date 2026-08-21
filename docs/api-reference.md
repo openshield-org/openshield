@@ -57,7 +57,7 @@ Query parameters:
 
 | Name | Description |
 |---|---|
-| `severity` | `HIGH`, `MEDIUM`, `LOW`, or `INFO` |
+| `severity` | `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, or `INFO` (`INFORMATIONAL` is normalized to `INFO`) |
 | `category` | Rule category, such as `Storage`, `Network`, `Identity`, `Database`, `Compute`, or `Key Vault` |
 | `rule_id` | Rule ID, such as `AZ-STOR-001` |
 | `scan_id` | UUID of a specific scan |
@@ -219,7 +219,7 @@ Missing subscription response:
 
 ## GET /api/score
 
-Returns the overall security posture score from 0 to 100. The score starts at 100 and deducts 10 per HIGH finding, 5 per MEDIUM finding, and 2 per LOW finding.
+Returns the overall security posture score from 0 to 100. Under [severity contract v1](severity-contract.md), the score starts at 100 and deducts 20 per CRITICAL finding, 10 per HIGH finding, 5 per MEDIUM finding, and 2 per LOW finding. INFO findings deduct zero.
 
 Query parameters: none
 
@@ -294,7 +294,7 @@ Example response:
   "summary": {
     "total": 12,
     "by_category": { "Storage": 3, "Network": 4, "Identity": 3, "Database": 2 },
-    "by_risk_level": { "HIGH": 4, "MEDIUM": 6, "LOW": 2 },
+    "by_risk_level": { "CRITICAL": 1, "HIGH": 3, "MEDIUM": 6, "LOW": 2, "INFO": 0, "NONE": 0 },
     "last_scan_at": "2026-06-03T15:12:51Z"
   },
   "resources": [

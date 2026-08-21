@@ -93,10 +93,10 @@ jobs:
           import importlib.util
           import sys
           from collections import defaultdict
+          from openshield.severity import CANONICAL_SEVERITIES
 
           rules_dir = "scanner/rules"
           required_fields = ["RULE_ID", "SEVERITY", "FRAMEWORKS"]
-          valid_severities = {"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"}
           failures = []
           seen_ids = defaultdict(list)
 
@@ -127,9 +127,10 @@ jobs:
                       failures.append(f"{filename}: missing field '{field}'")
 
               if hasattr(mod, "SEVERITY"):
-                  if mod.SEVERITY not in valid_severities:
+                  if mod.SEVERITY not in CANONICAL_SEVERITIES:
                       failures.append(
-                          f"{filename}: SEVERITY '{mod.SEVERITY}' not in {valid_severities}"
+                          f"{filename}: SEVERITY '{mod.SEVERITY}' not in "
+                          f"{sorted(CANONICAL_SEVERITIES)}"
                       )
 
               if hasattr(mod, "FRAMEWORKS"):
@@ -618,6 +619,9 @@ jobs:
 
       - name: Run dashboard load-state tests
         run: node src/hooks/usePageData.test.mjs
+
+      - name: Run severity contract tests
+        run: npm run test:severity
 
       - name: Run accessibility and internationalization checks
         run: npm run test:a11y && npm run test:i18n

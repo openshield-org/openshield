@@ -138,7 +138,7 @@ Every finding returned by a rule must conform to this schema:
 {
     "rule_id": str,  # e.g. "AZ-STOR-001"
     "rule_name": str,
-    "severity": str,  # HIGH | MEDIUM | LOW | INFO
+    "severity": str,  # CRITICAL | HIGH | MEDIUM | LOW | INFO
     "category": str,  # Storage | Network | Identity | Database | Compute | Key Vault
     "resource_id": str,  # full Azure resource ID
     "resource_name": str,
@@ -184,7 +184,8 @@ run_scan()
     → CVE enrichment via NVD API (cve_references, cvss_score, exploit_available)
     → db.save_scan(result)           # persists to PostgreSQL
     →   scans row: scan_id, subscription_id, started_at, completed_at,
-                   total_findings, score (severity-weighted 0-100)
+                   total_findings, score (severity-weighted 0-100),
+                   severity_contract_version
     →   findings rows: one per finding with full metadata + CVE fields
     → return scan result JSON
 
@@ -197,7 +198,7 @@ GET /api/findings
     → returns { count, findings[] }
 
 GET /api/score
-    → db.get_score()                 # severity-weighted: HIGH -10, MEDIUM -5, LOW -2
+    → db.get_score()                 # contract v1: CRITICAL -20, HIGH -10, MEDIUM -5, LOW -2
     → returns plain integer (e.g. 18)
 
 GET /api/resources

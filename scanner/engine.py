@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from api.observability import RULE_ERRORS_TOTAL
+from openshield.severity import CONTRACT_VERSION, SeverityContractError, normalize_severity, score_findings
 from scanner.azure_client import AzureClient
 
 logger = logging.getLogger(__name__)
@@ -75,10 +76,18 @@ class ScanEngine:
                 spec.loader.exec_module(module)  # type: ignore[union-attr]
                 rule_id = getattr(module, "RULE_ID", None)
                 if callable(getattr(module, "scan", None)) and isinstance(rule_id, str) and rule_id:
+                    declared_severity = getattr(module, "SEVERITY", None)
+                    if normalize_severity(declared_severity) != declared_severity:
+                        raise SeverityContractError(f"rule {rule_id} must declare a canonical severity")
                     self.rules.append(module)
                     logger.info("Loaded rule: %s", rule_id)
                 else:
                     logger.warning("Rule file %s has no scan() function or RULE_ID — skipped", rule_path.name)
+            except SeverityContractError:
+                # A rule outside the contract must fail startup rather than be
+                # silently skipped and later appear as a clean evaluation.
+                logger.exception("Rule %s has an invalid severity", rule_path.name)
+                raise
             except Exception as exc:
                 logger.error("Failed to load rule %s: %s", rule_path.name, exc)
 
@@ -116,22 +125,30 @@ class ScanEngine:
                     logger.warning("Rule %s returned %s instead of list — skipped", rule_id, type(rule_findings))
                     continue
 
-                for finding in rule_findings:
+                validated_findings = []
+                for raw_finding in rule_findings:
+                    finding = raw_finding
                     if not isinstance(finding, dict):
+                        logger.warning("Rule %s returned a non-object finding — skipped", rule_id)
                         continue
+                    finding = dict(finding)
+                    finding["severity"] = normalize_severity(finding.get("severity"))
                     finding.setdefault("detected_at", detected_at)
                     finding.setdefault("scan_id", scan_id)
-                findings.extend(rule_findings)
-                logger.info("Rule %s produced %d finding(s)", rule_id, len(rule_findings))
+                    validated_findings.append(finding)
+                findings.extend(validated_findings)
+                logger.info("Rule %s produced %d finding(s)", rule_id, len(validated_findings))
+            except SeverityContractError:
+                RULE_ERRORS_TOTAL.labels(rule_id=rule_id).inc()
+                logger.exception("Rule %s returned an invalid severity", rule_id)
+                raise
             except Exception as exc:
                 RULE_ERRORS_TOTAL.labels(rule_id=rule_id).inc()
                 logger.error("Rule %s raised an exception: %s", rule_id, exc, exc_info=True)
 
         completed_at = datetime.now(timezone.utc).isoformat()
 
-        severity_weights = {"HIGH": 10, "MEDIUM": 5, "LOW": 2}
-        deduction = sum(severity_weights.get((f.get("severity") or "").upper(), 0) for f in findings)
-        score = max(0, 100 - deduction)
+        score = score_findings(findings)
 
         result = {
             "scan_id": scan_id,
@@ -142,6 +159,7 @@ class ScanEngine:
             "completed_at": completed_at,
             "total_findings": len(findings),
             "score": score,
+            "severity_contract_version": CONTRACT_VERSION,
             "findings": findings,
         }
 

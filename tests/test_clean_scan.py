@@ -198,3 +198,48 @@ def test_get_compliance_score_remediated_rule_shows_pass():
                 result = db.get_compliance_score("cis")
 
     assert result["controls"][0]["status"] == "PASS"
+
+
+def test_get_compliance_score_reports_worst_critical_failure_without_inventing_pass_severity():
+    db = _db()
+    conn = MagicMock()
+    cur = _mock_cursor(
+        [
+            ("AZ-STOR-001", "HIGH", "Storage", 1),
+            ("AZ-STOR-001", "CRITICAL", "Storage", 2),
+        ]
+    )
+    conn.cursor.return_value = cur
+
+    import io
+    import json
+    from pathlib import Path
+
+    fake_framework = json.dumps(
+        {
+            "framework": "CIS Azure",
+            "version": "2.0",
+            "controls": {
+                "AZ-STOR-001": {"control_id": "3.1", "control_name": "No public blobs"},
+                "AZ-NET-001": {"control_id": "6.1", "control_name": "No unrestricted SSH"},
+            },
+        }
+    )
+
+    with patch.object(db, "_get_conn", return_value=conn):
+        with patch("builtins.open", return_value=io.StringIO(fake_framework)):
+            with patch.object(Path, "exists", return_value=True):
+                result = db.get_compliance_score("cis")
+
+    controls = {control["rule_id"]: control for control in result["controls"]}
+    assert controls["AZ-STOR-001"] == {
+        "rule_id": "AZ-STOR-001",
+        "control_id": "3.1",
+        "control_name": "No public blobs",
+        "status": "FAIL",
+        "severity": "CRITICAL",
+        "category": "Storage",
+        "resources": 3,
+    }
+    assert controls["AZ-NET-001"]["status"] == "PASS"
+    assert controls["AZ-NET-001"]["severity"] is None
