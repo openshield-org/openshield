@@ -236,8 +236,11 @@ def create_app() -> Flask:
     def ready():
         """Readiness probe: 200 when the database is reachable, else 503."""
         try:
-            db = DatabaseManager()
-            db.ping()
+            # Register the manager on Flask's request context before pinging.
+            # The existing teardown handler then returns the pooled connection
+            # on both the success and error paths.
+            g.db = DatabaseManager()
+            g.db.ping()
             return jsonify({"status": "ready"}), 200
         except Exception as exc:
             logger.warning("Readiness check failed: %s", exc)
