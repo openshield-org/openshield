@@ -76,6 +76,7 @@ class MockAzureClient:
         self._kv_keys: Dict[str, List[Any]] = {}
         self._diagnostic_settings: Dict[str, Optional[bool]] = {}
         self._diagnostic_default: Optional[bool] = False
+        self._jit_policies: Optional[List[Any]] = []
         self._conditional_access_policies: List[Any] = []
         # Credential stub for Graph/SDK-based rules (idn_003..009).
         self.credential = _StubCredential()
@@ -256,6 +257,14 @@ class MockAzureClient:
 
     def get_disk(self, disk_id: str) -> Optional[Any]:
         return self._disks.get(disk_id)
+
+    def set_jit_policies(self, policies: Optional[List[Any]]) -> "MockAzureClient":
+        """Configure the Defender for Cloud JIT policies; ``None`` represents an unreadable/indeterminate result."""
+        self._jit_policies = policies
+        return self
+
+    def get_jit_network_access_policies(self) -> Optional[List[Any]]:
+        return self._jit_policies
 
     # ------------------------------------------------------------------ #
     # Storage — lifecycle & service logging (three-state: True/False/None) #

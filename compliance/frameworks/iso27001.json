@@ -128,6 +128,11 @@
       "control_name": "Management of technical vulnerabilities",
       "description": "The virtual machine does not have automatic OS patching enabled. A.12.6.1 requires that information about technical vulnerabilities is obtained and the organisation's exposure evaluated. Without automatic patching, known OS vulnerabilities remain unmitigated."
     },
+    "AZ-CMP-007": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. A.13.1.1 requires network controls that manage and protect access to systems. JIT limits management-port exposure to approved, time-boxed windows."
+    },
     "AZ-CMP-003": {
       "control_id": "A.12.2.1",
       "control_name": "Controls against malware",

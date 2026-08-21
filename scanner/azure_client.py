@@ -431,6 +431,23 @@ class AzureClient:
             logger.error("get_web_apps failed: %s", exc)
             return []
 
+    def get_jit_network_access_policies(self) -> Optional[List[Any]]:
+        """List Microsoft Defender for Cloud Just-In-Time VM access policies.
+
+        Returns a list (including an empty list) when Defender for Cloud responds,
+        or ``None`` when permissions, networking, the SDK, or a subscription
+        without Defender for Cloud prevent the collection from being evaluated.
+        Callers must treat ``None`` as "JIT coverage unknown", never as "no JIT".
+        """
+        try:
+            from azure.mgmt.security import SecurityCenter
+
+            client = SecurityCenter(self.credential, self.subscription_id)
+            return list(client.jit_network_access_policies.list())
+        except Exception as exc:
+            logger.error("get_jit_network_access_policies failed: %s", exc)
+            return None
+
     def get_function_app_security_posture(self) -> Optional[List[Dict[str, Any]]]:
         """Return a cached, secret-free posture for Function Apps."""
         if self._function_apps_cache is not _UNSET:

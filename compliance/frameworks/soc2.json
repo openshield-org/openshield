@@ -148,6 +148,11 @@
       "control_name": "System Vulnerabilities are Identified and Managed",
       "description": "The virtual machine does not have automatic OS patching enabled. CC7.1 requires that vulnerabilities in system components are identified and managed through a defined process. Without automatic patching, known OS vulnerabilities are left unmitigated and exploitable."
     },
+    "AZ-CMP-007": {
+      "control_id": "CC6.6",
+      "control_name": "Restricts Access from Outside the Network Boundary",
+      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. CC6.6 requires that access from outside the network boundary is restricted. JIT opens management ports only for approved, time-boxed requests instead of continuously."
+    },
     "AZ-KV-001": {
       "control_id": "A1.2",
       "control_name": "Environmental Threats and Recovery",
