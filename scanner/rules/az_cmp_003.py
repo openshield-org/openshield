@@ -63,49 +63,64 @@ KNOWN_EP_EXTENSIONS = {
 logger = logging.getLogger(__name__)
 
 
-def _defender_endpoint_protection_status(azure_client: Any, vm_id: str) -> Optional[bool]:
-    """Look up the Defender for Cloud 'Endpoint protection' assessment for a VM.
+def _index_endpoint_protection_assessments(assessments: Optional[List[Any]]) -> Dict[str, List[Any]]:
+    """Group the subscription-wide assessments list by resource ID, once per scan.
 
-    The assessments API only supports subscription/management-group scope,
-    so this filters the subscription-wide collection down to the one
-    matching this VM's resource ID.
-
-    Returns:
-        True  - assessment found, status code "Healthy" (confirmed protected).
-        False - assessment found, status code "Unhealthy" (confirmed unprotected).
-        None  - assessments could not be listed, no assessment matched this
-                VM, or its status code was "NotApplicable"/unrecognised.
-                Callers must treat this as "Defender signal unavailable" and
-                fall back to the extension-based check, never as compliant.
+    The assessments API only supports subscription/management-group scope, so
+    every VM's lookup would otherwise re-scan the full list. Building this
+    index up front makes each VM's lookup O(1) instead of O(assessment count).
     """
-    assessments = azure_client.get_security_assessments()
-    if not assessments:
-        return None
-
-    vm_id_lower = (vm_id or "").lower()
-    for assessment in assessments:
-        resource_details = getattr(assessment, "resource_details", None)
-        resource_id = (getattr(resource_details, "id", "") or "").lower()
-        if resource_id != vm_id_lower:
-            continue
-
+    index: Dict[str, List[Any]] = {}
+    for assessment in assessments or []:
         display_name = (getattr(assessment, "display_name", "") or "").lower()
         if "endpoint protection" not in display_name:
             continue
+        resource_details = getattr(assessment, "resource_details", None)
+        resource_id = (getattr(resource_details, "id", "") or "").lower()
+        if not resource_id:
+            continue
+        index.setdefault(resource_id, []).append(assessment)
+    return index
 
+
+def _defender_endpoint_protection_status(assessments_by_resource: Dict[str, List[Any]], vm_id: str) -> Optional[bool]:
+    """Look up the Defender for Cloud 'Endpoint protection' assessment for a VM.
+
+    A resource can have more than one assessment whose display name contains
+    "endpoint protection" (e.g. an installation check and a separate health
+    check). Resolving by "first match in the list" would make the result
+    depend on API response order, so instead every matching assessment for
+    the resource is considered and an "Unhealthy" code always wins - a real
+    unhealthy signal must never be masked by iteration order.
+
+    Returns:
+        True  - all matching assessments are "Healthy" (confirmed protected).
+        False - at least one matching assessment is "Unhealthy" (confirmed
+                unprotected).
+        None  - no assessment matched this VM, or none had a status code of
+                "Healthy"/"Unhealthy" (e.g. only "NotApplicable"). Callers
+                must treat this as "Defender signal unavailable" and fall
+                back to the extension-based check, never as compliant.
+    """
+    matches = assessments_by_resource.get((vm_id or "").lower())
+    if not matches:
+        return None
+
+    codes = set()
+    for assessment in matches:
         status = getattr(assessment, "status", None)
-        code = (getattr(status, "code", "") or "").lower()
-        if code == "healthy":
-            return True
-        if code == "unhealthy":
-            return False
-        return None  # NotApplicable or an unrecognised status code
+        codes.add((getattr(status, "code", "") or "").lower())
 
-    return None
+    if "unhealthy" in codes:
+        return False
+    if "healthy" in codes:
+        return True
+    return None  # Only NotApplicable or unrecognised status codes.
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
+    assessments_by_resource = _index_endpoint_protection_assessments(azure_client.get_security_assessments())
 
     for vm in azure_client.get_virtual_machines():
         vm_id = getattr(vm, "id", "")
@@ -115,7 +130,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if not rg or not vm_name:
             continue
 
-        defender_status = _defender_endpoint_protection_status(azure_client, vm_id)
+        defender_status = _defender_endpoint_protection_status(assessments_by_resource, vm_id)
 
         if defender_status is True:
             continue  # Defender confirms protected - the strongest available signal.

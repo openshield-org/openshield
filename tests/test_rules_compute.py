@@ -628,6 +628,47 @@ def test_cmp_003_defender_assessment_for_different_resource_is_ignored(mock_azur
     assert az_cmp_003.scan(mock_azure, subscription_id) == []
 
 
+def test_cmp_003_defender_unhealthy_wins_over_healthy_regardless_of_assessment_order(mock_azure, subscription_id):
+    """A resource can have more than one 'endpoint protection' assessment (e.g. an
+    installation check and a separate health check). The result must not depend on
+    which one the API happened to list first - an Unhealthy code always wins."""
+    vm_id = _vm_id("vm-mixed-assessments")
+    vm = make_resource(id=vm_id, name="vm-mixed-assessments")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(_RG, "vm-mixed-assessments", [])
+
+    # Healthy listed before Unhealthy.
+    mock_azure.set_security_assessments(
+        [
+            _assessment(
+                vm_id, display_name="Endpoint protection should be installed on virtual machines", status_code="Healthy"
+            ),
+            _assessment(
+                vm_id, display_name="Endpoint protection health issues should be resolved", status_code="Unhealthy"
+            ),
+        ]
+    )
+    findings_order_a = az_cmp_003.scan(mock_azure, subscription_id)
+
+    # Same two assessments, reversed order.
+    mock_azure.set_security_assessments(
+        [
+            _assessment(
+                vm_id, display_name="Endpoint protection health issues should be resolved", status_code="Unhealthy"
+            ),
+            _assessment(
+                vm_id, display_name="Endpoint protection should be installed on virtual machines", status_code="Healthy"
+            ),
+        ]
+    )
+    findings_order_b = az_cmp_003.scan(mock_azure, subscription_id)
+
+    assert findings_order_a == findings_order_b
+    assert len(findings_order_a) == 1
+    assert findings_order_a[0]["metadata"]["signal"] == "defender_assessment"
+    assert findings_order_a[0]["metadata"]["determination"] == "non_compliant"
+
+
 # ── AZ-CMP-004: VM without automatic OS patching ────────────────────────────
 
 
