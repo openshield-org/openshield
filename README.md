@@ -226,6 +226,18 @@ FLASK_APP=api/app.py flask run
 See [Database Migrations](docs/database-migrations.md) for schema changes and the
 one-time onboarding step required for existing production databases.
 
+**Local containers (Compose)**
+
+```bash
+# Starts PostgreSQL 16, applies migrations, then starts the API, worker, and dashboard
+docker compose --profile local up --build
+
+# Database-aware API readiness
+curl --fail http://127.0.0.1:8000/ready
+```
+
+The profile is intentionally named `local`: its database credentials and JWT secret are development-only values, ports bind to loopback, and the dashboard talks to `http://localhost:8000`. Set the four `AZURE_*` variables in your shell before starting Compose if you want the worker to execute real scans. Stop the stack with `docker compose --profile local down`; add `--volumes` only when you intentionally want to remove local database and frontend dependency data.
+
 **Frontend (React dashboard)**
 
 ```bash

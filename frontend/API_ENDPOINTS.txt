@@ -11,7 +11,8 @@ BASE URL
 
 Set VITE_API_URL to the API origin, without a trailing /api path.
 
-  Local development default:  http://localhost:5000
+  Direct Flask default:       http://localhost:5000
+  Local Compose profile:      http://localhost:8000
   Production fallback:        https://openshield-api.onrender.com
   Example override:           VITE_API_URL=https://api.example.com
 
