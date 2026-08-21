@@ -429,6 +429,38 @@ def test_docker_hub_short_form_images_match_trusted_registry(image, policy_file)
     assert az_aks_019.scan(client, "sub") == []
 
 
+def test_trusted_registry_prefix_does_not_cross_repository_boundary(policy_file):
+    policy_file.write_text(
+        """{
+  "approved_authorized_ip_ranges": ["203.0.113.0/24"],
+  "trusted_registry_prefixes": ["contoso.azurecr.io/team"],
+  "allowed_cluster_admin_subjects": ["Group:aks-platform-admins"],
+  "excluded_namespaces": ["kube-system"],
+  "require_image_digests": true
+}""",
+        encoding="utf-8",
+    )
+    client = MagicMock()
+    client.get_aks_security_posture.return_value = [
+        evidence(
+            workloads=(
+                workload(
+                    containers=(
+                        container(name="trusted", image="contoso.azurecr.io/team/api:1.0"),
+                        container(name="lookalike", image="contoso.azurecr.io/team-evil/api:1.0"),
+                    )
+                ),
+            )
+        )
+    ]
+
+    findings = az_aks_019.scan(client, "sub")
+
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["container"] == "lookalike"
+    assert findings[0]["metadata"]["image"] == "contoso.azurecr.io/team-evil/api:1.0"
+
+
 def test_policy_validation_rejects_unknown_fields(policy_file):
     assert load_policy(policy_file).require_image_digests is True
     policy_file.write_text('{"unexpected": true}', encoding="utf-8")

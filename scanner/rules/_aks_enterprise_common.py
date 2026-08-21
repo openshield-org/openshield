@@ -204,6 +204,17 @@ def _normalize_image_registry(image: str) -> str:
     return normalized
 
 
+def _matches_trusted_registry_prefix(image: str, prefix: str) -> bool:
+    """Match a registry/repository prefix without crossing a repository boundary."""
+    if prefix.endswith("/"):
+        return image.startswith(prefix)
+    if image == prefix:
+        return True
+    # Tags, digests, and child repositories are valid continuations; a raw
+    # string continuation such as ``team-evil`` must not inherit trust.
+    return any(image.startswith(f"{prefix}{separator}") for separator in ("/", ":", "@"))
+
+
 def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> list[dict[str, Any]]:
     rule_id = module["RULE_ID"]
     evidence_items = azure_client.get_aks_security_posture()
@@ -439,7 +450,8 @@ def scan_control(azure_client: Any, module: Mapping[str, Any], control: str) -> 
                         continue
                     normalized = _normalize_image_registry(image)
                     trusted = control != "untrusted_registry" or any(
-                        normalized.startswith(prefix) for prefix in policy.trusted_registry_prefixes
+                        _matches_trusted_registry_prefix(normalized, prefix)
+                        for prefix in policy.trusted_registry_prefixes
                     )
                     digest = "@sha256:" in normalized
                     latest = normalized.endswith(":latest") or (":" not in normalized.rsplit("/", 1)[-1] and not digest)
