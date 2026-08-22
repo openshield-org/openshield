@@ -111,6 +111,7 @@ def test_get_compliance_score_scopes_to_latest_scan():
     db = _db()
     conn = MagicMock()
     cur = _mock_cursor([])
+    cur.fetchone.return_value = {"scan_id": "scan-1", "compliance_mapping_snapshot": None}
     conn.cursor.return_value = cur
 
     with patch.object(db, "_get_conn", return_value=conn):
@@ -131,9 +132,16 @@ def test_get_compliance_score_scopes_to_latest_scan():
             with patch.object(Path, "exists", return_value=True):
                 db.get_compliance_score("cis")
 
-    executed_sql = conn.cursor.return_value.execute.call_args[0][0]
-    assert "status = 'completed'" in executed_sql
-    assert "total_findings" not in executed_sql
+    # get_compliance_score() issues two queries: first it resolves the latest
+    # completed scan, then it looks up findings scoped to that resolved
+    # scan_id — so "status = 'completed'" and the findings lookup are on
+    # different statements, not one combined query.
+    executed_statements = [call[0][0] for call in conn.cursor.return_value.execute.call_args_list]
+    assert any("status = 'completed'" in sql for sql in executed_statements)
+    findings_sql = executed_statements[-1]
+    assert "FROM findings" in findings_sql
+    assert "scan_id = %s" in findings_sql
+    assert "total_findings" not in findings_sql
 
 
 def test_get_compliance_score_all_pass_after_clean_scan():
@@ -141,6 +149,7 @@ def test_get_compliance_score_all_pass_after_clean_scan():
     db = _db()
     conn = MagicMock()
     cur = _mock_cursor([])
+    cur.fetchone.return_value = {"scan_id": "scan-1", "compliance_mapping_snapshot": None}
     conn.cursor.return_value = cur
 
     import json
@@ -176,6 +185,7 @@ def test_get_compliance_score_remediated_rule_shows_pass():
     db = _db()
     conn = MagicMock()
     cur = _mock_cursor([])
+    cur.fetchone.return_value = {"scan_id": "scan-2", "compliance_mapping_snapshot": None}
     conn.cursor.return_value = cur
 
     import json
