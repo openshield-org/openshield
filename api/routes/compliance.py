@@ -25,11 +25,17 @@ def _get_db() -> DatabaseManager:
 
 @compliance_bp.get("/api/compliance/<framework>")
 def get_compliance(framework: str):
-    """Return pass/fail compliance breakdown for a framework.
+    """Return technical-evidence coverage against a framework mapping pack.
 
     Supported frameworks: cis, nist, iso27001, soc2, ncsc_pqc, enisa_pqc
 
-    Returns control-level pass/fail status mapped to current open findings.
+    This is versioned technical evidence coverage from the most recent
+    completed scan, not a certification or a claim of full framework
+    compliance. Each control also reports mapping_type, evidence_type,
+    primary_source, rationale, owner and review_status; controls whose
+    mapping_type is not_applicable or organizational are excluded from
+    score_percent. If no completed scan exists yet, status is NO_SCAN_DATA
+    and no PASS/FAIL is reported.
     """
     try:
         framework = choice(framework, "framework", SUPPORTED_FRAMEWORKS, case="lower")

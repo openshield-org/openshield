@@ -55,6 +55,35 @@ FRAMEWORK_FILE_MAP = {
     "enisa_pqc": "enisa_pqc.json",
 }
 
+_PACK_METADATA_KEYS = (
+    "framework",
+    "version",
+    "mapping_pack_version",
+    "mapping_pack_status",
+    "mapping_pack_source",
+    "mapping_pack_published",
+)
+
+
+def _build_compliance_mapping_snapshot() -> Dict[str, Any]:
+    """Capture each framework's mapping-pack identity at the moment a scan is saved.
+
+    Historical scans must remain interpretable even after the mapping pack on
+    disk is later revised or a framework edition is superseded, so this
+    snapshot — not the live files — is what a report for this scan prefers.
+    A framework file that is missing or unreadable is simply omitted; it does
+    not fail the scan save.
+    """
+    snapshot: Dict[str, Any] = {}
+    for framework, filename in FRAMEWORK_FILE_MAP.items():
+        try:
+            with open(FRAMEWORKS_DIR / filename) as fh:
+                data = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            continue
+        snapshot[framework] = {key: data.get(key) for key in _PACK_METADATA_KEYS}
+    return snapshot
+
 
 @dataclass
 class Finding:
@@ -177,6 +206,7 @@ class DatabaseManager:
 
         conn = self._get_conn()
         completed_at = scan_result.get("completed_at") or datetime.now(timezone.utc).isoformat()
+        mapping_snapshot = json.dumps(_build_compliance_mapping_snapshot())
         try:
             with conn.cursor() as cur:
                 cur.execute(
@@ -184,16 +214,25 @@ class DatabaseManager:
                     INSERT INTO scans (
                         scan_id, subscription_id, started_at, completed_at,
                         total_findings, score, cve_enrichment_status, status,
-                        attempt_count, error_message, severity_contract_version
+                        attempt_count, error_message, severity_contract_version,
+                        compliance_mapping_snapshot
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (scan_id) DO UPDATE SET
                         completed_at = EXCLUDED.completed_at,
                         total_findings = EXCLUDED.total_findings,
                         score = EXCLUDED.score,
                         status = EXCLUDED.status,
                         error_message = EXCLUDED.error_message,
-                        severity_contract_version = EXCLUDED.severity_contract_version
+                        severity_contract_version = EXCLUDED.severity_contract_version,
+                        -- The mapping snapshot captured for a scan_id's first
+                        -- successful write is its historical record and must
+                        -- stay immutable on replay (e.g. a worker retry that
+                        -- reuses the same scan_id) - only fill it in if this
+                        -- scan_id never captured one.
+                        compliance_mapping_snapshot = COALESCE(
+                            scans.compliance_mapping_snapshot, EXCLUDED.compliance_mapping_snapshot
+                        )
                     """,
                     (
                         scan_result["scan_id"],
@@ -207,6 +246,7 @@ class DatabaseManager:
                         scan_result.get("attempt_count", 0),
                         scan_result.get("error_message"),
                         CONTRACT_VERSION,
+                        mapping_snapshot,
                     ),
                 )
                 # A worker retry replaces the previous result atomically. This
@@ -562,14 +602,25 @@ class DatabaseManager:
         }
 
     def get_compliance_score(self, framework: str) -> Dict[str, Any]:
-        """Return pass/fail breakdown against a compliance framework.
+        """Return technical-evidence coverage against a compliance framework mapping pack.
+
+        This reports coverage from the most recent completed scan, not a
+        certification or a claim of full framework compliance. Controls whose
+        mapping_type is "not_applicable" or "organizational" are listed but
+        excluded from the pass-rate denominator (score_percent), because a
+        technical scan cannot itself establish an organizational control or a
+        control the mapped framework edition does not define.
 
         Args:
-            framework: One of 'cis', 'nist', or 'iso27001'.
+            framework: One of the keys in FRAMEWORK_FILE_MAP (e.g. 'cis', 'nist').
 
         Returns:
-            dict with keys: framework, total_controls, passed, failed,
-            score_percent, controls (list of control detail objects).
+            dict with keys: framework, version, mapping_pack_version,
+            mapping_pack_status, mapping_pack_source, mapping_pack_published,
+            evaluation_basis, total_controls, in_scope_controls,
+            excluded_controls, passed, failed, score_percent, controls (list
+            of control detail objects each carrying mapping_type, evidence_type,
+            primary_source, rationale, owner, review_status, review_date).
         """
         filename = FRAMEWORK_FILE_MAP.get(framework.lower())
         if not filename:
@@ -583,21 +634,62 @@ class DatabaseManager:
             framework_data = json.load(fh)
 
         controls = framework_data.get("controls", {})
+        pack_meta = {
+            "framework": framework_data.get("framework"),
+            "version": framework_data.get("version"),
+            "mapping_pack_version": framework_data.get("mapping_pack_version"),
+            "mapping_pack_status": framework_data.get("mapping_pack_status"),
+            "mapping_pack_source": framework_data.get("mapping_pack_source"),
+            "mapping_pack_published": framework_data.get("mapping_pack_published"),
+        }
 
-        # Get failure detail from the latest completed scan only. This does
-        # not change the legacy absence-implies-PASS behavior tracked by #263;
-        # it prevents the frontend from inventing MEDIUM for failed controls.
         conn = self._get_conn()
-        with conn.cursor() as cur:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT scan_id, compliance_mapping_snapshot FROM scans "
+                "WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1"
+            )
+            latest_scan = cur.fetchone()
+
+            if latest_scan is None:
+                # No completed scan exists yet: there is no evidence to report.
+                # Absence of findings must never be presented as a passing score.
+                return {
+                    **pack_meta,
+                    "status": "NO_SCAN_DATA",
+                    "message": (
+                        "No completed scan is available yet, so no technical "
+                        "evidence exists to report against this framework."
+                    ),
+                    "total_controls": len(controls),
+                    "in_scope_controls": 0,
+                    "excluded_controls": 0,
+                    "passed": 0,
+                    "failed": 0,
+                    "score_percent": None,
+                    "controls": [],
+                }
+
+            scan_id = latest_scan["scan_id"]
+            snapshot = latest_scan.get("compliance_mapping_snapshot") or {}
+            snapshot_for_fw = snapshot.get(framework.lower())
+            if snapshot_for_fw:
+                # Report the mapping-pack identity that was actually in effect when
+                # this scan ran, not whatever is on disk now, so a historical report
+                # stays interpretable even after the mapping pack is later revised.
+                pack_meta = snapshot_for_fw
+
+            # Grouped by severity/category too (not just DISTINCT rule_id) so
+            # each failing control can report which severity/category/how many
+            # resources are affected, not just a bare FAIL.
             cur.execute(
                 """
                 SELECT rule_id, severity, category, COUNT(*)
                 FROM findings
-                WHERE scan_id = (
-                    SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1
-                )
+                WHERE scan_id = %s
                 GROUP BY rule_id, severity, category
-                """
+                """,
+                (scan_id,),
             )
             finding_rows = cur.fetchall()
 
@@ -618,9 +710,18 @@ class DatabaseManager:
                 current["category"] = category
 
         results = []
+        excluded_count = 0
         for rule_id, control in controls.items():
+            mapping_type = control.get("mapping_type", "supporting")
+            is_excluded = mapping_type in ("not_applicable", "organizational")
             failure = failures.get(rule_id)
-            status = "FAIL" if failure else "PASS"
+
+            if is_excluded:
+                status = "NOT_APPLICABLE" if mapping_type == "not_applicable" else "ORGANIZATIONAL"
+                excluded_count += 1
+            else:
+                status = "FAIL" if failure else "PASS"
+
             results.append(
                 {
                     "rule_id": rule_id,
@@ -630,18 +731,37 @@ class DatabaseManager:
                     "severity": failure["severity"] if failure else None,
                     "category": failure["category"] if failure else None,
                     "resources": failure["resources"] if failure else 0,
+                    "mapping_type": mapping_type,
+                    "evidence_type": control.get("evidence_type"),
+                    "primary_source": control.get("primary_source"),
+                    "rationale": control.get("rationale"),
+                    "owner": control.get("owner"),
+                    "review_status": control.get("review_status"),
+                    "review_date": control.get("review_date"),
                 }
             )
 
         total = len(results)
+        in_scope = total - excluded_count
         passed = sum(1 for r in results if r["status"] == "PASS")
-        failed = total - passed
-        score_pct = round((passed / total) * 100) if total else 0
+        failed = sum(1 for r in results if r["status"] == "FAIL")
+        score_pct = round((passed / in_scope) * 100) if in_scope else None
 
         return {
-            "framework": framework_data.get("framework"),
-            "version": framework_data.get("version"),
+            **pack_meta,
+            "scan_id": scan_id,
+            "evaluation_basis": (
+                "PASS reflects the absence of findings for this rule in the most recent "
+                "completed scan. It does not yet confirm the rule executed successfully "
+                "against every applicable resource in that scan — an errored or skipped "
+                "rule cannot currently be distinguished from a clean pass (tracked in "
+                "issue #263). Controls with mapping_type not_applicable or organizational "
+                "are excluded from score_percent because a technical scan alone cannot "
+                "establish them."
+            ),
             "total_controls": total,
+            "in_scope_controls": in_scope,
+            "excluded_controls": excluded_count,
             "passed": passed,
             "failed": failed,
             "score_percent": score_pct,

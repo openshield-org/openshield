@@ -187,7 +187,9 @@ function normalizeComplianceFramework(data, id, color) {
     id,
     name:          data.framework,
     version:       data.version,
-    score:         data.score_percent,
+    // score_percent is null when no completed scan exists yet (no evidence
+    // to report) or when every control is excluded from the denominator.
+    score:         data.score_percent ?? 0,
     totalControls: data.total_controls,
     passing:       data.passed,
     failing:       data.failed,
