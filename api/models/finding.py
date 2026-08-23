@@ -177,69 +177,82 @@ class DatabaseManager:
 
         conn = self._get_conn()
         completed_at = scan_result.get("completed_at") or datetime.now(timezone.utc).isoformat()
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO scans (
-                    scan_id, subscription_id, started_at, completed_at,
-                    total_findings, score, cve_enrichment_status, status,
-                    attempt_count, error_message, severity_contract_version
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (scan_id) DO UPDATE SET
-                    completed_at = EXCLUDED.completed_at,
-                    total_findings = EXCLUDED.total_findings,
-                    score = EXCLUDED.score,
-                    status = EXCLUDED.status,
-                    error_message = EXCLUDED.error_message,
-                    severity_contract_version = EXCLUDED.severity_contract_version
-                """,
-                (
-                    scan_result["scan_id"],
-                    scan_result["subscription_id"],
-                    scan_result["started_at"],
-                    completed_at,
-                    len(findings),
-                    score_findings(findings),
-                    scan_result.get("cve_enrichment_status", "PENDING"),
-                    scan_result.get("status", "completed"),
-                    scan_result.get("attempt_count", 0),
-                    scan_result.get("error_message"),
-                    CONTRACT_VERSION,
-                ),
-            )
-            for f in findings:
+        try:
+            with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO findings
-                        (scan_id, rule_id, rule_name, severity, category,
-                         resource_id, resource_name, resource_type,
-                         description, remediation, playbook,
-                         frameworks, metadata, cve_references,
-                         cvss_score, exploit_available, detected_at)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    INSERT INTO scans (
+                        scan_id, subscription_id, started_at, completed_at,
+                        total_findings, score, cve_enrichment_status, status,
+                        attempt_count, error_message, severity_contract_version
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (scan_id) DO UPDATE SET
+                        completed_at = EXCLUDED.completed_at,
+                        total_findings = EXCLUDED.total_findings,
+                        score = EXCLUDED.score,
+                        status = EXCLUDED.status,
+                        error_message = EXCLUDED.error_message,
+                        severity_contract_version = EXCLUDED.severity_contract_version
                     """,
                     (
-                        f.get("scan_id"),
-                        f.get("rule_id"),
-                        f.get("rule_name"),
-                        f.get("severity"),
-                        f.get("category"),
-                        f.get("resource_id"),
-                        f.get("resource_name"),
-                        f.get("resource_type"),
-                        f.get("description"),
-                        f.get("remediation"),
-                        f.get("playbook"),
-                        json.dumps(f.get("frameworks", {})),
-                        json.dumps(f.get("metadata", {})),
-                        json.dumps(f.get("cve_references", [])),
-                        f.get("cvss_score"),
-                        f.get("exploit_available", False),
-                        f.get("detected_at"),
+                        scan_result["scan_id"],
+                        scan_result["subscription_id"],
+                        scan_result["started_at"],
+                        completed_at,
+                        len(findings),
+                        score_findings(findings),
+                        scan_result.get("cve_enrichment_status", "PENDING"),
+                        scan_result.get("status", "completed"),
+                        scan_result.get("attempt_count", 0),
+                        scan_result.get("error_message"),
+                        CONTRACT_VERSION,
                     ),
                 )
-        conn.commit()
+                # A worker retry replaces the previous result atomically. This
+                # keeps the scan header, child rows, and recomputed score in
+                # agreement instead of duplicating findings on every attempt.
+                cur.execute("DELETE FROM findings WHERE scan_id = %s", (scan_result["scan_id"],))
+                for f in findings:
+                    cur.execute(
+                        """
+                        INSERT INTO findings
+                            (scan_id, rule_id, rule_name, severity, category,
+                             resource_id, resource_name, resource_type,
+                             description, remediation, playbook,
+                             frameworks, metadata, cve_references,
+                             cvss_score, exploit_available, detected_at)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        """,
+                        (
+                            # The parent scan owns every child in this batch.
+                            # Never trust a caller-supplied child scan_id.
+                            scan_result["scan_id"],
+                            f.get("rule_id"),
+                            f.get("rule_name"),
+                            f.get("severity"),
+                            f.get("category"),
+                            f.get("resource_id"),
+                            f.get("resource_name"),
+                            f.get("resource_type"),
+                            f.get("description"),
+                            f.get("remediation"),
+                            f.get("playbook"),
+                            json.dumps(f.get("frameworks", {})),
+                            json.dumps(f.get("metadata", {})),
+                            json.dumps(f.get("cve_references", [])),
+                            f.get("cvss_score"),
+                            f.get("exploit_available", False),
+                            f.get("detected_at"),
+                        ),
+                    )
+            conn.commit()
+        except Exception:
+            # psycopg2 connections remain in an aborted transaction after any
+            # SQL error. Roll back here so the worker can record failure and
+            # safely process subsequent scans on the same pooled connection.
+            conn.rollback()
+            raise
         logger.info(
             "Saved scan %s with %d findings",
             scan_result["scan_id"],

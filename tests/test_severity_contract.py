@@ -148,7 +148,8 @@ def test_persistence_canonicalizes_alias_and_records_contract_version():
     conn = MagicMock()
     conn.cursor.return_value = cursor
     raw_finding = {
-        "scan_id": "00000000-0000-0000-0000-000000000000",
+        # A stale/caller-supplied child ID must never cross-attach a finding.
+        "scan_id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
         "rule_id": "AZ-TEST-001",
         "rule_name": "Test finding",
         "severity": "INFORMATIONAL",
@@ -174,13 +175,38 @@ def test_persistence_canonicalizes_alias_and_records_contract_version():
         db.save_scan(result)
 
     scan_parameters = cursor.execute.call_args_list[0].args[1]
-    finding_parameters = cursor.execute.call_args_list[1].args[1]
+    delete_parameters = cursor.execute.call_args_list[1].args[1]
+    finding_parameters = cursor.execute.call_args_list[2].args[1]
     assert scan_parameters[4] == 1
     assert scan_parameters[5] == 100
     assert scan_parameters[10] == CONTRACT_VERSION
+    assert delete_parameters == (result["scan_id"],)
+    assert finding_parameters[0] == result["scan_id"]
     assert finding_parameters[3] == "INFO"
     assert raw_finding["severity"] == "INFORMATIONAL"
     conn.commit.assert_called_once_with()
+    conn.rollback.assert_not_called()
+
+
+def test_persistence_rolls_back_a_failed_atomic_replacement():
+    db = _db()
+    cursor = _cursor()
+    cursor.execute.side_effect = [None, None, RuntimeError("insert failed")]
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    result = {
+        "scan_id": "00000000-0000-0000-0000-000000000000",
+        "subscription_id": "00000000-0000-0000-0000-000000000001",
+        "started_at": "2026-08-21T00:00:00+00:00",
+        "findings": [{"rule_id": "AZ-TEST-001", "severity": "HIGH"}],
+    }
+
+    with patch.object(db, "_get_conn", return_value=conn):
+        with pytest.raises(RuntimeError, match="insert failed"):
+            db.save_scan(result)
+
+    conn.rollback.assert_called_once_with()
+    conn.commit.assert_not_called()
 
 
 def test_v1_migration_freezes_the_same_ids_and_weights_as_the_contract():
