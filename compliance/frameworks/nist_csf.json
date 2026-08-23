@@ -433,6 +433,56 @@
       "control_name": "Network integrity is protected",
       "description": "An explicit default Internet UDR can bypass the approved inspected egress path."
     },
+    "AZ-NET-018": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Disabling unnecessary public access ensures the Private Endpoint is the managed remote access path."
+    },
+    "AZ-NET-019": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Approved Private Endpoint connections preserve the intended private network boundary."
+    },
+    "AZ-NET-020": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Private DNS zone association directs service names through the intended private endpoint path."
+    },
+    "AZ-NET-021": {
+      "control_id": "PR.AC-5",
+      "control_name": "Network integrity is protected",
+      "description": "Private Endpoint ARM DNS configuration associates service names with private addresses; effective resolver-path validation remains separate evidence."
+    },
+    "AZ-NET-022": {
+      "control_id": "PR.AC-3",
+      "control_name": "Remote access is managed",
+      "description": "Critical PaaS public access is disabled unless an explicit approved exception exists."
+    },
+    "AZ-NET-023": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored",
+      "description": "Azure Firewall threat intelligence alerts on and denies traffic involving known malicious infrastructure."
+    },
+    "AZ-NET-024": {
+      "control_id": "PR.PT-4",
+      "control_name": "Communications and control networks are protected",
+      "description": "Application Gateway WAF Prevention mode actively blocks matching application attacks."
+    },
+    "AZ-NET-025": {
+      "control_id": "DE.CM-1",
+      "control_name": "The network is monitored",
+      "description": "Application Gateway SKU-supported diagnostic logs provide perimeter monitoring evidence; v2 performance telemetry is supplied through metrics."
+    },
+    "AZ-NET-026": {
+      "control_id": "PR.PT-4",
+      "control_name": "Communications and control networks are protected",
+      "description": "Current base and bot managed rules protect the web application perimeter."
+    },
+    "AZ-NET-027": {
+      "control_id": "PR.PT-4",
+      "control_name": "Communications and control networks are protected",
+      "description": "Rate-limit rules protect internet-facing applications from abusive request volume."
+    },
     "AZ-SECOPS-001": {
       "control_id": "PR.PT-1",
       "control_name": "Audit/log records are determined, documented, implemented, and reviewed in accordance with policy",

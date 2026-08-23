@@ -433,6 +433,56 @@
       "control_name": "Network controls",
       "description": "Default routes must preserve the approved controlled egress boundary."
     },
+    "AZ-NET-018": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "PaaS resources using Private Link should not retain unnecessary public network exposure."
+    },
+    "AZ-NET-019": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Private Endpoint connections must be approved and operational."
+    },
+    "AZ-NET-020": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Private Endpoints require an associated service-appropriate Private DNS zone."
+    },
+    "AZ-NET-021": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Private Endpoint ARM DNS configuration must associate service names with private addresses; effective resolver-path validation remains separate evidence."
+    },
+    "AZ-NET-022": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Critical PaaS resources restrict public exposure unless an approved exception exists."
+    },
+    "AZ-NET-023": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Azure Firewall denies traffic identified by Microsoft threat intelligence."
+    },
+    "AZ-NET-024": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Application Gateway WAF operates in Prevention mode at the application boundary."
+    },
+    "AZ-NET-025": {
+      "control_id": "A.12.4.1",
+      "control_name": "Event logging",
+      "description": "Application Gateway WAF diagnostic categories supported by its SKU are exported to an approved monitoring destination."
+    },
+    "AZ-NET-026": {
+      "control_id": "A.14.2.5",
+      "control_name": "Secure system engineering principles",
+      "description": "Current managed application and bot rules are maintained at the web perimeter."
+    },
+    "AZ-NET-027": {
+      "control_id": "A.13.1.1",
+      "control_name": "Network controls",
+      "description": "Rate limiting protects internet-facing application entry points."
+    },
     "AZ-SECOPS-001": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",

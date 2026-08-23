@@ -975,9 +975,9 @@
     },
     {
       "id": "AZ-NET-021",
-      "name": "Private Endpoint FQDN without private address evidence",
+      "name": "Private Endpoint DNS configuration reports only public addresses",
       "osi_classification": "Layer 7",
-      "classification_basis": "DNS is an application-layer naming protocol; this rule evaluates its FQDN result rather than packet routing.",
+      "classification_basis": "DNS is an application-layer naming protocol; this rule evaluates ARM custom DNS configuration and does not claim effective resolver-path evidence.",
       "layer_3_domain_ids": []
     },
     {
@@ -1010,7 +1010,7 @@
       "id": "AZ-NET-025",
       "name": "Application Gateway WAF diagnostic logging incomplete",
       "osi_classification": "Layer 7",
-      "classification_basis": "The control evaluates access, performance, and firewall logging for the HTTP application gateway.",
+      "classification_basis": "The control evaluates the diagnostic log categories supported by the Application Gateway SKU; v2 performance telemetry is metric-based.",
       "layer_3_domain_ids": []
     },
     {

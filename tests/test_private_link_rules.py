@@ -76,11 +76,18 @@ def test_net_021_unknown_or_malformed_dns_evidence_does_not_flag(configs):
     assert az_net_021.scan(FakeAzure([_item(dns_configs=configs)]), "sub") == []
 
 
-def test_net_021_flags_only_public_resolution():
+def test_net_021_flags_only_public_custom_dns_configuration():
     configs = [{"fqdn": "store1.blob.core.windows.net", "ip_addresses": ["20.1.2.3"]}]
     findings = az_net_021.scan(FakeAzure([_item(dns_configs=configs)]), "sub")
     assert len(findings) == 1
-    assert findings[0]["metadata"]["observed"]["non_private_dns_results"] == configs
+    assert findings[0]["metadata"]["observed"]["non_private_custom_dns_configs"] == configs
+
+
+def test_net_021_does_not_claim_effective_resolution_from_private_configuration():
+    # ARM customDnsConfigs describe the endpoint's expected records. A broken
+    # resolver path is outside this configuration-only rule's evidence scope.
+    item = _item(effective_dns_results=["20.1.2.3"])
+    assert az_net_021.scan(FakeAzure([item]), "sub") == []
 
 
 def test_private_link_collector_preserves_zone_group_failure(monkeypatch):

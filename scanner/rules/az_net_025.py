@@ -12,11 +12,13 @@ SEVERITY = "MEDIUM"
 CATEGORY = "Network"
 FRAMEWORKS = {"CIS": "N/A-NET-025", "NIST": "DE.CM-1", "ISO27001": "A.12.4.1", "SOC2": "CC7.2"}
 DESCRIPTION = (
-    "An Application Gateway WAF lacks a diagnostic setting with access, performance, and firewall logs enabled."
+    "An Application Gateway WAF lacks a diagnostic setting with every log category supported by its SKU enabled. "
+    "WAF v1 requires access, performance, and firewall logs; WAF_v2 requires access and firewall logs, with "
+    "performance telemetry provided through Azure Monitor metrics."
 )
 REMEDIATION = (
-    "Create an Azure Monitor diagnostic setting that exports all three Application Gateway "
-    "log categories to an approved destination."
+    "Create an Azure Monitor diagnostic setting that exports all log categories supported by the Application "
+    "Gateway SKU to an approved destination, and retain Azure Monitor metrics for v2 performance telemetry."
 )
 PLAYBOOK = "playbooks/cli/fix_az_net_025.sh"
 logger = logging.getLogger(__name__)
@@ -33,7 +35,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if not waf_enabled(gateway):
             continue
         resource_id = getattr(gateway, "id", "") or ""
-        enabled = azure_client.get_waf_diagnostic_logging(resource_id)
+        sku_name = getattr(getattr(gateway, "sku", None), "name", "") or ""
+        enabled = azure_client.get_waf_diagnostic_logging(resource_id, sku_name)
         if enabled is None:
             logger.warning("%s UNKNOWN for %s: diagnostic settings unavailable", RULE_ID, getattr(gateway, "name", ""))
             continue
@@ -54,8 +57,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "frameworks": FRAMEWORKS,
                 "metadata": metadata(
                     resource_id=resource_id,
-                    observed={"required_waf_log_categories": "Incomplete"},
-                    expected={"required_waf_log_categories": "Enabled"},
+                    observed={"required_waf_log_categories": "Incomplete", "sku": sku_name},
+                    expected={"sku_supported_waf_log_categories": "Enabled"},
                     source="Azure Monitor diagnostic settings",
                     timestamp=timestamp,
                     permissions=["Microsoft.Insights/diagnosticSettings/read"],

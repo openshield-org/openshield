@@ -1,4 +1,4 @@
-"""AZ-NET-021: Private Endpoint FQDN has no private address evidence."""
+"""AZ-NET-021: Private Endpoint ARM DNS configuration reports only public addresses."""
 
 import logging
 from typing import Any, Dict, List
@@ -6,14 +6,18 @@ from typing import Any, Dict, List
 from scanner.rules._private_link_common import evidence, private_address
 
 RULE_ID = "AZ-NET-021"
-RULE_NAME = "Private Endpoint FQDN Does Not Resolve to a Private Address"
+RULE_NAME = "Private Endpoint DNS Configuration Reports Only Public Addresses"
 SEVERITY = "HIGH"
 CATEGORY = "Network"
 FRAMEWORKS = {"CIS": "N/A-NET-021", "NIST": "PR.AC-5", "ISO27001": "A.13.1.1", "SOC2": "CC6.6"}
-DESCRIPTION = "Azure's Private Endpoint DNS configuration reports an FQDN with only public address results."
+DESCRIPTION = (
+    "Azure's Private Endpoint custom DNS configuration reports an FQDN with only public IP addresses. "
+    "This control validates ARM configuration evidence; it does not test effective DNS resolution from a VNet "
+    "workload or an on-premises resolver."
+)
 REMEDIATION = (
-    "Correct the Private DNS zone records and VNet links so the endpoint FQDN "
-    "resolves to its allocated private IP address."
+    "Correct the Private Endpoint DNS configuration so its FQDN is associated with the allocated private IP, "
+    "then separately validate effective resolution from every relevant VNet and on-premises resolver path."
 )
 PLAYBOOK = "playbooks/cli/fix_az_net_021.sh"
 logger = logging.getLogger(__name__)
@@ -29,7 +33,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         configs = item.get("dns_configs")
         if not configs:
             logger.warning(
-                "%s UNKNOWN for %s: FQDN resolution evidence unavailable", RULE_ID, item.get("endpoint_name")
+                "%s UNKNOWN for %s: custom DNS configuration unavailable", RULE_ID, item.get("endpoint_name")
             )
             continue
         bad = []
@@ -57,7 +61,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "remediation": REMEDIATION,
                 "playbook": PLAYBOOK,
                 "frameworks": FRAMEWORKS,
-                "metadata": evidence(item, {"non_private_dns_results": bad}, {"fqdn_result": "Private IP address"}),
+                "metadata": evidence(
+                    item,
+                    {"non_private_custom_dns_configs": bad},
+                    {"custom_dns_config": "FQDN associated with a private IP address"},
+                ),
             }
         )
     return findings

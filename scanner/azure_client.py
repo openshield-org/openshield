@@ -531,13 +531,17 @@ class AzureClient:
             self._waf_policies_cache = None
         return self._waf_policies_cache
 
-    def get_waf_diagnostic_logging(self, resource_id: str) -> Optional[bool]:
-        """Return whether all required Application Gateway log categories are enabled."""
-        required = {
-            "ApplicationGatewayAccessLog",
-            "ApplicationGatewayPerformanceLog",
-            "ApplicationGatewayFirewallLog",
-        }
+    def get_waf_diagnostic_logging(self, resource_id: str, sku_name: str) -> Optional[bool]:
+        """Return whether the SKU-supported Application Gateway log categories are enabled."""
+        normalized_sku = (sku_name or "").strip().lower()
+        if not normalized_sku:
+            logger.warning("Application Gateway SKU unavailable for %s", resource_id)
+            return None
+        required = {"ApplicationGatewayAccessLog", "ApplicationGatewayFirewallLog"}
+        # ApplicationGatewayPerformanceLog is exposed by v1 only. v2 publishes
+        # performance telemetry through Azure Monitor metrics instead.
+        if not normalized_sku.endswith("_v2"):
+            required.add("ApplicationGatewayPerformanceLog")
         try:
             client = MonitorManagementClient(self.credential, self.subscription_id)
             settings = list(client.diagnostic_settings.list(resource_id))

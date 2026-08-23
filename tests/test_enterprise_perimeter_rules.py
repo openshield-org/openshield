@@ -24,7 +24,7 @@ _POLICY_ID = (
 )
 
 
-def gateway(*, public=True, mode="Prevention", policy=True, enabled=True):
+def gateway(*, public=True, mode="Prevention", policy=True, enabled=True, sku="WAF_v2"):
     return ns(
         id=_GATEWAY_ID,
         name="appgw",
@@ -33,6 +33,7 @@ def gateway(*, public=True, mode="Prevention", policy=True, enabled=True):
         ),
         firewall_policy=ns(id=_POLICY_ID) if policy else None,
         frontend_ip_configurations=[ns(public_ip_address=ns(id="/publicIps/pip"))] if public else [],
+        sku=ns(name=sku),
     )
 
 
@@ -71,7 +72,7 @@ class FakeAzure:
     def get_waf_policies(self):
         return self.policies
 
-    def get_waf_diagnostic_logging(self, resource_id):
+    def get_waf_diagnostic_logging(self, resource_id, sku_name):
         return self.diagnostics
 
 
@@ -168,18 +169,30 @@ def test_net_027_public_gateway_requires_enabled_rate_limit():
     assert az_net_027.scan(FakeAzure(gateways=[gateway(public=False)], policies=[policy(rate=False)]), "sub") == []
 
 
-def test_diagnostic_collector_requires_all_categories(monkeypatch):
+def test_diagnostic_collector_requires_v1_performance_category(monkeypatch):
     logs = [
         ns(category="ApplicationGatewayAccessLog", enabled=True),
-        ns(category="ApplicationGatewayPerformanceLog", enabled=True),
         ns(category="ApplicationGatewayFirewallLog", enabled=True),
     ]
     monitor = ns(diagnostic_settings=ns(list=lambda _: [ns(logs=logs)]))
     monkeypatch.setattr("scanner.azure_client.MonitorManagementClient", lambda *_: monitor)
     client = AzureClient("sub", credential=object())
-    assert client.get_waf_diagnostic_logging(_GATEWAY_ID) is True
+    assert client.get_waf_diagnostic_logging(_GATEWAY_ID, "WAF_Medium") is False
+    logs.append(ns(category="ApplicationGatewayPerformanceLog", enabled=True))
+    assert client.get_waf_diagnostic_logging(_GATEWAY_ID, "WAF_Medium") is True
+
+
+def test_diagnostic_collector_accepts_wafv2_without_performance_log(monkeypatch):
+    logs = [
+        ns(category="ApplicationGatewayAccessLog", enabled=True),
+        ns(category="ApplicationGatewayFirewallLog", enabled=True),
+    ]
+    monitor = ns(diagnostic_settings=ns(list=lambda _: [ns(logs=logs)]))
+    monkeypatch.setattr("scanner.azure_client.MonitorManagementClient", lambda *_: monitor)
+    client = AzureClient("sub", credential=object())
+    assert client.get_waf_diagnostic_logging(_GATEWAY_ID, "WAF_v2") is True
     logs.pop()
-    assert client.get_waf_diagnostic_logging(_GATEWAY_ID) is False
+    assert client.get_waf_diagnostic_logging(_GATEWAY_ID, "WAF_v2") is False
 
 
 def test_critical_paas_collector_preserves_independent_service_failure(monkeypatch):

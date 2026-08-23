@@ -50,7 +50,7 @@ OpenShield currently ships 90 Azure scan rules. This table is generated from the
 | AZ-NET-018 | Private Endpoint Target Retains Public Network Access | HIGH | Network | N/A-NET-018 | PR.AC-3 | A.13.1.1 |
 | AZ-NET-019 | Private Endpoint Connection Is Not Approved | HIGH | Network | N/A-NET-019 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-020 | Private Endpoint Lacks Private DNS Zone Association | HIGH | Network | N/A-NET-020 | PR.AC-5 | A.13.1.1 |
-| AZ-NET-021 | Private Endpoint FQDN Does Not Resolve to a Private Address | HIGH | Network | N/A-NET-021 | PR.AC-5 | A.13.1.1 |
+| AZ-NET-021 | Private Endpoint DNS Configuration Reports Only Public Addresses | HIGH | Network | N/A-NET-021 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-022 | Critical PaaS Resource Is Publicly Accessible Without Approved Exception | HIGH | Network | N/A-NET-022 | PR.AC-3 | A.13.1.1 |
 | AZ-NET-023 | Azure Firewall Threat Intelligence Is Not Alert and Deny | HIGH | Network | N/A-NET-023 | DE.CM-1 | A.13.1.1 |
 | AZ-NET-024 | Application Gateway WAF Is Not in Prevention Mode | HIGH | Network | N/A-NET-024 | PR.PT-4 | A.13.1.1 |
