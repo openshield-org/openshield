@@ -22,7 +22,11 @@ def test_chromadb_not_in_core_requirements():
 
 
 def test_chroma_default_embedding_uses_onnx_runtime():
-    pytest.importorskip("chromadb", exc_type=ImportError, reason="chromadb not installed (optional RAG dependency); skipping")
+    pytest.importorskip(
+        "chromadb",
+        exc_type=ImportError,
+        reason="chromadb not installed (optional RAG dependency); skipping",
+    )
     from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
     embedding_function = DefaultEmbeddingFunction()
