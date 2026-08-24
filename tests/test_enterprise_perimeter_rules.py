@@ -137,6 +137,8 @@ def test_net_023_accepts_real_deny_mode_and_preserves_unknown():
     assert az_net_023.scan(FakeAzure(firewalls=[firewall]), "sub") == []
     firewall.threat_intel_mode = None
     assert az_net_023.scan(FakeAzure(firewalls=[firewall]), "sub") == []
+    firewall.threat_intel_mode = "FutureMode"
+    assert az_net_023.scan(FakeAzure(firewalls=[firewall]), "sub") == []
     assert az_net_023.scan(FakeAzure(firewalls=None), "sub") == []
 
 
@@ -174,12 +176,25 @@ def test_net_027_public_gateway_requires_enabled_rate_limit():
     gw = gateway(public=True)
     assert az_net_027.scan(FakeAzure(gateways=[gw], policies=[policy(rate=True)]), "sub") == []
     assert len(az_net_027.scan(FakeAzure(gateways=[gw], policies=[policy(rate=False)]), "sub")) == 1
+    disabled_policy = policy(rate=False)
+    disabled_policy.custom_rules = [ns(rule_type="RateLimitRule", state="Disabled")]
+    assert len(az_net_027.scan(FakeAzure(gateways=[gw], policies=[disabled_policy]), "sub")) == 1
     assert az_net_027.scan(FakeAzure(gateways=[gateway(public=False)], policies=[policy(rate=False)]), "sub") == []
 
 
 def test_net_027_ignores_public_gateway_without_waf():
     gw = gateway(public=True, policy=False, enabled=False)
     assert az_net_027.scan(FakeAzure(gateways=[gw], policies=[]), "sub") == []
+
+
+@pytest.mark.parametrize("state", [None, "FutureState"])
+def test_net_027_preserves_unknown_rate_limit_state(state):
+    rate_rule = ns(rule_type="RateLimitRule")
+    if state is not None:
+        rate_rule.state = state
+    waf_policy = policy(rate=False)
+    waf_policy.custom_rules = [rate_rule]
+    assert az_net_027.scan(FakeAzure(gateways=[gateway()], policies=[waf_policy]), "sub") == []
 
 
 def test_diagnostic_collector_requires_v1_performance_category(monkeypatch):

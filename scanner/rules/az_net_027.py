@@ -41,13 +41,19 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         policy_id = getattr(getattr(gateway, "firewall_policy", None), "id", "") or ""
         policy = indexed.get(policy_id.lower())
         rules = getattr(policy, "custom_rules", None) if policy else []
-        rate_rules = [
-            rule
-            for rule in (rules or [])
-            if str(getattr(rule, "rule_type", "")).lower() == "ratelimitrule"
-            and str(getattr(rule, "state", "Enabled")).lower() == "enabled"
-        ]
-        if rate_rules:
+        rate_rules = [rule for rule in (rules or []) if str(getattr(rule, "rule_type", "")).lower() == "ratelimitrule"]
+        states = [getattr(rule, "state", None) for rule in rate_rules]
+        normalized_states = [str(getattr(state, "value", state)).lower() for state in states if state is not None]
+        if "enabled" in normalized_states:
+            continue
+        if rate_rules and (
+            len(normalized_states) != len(states) or any(state != "disabled" for state in normalized_states)
+        ):
+            logger.warning(
+                "%s UNKNOWN for %s: rate-limit rule state missing or unrecognized",
+                RULE_ID,
+                getattr(gateway, "name", ""),
+            )
             continue
         resource_id = getattr(gateway, "id", "") or ""
         findings.append(

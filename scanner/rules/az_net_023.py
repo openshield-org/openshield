@@ -36,6 +36,14 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         normalized = str(getattr(mode, "value", mode)).lower()
         if normalized == "deny":
             continue
+        if normalized not in {"alert", "off"}:
+            logger.warning(
+                "%s UNKNOWN for %s: unrecognized threat intelligence mode %r",
+                RULE_ID,
+                getattr(firewall, "name", ""),
+                mode,
+            )
+            continue
         resource_id = getattr(firewall, "id", "") or ""
         findings.append(
             {
