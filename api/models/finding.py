@@ -537,29 +537,45 @@ class DatabaseManager:
     # Scoring                                                               #
     # ------------------------------------------------------------------ #
 
-    def get_score(self) -> int:
+    def get_score(self) -> Dict[str, Any]:
         """Return a 0-100 security posture score based on the latest scan's findings.
 
         Scoped to the most recent scan so historical findings from older scans
         do not accumulate and drive the score to zero.
         CRITICAL findings deduct 20 points each, HIGH 10, MEDIUM 5,
-        LOW 2, and INFO 0. Floors at 0.
+        LOW 2, and INFO 0 (openshield.severity.score_counts). Floors at 0.
+
+        The scan-existence check is a separate query from the findings lookup:
+        folding both into one `scan_id = (SELECT ...)` subquery (the previous
+        approach) cannot distinguish "no completed scan exists" from "the
+        latest completed scan found nothing" - both yield zero rows, so the
+        former was silently reported as a perfect 100 score with no actual
+        evidence behind it, the same NO_SCAN_DATA gap fixed in
+        get_compliance_score().
+
+        Returns:
+            {"status": "NO_SCAN_DATA", "score": None, "message": ...} when no
+            completed scan exists yet, or {"status": "OK", "score": <0-100>}
+            once one has.
         """
         conn = self._get_conn()
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT severity, COUNT(*)
-                FROM findings
-                WHERE scan_id = (
-                    SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1
-                )
-                GROUP BY severity
-                """
-            )
+            cur.execute("SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1")
+            latest_scan = cur.fetchone()
+
+            if latest_scan is None:
+                return {
+                    "status": "NO_SCAN_DATA",
+                    "score": None,
+                    "message": ("No completed scan is available yet, so there is no security posture to score."),
+                }
+
+            scan_id = latest_scan[0]
+            cur.execute("SELECT severity, COUNT(*) FROM findings WHERE scan_id = %s GROUP BY severity", (scan_id,))
             rows = cur.fetchall()
 
-        return score_counts({severity: count for severity, count in rows})
+        score = score_counts({severity: count for severity, count in rows})
+        return {"status": "OK", "score": score}
 
     def get_cve_summary(self) -> Dict[str, Any]:
         """Return high-level summary of CVE findings for the dashboard."""
