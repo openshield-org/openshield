@@ -30,6 +30,12 @@ def test_normalise_rejects_non_object_and_invalid_severity():
         normalise({"severity": "urgent"}, "scan-1")
 
 
+@pytest.mark.parametrize("finding", ({}, {"severity": None}, {"severity": ""}))
+def test_normalise_rejects_missing_or_empty_severity(finding):
+    with pytest.raises(ValidationError, match="severity is required"):
+        normalise(finding, "scan-1")
+
+
 def test_normalise_accepts_bounded_finding():
     record = normalise(
         {"id": 1, "severity": "HIGH", "rule_id": "AZ-NET-001", "compliance": {"cis": "1.1"}},

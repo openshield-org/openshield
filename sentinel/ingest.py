@@ -72,7 +72,9 @@ def normalise(raw, scan_id):
     if not isinstance(raw, dict):
         raise ValidationError("each Sentinel finding must be an object")
     scan_id = bounded_string(scan_id, "scan_id", maximum=128, pattern=re.compile(r"^[A-Za-z0-9._:-]+$"))
-    raw_severity = _safe_text(raw.get("severity", "MEDIUM"), "severity", maximum=16)
+    if raw.get("severity") in (None, ""):
+        raise ValidationError("severity is required for every Sentinel finding")
+    raw_severity = _safe_text(raw["severity"], "severity", maximum=16)
     try:
         sev = normalize_severity(raw_severity)
     except SeverityContractError as exc:
