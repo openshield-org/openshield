@@ -15,7 +15,7 @@ FRAMEWORKS = {
 }
 DESCRIPTION = (
     "A virtual machine has management ports (SSH 22 / RDP 3389) allowed inbound "
-    "from the internet by its network security group, and no Microsoft Defender "
+    "from the internet by a network security group (on the NIC or its subnet), and no Microsoft Defender "
     "for Cloud Just-In-Time (JIT) VM access policy covers those ports. The ports "
     "are therefore open on a standing basis instead of only during an approved, "
     "time-boxed request, leaving them continuously exposed to scanning and "
@@ -37,6 +37,30 @@ _MANAGEMENT_PORTS = ("22", "3389")
 _OPEN_SOURCES = {"*", "0.0.0.0/0", "Internet", "Any"}
 
 
+def _spec_covers_port(spec: str, port: int) -> bool:
+    """True if an NSG destination-port spec covers ``port``.
+
+    A spec is ``*`` (all ports), a single number (``22``), or an inclusive range
+    (``20-30``). Ranges are the case the earlier exact-match logic missed: a rule
+    with ``destination_port_range = "20-30"`` exposes SSH but read as closed.
+    """
+    spec = spec.strip()
+    if not spec:
+        return False
+    if spec == "*":
+        return True
+    if "-" in spec:
+        low, _, high = spec.partition("-")
+        try:
+            return int(low) <= port <= int(high)
+        except ValueError:
+            return False
+    try:
+        return int(spec) == port
+    except ValueError:
+        return False
+
+
 def _rule_allows_port_from_any(rule: Any, port: str) -> bool:
     """True if an NSG security rule allows inbound traffic on ``port`` from any source."""
     if str(getattr(rule, "direction", "")).lower() != "inbound":
@@ -49,9 +73,10 @@ def _rule_allows_port_from_any(rule: Any, port: str) -> bool:
     if source not in _OPEN_SOURCES and not any(s in _OPEN_SOURCES for s in source_prefixes):
         return False
 
-    dest_range = str(getattr(rule, "destination_port_range", "") or "")
-    dest_ranges = [str(r) for r in (getattr(rule, "destination_port_ranges", []) or [])]
-    return dest_range in (port, "*") or port in dest_ranges or "*" in dest_ranges
+    port_int = int(port)
+    dest_specs = [str(getattr(rule, "destination_port_range", "") or "")]
+    dest_specs.extend(str(item) for item in (getattr(rule, "destination_port_ranges", []) or []))
+    return any(_spec_covers_port(spec, port_int) for spec in dest_specs)
 
 
 def _jit_coverage(policies: List[Any]) -> Dict[str, set]:
@@ -72,12 +97,31 @@ def _jit_coverage(policies: List[Any]) -> Dict[str, set]:
     return coverage
 
 
-def _open_management_ports(azure_client: Any, vm: Any, nsg_by_id: Dict[str, Any]) -> set:
-    """Return the set of management ports open to the internet on this VM's NIC NSGs."""
-    open_ports: set = set()
+def _applicable_nsgs(
+    azure_client: Any,
+    vm: Any,
+    nsg_by_id: Dict[str, Any],
+    nsg_by_subnet_id: Dict[str, Any],
+) -> List[Any]:
+    """Every NSG that governs this VM's inbound traffic — NIC-level *and* subnet-level.
+
+    An NSG can be attached directly to the NIC or to the NIC's subnet. A VM with
+    no NIC-level NSG can still be exposed through its subnet NSG, so both paths
+    must be considered or the rule reports a false NOT_APPLICABLE.
+    """
+    nsgs: List[Any] = []
+    seen: set = set()
     network_profile = getattr(vm, "network_profile", None)
     if not network_profile:
-        return open_ports
+        return nsgs
+
+    def _add(nsg: Any) -> None:
+        if nsg is None:
+            return
+        key = (getattr(nsg, "id", "") or "").lower() or id(nsg)
+        if key not in seen:
+            seen.add(key)
+            nsgs.append(nsg)
 
     for nic_ref in getattr(network_profile, "network_interfaces", []) or []:
         parsed = azure_client.parse_resource_id(getattr(nic_ref, "id", ""))
@@ -88,10 +132,23 @@ def _open_management_ports(azure_client: Any, vm: Any, nsg_by_id: Dict[str, Any]
         nic = azure_client.get_network_interface(resource_group, nic_name)
         if not nic:
             continue
-        nsg_ref = getattr(nic, "network_security_group", None)
-        nsg = nsg_by_id.get((getattr(nsg_ref, "id", "") or "").lower())
-        if not nsg:
-            continue
+        nic_nsg_ref = getattr(nic, "network_security_group", None)
+        _add(nsg_by_id.get((getattr(nic_nsg_ref, "id", "") or "").lower()))
+        for ip_config in getattr(nic, "ip_configurations", []) or []:
+            subnet = getattr(ip_config, "subnet", None)
+            _add(nsg_by_subnet_id.get((getattr(subnet, "id", "") or "").lower()))
+    return nsgs
+
+
+def _open_management_ports(
+    azure_client: Any,
+    vm: Any,
+    nsg_by_id: Dict[str, Any],
+    nsg_by_subnet_id: Dict[str, Any],
+) -> set:
+    """Return the management ports open to the internet on any NSG that governs the VM."""
+    open_ports: set = set()
+    for nsg in _applicable_nsgs(azure_client, vm, nsg_by_id, nsg_by_subnet_id):
         for security_rule in getattr(nsg, "security_rules", []) or []:
             for port in _MANAGEMENT_PORTS:
                 if _rule_allows_port_from_any(security_rule, port):
@@ -116,12 +173,17 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         return findings
 
     coverage = _jit_coverage(policies)
-    nsg_by_id = {
-        (getattr(nsg, "id", "") or "").lower(): nsg for nsg in (azure_client.get_network_security_groups() or [])
-    }
+    all_nsgs = azure_client.get_network_security_groups() or []
+    nsg_by_id = {(getattr(nsg, "id", "") or "").lower(): nsg for nsg in all_nsgs}
+    nsg_by_subnet_id: Dict[str, Any] = {}
+    for nsg in all_nsgs:
+        for subnet in getattr(nsg, "subnets", []) or []:
+            subnet_id = (getattr(subnet, "id", "") or "").lower()
+            if subnet_id:
+                nsg_by_subnet_id[subnet_id] = nsg
 
     for vm in azure_client.get_virtual_machines():
-        open_ports = _open_management_ports(azure_client, vm, nsg_by_id)
+        open_ports = _open_management_ports(azure_client, vm, nsg_by_id, nsg_by_subnet_id)
         if not open_ports:
             continue  # NOT_APPLICABLE: no management ports exposed
 

@@ -524,3 +524,66 @@ def test_cmp_007_indeterminate_jit_is_not_flagged(mock_azure, subscription_id):
         None,
     )
     assert az_cmp_007.scan(mock_azure, subscription_id) == []
+
+
+def _subnet_id(name):
+    return f"/subscriptions/{_SUB}/resourceGroups/{_RG}/providers/Microsoft.Network/virtualNetworks/vnet/subnets/{name}"
+
+
+def test_cmp_007_port_range_covering_ssh_is_flagged(mock_azure, subscription_id):
+    """An NSG rule whose destination_port_range is a range (20-30) containing SSH (22)
+    exposes the port; the earlier exact-match logic treated 22 as closed."""
+    _wire(
+        mock_azure,
+        _vm_on_nic("vm-range", "nic1"),
+        "nic1",
+        _nic_on_nsg("nsg1"),
+        _nsg("nsg1", [_sec_rule("20-30")]),
+        [],
+    )
+    findings = az_cmp_007.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["open_management_ports"] == ["22"]
+
+
+def test_cmp_007_port_range_in_ranges_list_covering_rdp(mock_azure, subscription_id):
+    """A range in destination_port_ranges (3380-3400) containing RDP (3389) is detected."""
+    rule = make_resource(
+        direction="Inbound",
+        access="Allow",
+        source_address_prefix="Internet",
+        source_address_prefixes=[],
+        destination_port_range="",
+        destination_port_ranges=["3380-3400"],
+    )
+    _wire(
+        mock_azure,
+        _vm_on_nic("vm-range2", "nic1"),
+        "nic1",
+        _nic_on_nsg("nsg1"),
+        _nsg("nsg1", [rule]),
+        [],
+    )
+    findings = az_cmp_007.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["open_management_ports"] == ["3389"]
+
+
+def test_cmp_007_subnet_level_nsg_exposure_is_flagged(mock_azure, subscription_id):
+    """A VM with no NIC-level NSG is still exposed if the NSG on its subnet opens SSH."""
+    subnet_id = _subnet_id("subnet1")
+    nic = make_resource(
+        network_security_group=None,
+        ip_configurations=[make_resource(subnet=make_resource(id=subnet_id))],
+    )
+    subnet_nsg = make_resource(
+        id=_nsg_id("nsg-sub"),
+        name="nsg-sub",
+        security_rules=[_sec_rule("22")],
+        subnets=[make_resource(id=subnet_id)],
+    )
+    _wire(mock_azure, _vm_on_nic("vm-subnet", "nic1"), "nic1", nic, subnet_nsg, [])
+    findings = az_cmp_007.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["resource_name"] == "vm-subnet"
+    assert findings[0]["metadata"]["open_management_ports"] == ["22"]
