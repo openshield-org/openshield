@@ -401,7 +401,7 @@
     "AZ-NET-023": {
       "control_id": "N/A-NET-023",
       "control_name": "Azure Firewall threat intelligence enforcement baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "AlertAndDeny blocks traffic involving known malicious addresses and domains; CIS Azure Foundations 2.0.0 has no direct recommendation for this mode."
+      "description": "Deny mode blocks traffic involving known malicious addresses and domains; CIS Azure Foundations 2.0.0 has no direct recommendation for this mode."
     },
     "AZ-NET-024": {
       "control_id": "N/A-NET-024",

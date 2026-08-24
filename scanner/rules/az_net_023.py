@@ -1,4 +1,4 @@
-"""AZ-NET-023: Azure Firewall threat intelligence is not AlertAndDeny."""
+"""AZ-NET-023: Azure Firewall threat intelligence is not in Deny mode."""
 
 import logging
 from datetime import datetime, timezone
@@ -7,16 +7,14 @@ from typing import Any, Dict, List
 from scanner.rules._perimeter_common import metadata
 
 RULE_ID = "AZ-NET-023"
-RULE_NAME = "Azure Firewall Threat Intelligence Is Not Alert and Deny"
+RULE_NAME = "Azure Firewall Threat Intelligence Is Not in Deny Mode"
 SEVERITY = "HIGH"
 CATEGORY = "Network"
 FRAMEWORKS = {"CIS": "N/A-NET-023", "NIST": "DE.CM-1", "ISO27001": "A.13.1.1", "SOC2": "CC6.6"}
 DESCRIPTION = (
     "Azure Firewall threat intelligence is disabled or configured to alert without denying known malicious traffic."
 )
-REMEDIATION = (
-    "Set Azure Firewall threat intelligence mode to AlertAndDeny after reviewing documented exception traffic."
-)
+REMEDIATION = "Set Azure Firewall threat intelligence mode to Deny after reviewing documented exception traffic."
 PLAYBOOK = "playbooks/cli/fix_az_net_023.sh"
 logger = logging.getLogger(__name__)
 
@@ -35,8 +33,8 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "%s UNKNOWN for %s: threat intelligence state missing", RULE_ID, getattr(firewall, "name", "")
             )
             continue
-        normalized = str(getattr(mode, "value", mode)).replace("_", "").lower()
-        if normalized == "alertanddeny":
+        normalized = str(getattr(mode, "value", mode)).lower()
+        if normalized == "deny":
             continue
         resource_id = getattr(firewall, "id", "") or ""
         findings.append(
@@ -55,7 +53,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "metadata": metadata(
                     resource_id=resource_id,
                     observed={"threat_intel_mode": str(mode)},
-                    expected={"threat_intel_mode": "AlertAndDeny"},
+                    expected={"threat_intel_mode": "Deny"},
                     source="Azure Resource Manager: Microsoft.Network/azureFirewalls",
                     timestamp=timestamp,
                     permissions=["Microsoft.Network/azureFirewalls/read"],

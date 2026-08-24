@@ -118,17 +118,25 @@ def test_net_022_private_or_unknown_state_does_not_flag(state):
     assert az_net_022.scan(FakeAzure(paas={"storage": [paas_item(state)]}), "sub") == []
 
 
-def test_net_023_requires_alert_and_deny():
-    bad = ns(
+@pytest.mark.parametrize("mode", ["Alert", "Off"])
+def test_net_023_flags_real_non_deny_modes(mode):
+    firewall = ns(
         id="/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw",
         name="fw",
-        threat_intel_mode="Alert",
+        threat_intel_mode=mode,
     )
-    assert len(az_net_023.scan(FakeAzure(firewalls=[bad]), "sub")) == 1
-    bad.threat_intel_mode = "AlertAndDeny"
-    assert az_net_023.scan(FakeAzure(firewalls=[bad]), "sub") == []
-    bad.threat_intel_mode = None
-    assert az_net_023.scan(FakeAzure(firewalls=[bad]), "sub") == []
+    assert len(az_net_023.scan(FakeAzure(firewalls=[firewall]), "sub")) == 1
+
+
+def test_net_023_accepts_real_deny_mode_and_preserves_unknown():
+    firewall = ns(
+        id="/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Network/azureFirewalls/fw",
+        name="fw",
+        threat_intel_mode=ns(value="Deny"),
+    )
+    assert az_net_023.scan(FakeAzure(firewalls=[firewall]), "sub") == []
+    firewall.threat_intel_mode = None
+    assert az_net_023.scan(FakeAzure(firewalls=[firewall]), "sub") == []
     assert az_net_023.scan(FakeAzure(firewalls=None), "sub") == []
 
 
@@ -167,6 +175,11 @@ def test_net_027_public_gateway_requires_enabled_rate_limit():
     assert az_net_027.scan(FakeAzure(gateways=[gw], policies=[policy(rate=True)]), "sub") == []
     assert len(az_net_027.scan(FakeAzure(gateways=[gw], policies=[policy(rate=False)]), "sub")) == 1
     assert az_net_027.scan(FakeAzure(gateways=[gateway(public=False)], policies=[policy(rate=False)]), "sub") == []
+
+
+def test_net_027_ignores_public_gateway_without_waf():
+    gw = gateway(public=True, policy=False, enabled=False)
+    assert az_net_027.scan(FakeAzure(gateways=[gw], policies=[]), "sub") == []
 
 
 def test_diagnostic_collector_requires_v1_performance_category(monkeypatch):

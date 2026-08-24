@@ -9,6 +9,7 @@ from scanner.rules._perimeter_common import (
     metadata,
     policy_by_id,
     public_gateway,
+    waf_enabled,
 )
 
 RULE_ID = "AZ-NET-027"
@@ -35,7 +36,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     timestamp = datetime.now(timezone.utc).isoformat()
     findings = []
     for gateway in gateways:
-        if not public_gateway(gateway):
+        if not public_gateway(gateway) or not waf_enabled(gateway):
             continue
         policy_id = getattr(getattr(gateway, "firewall_policy", None), "id", "") or ""
         policy = indexed.get(policy_id.lower())
