@@ -86,6 +86,65 @@ def test_firewall_and_peering_wrappers(client):
         assert client.get_vnet_peerings("rg", "vnet") == []
 
 
+def _watcher(name, location, resource_group="NetworkWatcherRG"):
+    return SimpleNamespace(
+        id=f"/subscriptions/sub-1/resourceGroups/{resource_group}/providers/Microsoft.Network/networkWatchers/{name}",
+        name=name,
+        location=location,
+    )
+
+
+def test_get_flow_logs_merges_results_across_regions(client):
+    with patch("scanner.azure_client.NetworkManagementClient") as constructor:
+        sdk = constructor.return_value
+        sdk.network_watchers.list_all.return_value = [
+            _watcher("watcher-east", "East US"),
+            _watcher("watcher-west", "West US"),
+        ]
+        sdk.flow_logs.list.side_effect = lambda rg, name: (
+            [SimpleNamespace(target_resource_id="vnet-east", enabled=True)]
+            if name == "watcher-east"
+            else [SimpleNamespace(target_resource_id="vnet-west", enabled=False)]
+        )
+
+        result = client.get_flow_logs()
+
+        assert set(result) == {"eastus", "westus"}
+        assert result["eastus"][0].target_resource_id == "vnet-east"
+        assert result["westus"][0].enabled is False
+
+
+def test_get_flow_logs_top_level_failure_returns_empty_dict(client):
+    """Failing to enumerate Network Watchers at all yields {} - every region
+    is then indeterminate via .get(region) returning None, never a false pass."""
+    with patch("scanner.azure_client.NetworkManagementClient") as constructor:
+        constructor.return_value.network_watchers.list_all.side_effect = RuntimeError("denied")
+        assert client.get_flow_logs() == {}
+
+
+def test_get_flow_logs_partial_failure_preserves_other_regions(client):
+    """One watcher's flow-log listing failing (403/429/etc) must not discard
+    results already collected from a different, healthy region."""
+    with patch("scanner.azure_client.NetworkManagementClient") as constructor:
+        sdk = constructor.return_value
+        sdk.network_watchers.list_all.return_value = [
+            _watcher("watcher-ok", "East US"),
+            _watcher("watcher-denied", "West US"),
+        ]
+
+        def flow_logs_list(rg, name):
+            if name == "watcher-denied":
+                raise RuntimeError("permission denied")
+            return [SimpleNamespace(target_resource_id="vnet-east", enabled=True)]
+
+        sdk.flow_logs.list.side_effect = flow_logs_list
+
+        result = client.get_flow_logs()
+
+        assert result["eastus"][0].target_resource_id == "vnet-east"
+        assert result["westus"] is None
+
+
 def test_vm_extensions_normalize_sdk_page_and_failure(client):
     with patch("scanner.azure_client.ComputeManagementClient") as constructor:
         constructor.return_value.virtual_machine_extensions.list.return_value = SimpleNamespace(

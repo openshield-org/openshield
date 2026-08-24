@@ -171,7 +171,7 @@
     "AZ-NET-012": {
       "control_id": "6.7",
       "control_name": "Ensure that Network Watcher flow logs are enabled for Network Security Groups",
-      "description": "Network Security Group flow logs should be enabled through Network Watcher so network traffic can be audited and investigated. Without flow logs, lateral movement and suspicious network activity cannot be reconstructed."
+      "description": "A VNet flow log (or an existing legacy NSG flow log) should cover this virtual network's traffic so it can be audited and investigated. Microsoft blocks new NSG flow log creation as of 2025-06-30 and retires the feature on 2027-09-30, so VNet flow logs are the current, supported mechanism. Without either, lateral movement and suspicious network activity cannot be reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "4.3.6",

@@ -43,7 +43,7 @@ OpenShield currently ships 80 Azure scan rules. This table is generated from the
 | AZ-NET-009 | VPN gateway using outdated IKE version | HIGH | Network | 9.5 | SC-8 | A.13.2.1 |
 | AZ-NET-010 | Subnet with no network security group attached | HIGH | Network | 9.10 | SC-7 | A.13.1.1 |
 | AZ-NET-011 | Network Watcher Not Enabled in All Regions | LOW | Network | 6.5 | DE.CM-7 | A.12.4.1 |
-| AZ-NET-012 | NSG Flow Logs Not Enabled | MEDIUM | Network | 6.7 | DE.CM-1 | A.12.4.1 |
+| AZ-NET-012 | VNet Flow Logs Not Enabled | MEDIUM | Network | 6.7 | DE.CM-1 | A.12.4.1 |
 | AZ-NET-013 | Azure Firewall Not Enabled on Virtual Network | HIGH | Network | 6.4 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-014 | VNet Peering Configured Without Gateway Transit Restrictions | MEDIUM | Network | 6.6 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-015 | Public DNS Zone Exposes Internal Infrastructure Details | MEDIUM | Network | 9.8 | PR.AC-5 | A.13.1.1 |

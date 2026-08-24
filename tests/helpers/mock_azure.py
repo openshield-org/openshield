@@ -81,7 +81,7 @@ class MockAzureClient:
         self.credential = _StubCredential()
         self._regions_with_resources: List[str] = []
         self._network_watcher_regions: List[str] = []
-        self._nsg_flow_logs: Dict[str, List[Any]] = {}
+        self._flow_logs_by_region: Dict[str, Optional[List[Any]]] = {}
         self._dns_zones: List[Any] = []
         self._dns_record_sets: Dict[Tuple[str, str], List[Any]] = {}
         self._web_apps: List[Any] = []
@@ -318,17 +318,16 @@ class MockAzureClient:
     def get_vnet_peerings(self, resource_group: str, vnet_name: str) -> List[Any]:
         return self._vnet_peerings.get((resource_group, vnet_name), [])
 
-    def set_nsg_flow_logs(self, resource_group: str, flow_logs: List[Any]) -> "MockAzureClient":
-        # NOTE: az_net_012 calls get_nsg_flow_logs(resource_group) with a single
-        # argument and iterates the result. This mock matches that *expected*
-        # contract so the rule's detection logic can be exercised. The real
-        # AzureClient does not implement get_nsg_flow_logs at all — see the
-        # validation report (AZ-NET-012 always false-positives in production).
-        self._nsg_flow_logs[resource_group] = flow_logs
+    def set_flow_logs_by_region(self, region: str, flow_logs: Optional[List[Any]]) -> "MockAzureClient":
+        # ``None`` models a region whose Network Watcher/flow-log listing
+        # failed (or wasn't set at all - regions absent from this dict are
+        # the same case). A region simply never set here means "no Network
+        # Watcher found there", matching AzureClient.get_flow_logs()'s contract.
+        self._flow_logs_by_region[region] = flow_logs
         return self
 
-    def get_nsg_flow_logs(self, resource_group: str) -> List[Any]:
-        return self._nsg_flow_logs.get(resource_group, [])
+    def get_flow_logs(self) -> Dict[str, Optional[List[Any]]]:
+        return self._flow_logs_by_region
 
     def set_regions_with_resources(self, regions: List[str]) -> "MockAzureClient":
         self._regions_with_resources = regions

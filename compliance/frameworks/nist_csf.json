@@ -171,7 +171,7 @@
     "AZ-NET-012": {
       "control_id": "DE.CM-1",
       "control_name": "The network is monitored to detect potential cybersecurity events",
-      "description": "Network Security Group flow logs provide visibility into network traffic patterns and blocked or allowed flows. Without flow logs, potential cybersecurity events in network traffic cannot be detected or reconstructed."
+      "description": "A VNet flow log (or an existing legacy NSG flow log) provides visibility into network traffic patterns and blocked or allowed flows. New NSG flow log creation is blocked as of 2025-06-30, so VNet flow logs are the current mechanism. Without either, potential cybersecurity events in network traffic cannot be detected or reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "PR.DS-2",

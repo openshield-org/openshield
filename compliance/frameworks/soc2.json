@@ -171,7 +171,7 @@
     "AZ-NET-012": {
       "control_id": "CC7.2",
       "control_name": "System monitoring",
-      "description": "Network Security Group flow logs support continuous monitoring of network traffic and investigation of anomalous connections. Without flow logs, network-level security events may not be detected or reconstructed."
+      "description": "A VNet flow log (or an existing legacy NSG flow log) supports continuous monitoring of network traffic and investigation of anomalous connections. New NSG flow log creation is blocked as of 2025-06-30, so VNet flow logs are the current mechanism. Without either, network-level security events may not be detected or reconstructed."
     },
     "AZ-DB-003": {
       "control_id": "CC6.1",

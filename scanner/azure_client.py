@@ -925,6 +925,46 @@ class AzureClient:
             logger.error("get_network_watcher_regions failed: %s", exc)
             return []
 
+    def get_flow_logs(self) -> Dict[str, Optional[List[Any]]]:
+        """Return Network Watcher flow log configurations, keyed by normalized region.
+
+        Flow logs (both legacy NSG-scoped and current VNet-scoped) are only
+        listable per-region Network Watcher, never in one subscription-wide
+        call, so a failure enumerating or querying one region's watcher must
+        not discard - or fabricate absence for - flow logs in a different
+        region.
+
+        Returns:
+            A dict from normalized region name to that region's list of
+            FlowLog resources, or ``None`` when that specific region's
+            watcher/flow-log listing failed. A region simply absent from the
+            dict means no Network Watcher was found there. Callers must treat
+            both ``None`` and a missing key as indeterminate, never as
+            "no flow log configured".
+        """
+        result: Dict[str, Optional[List[Any]]] = {}
+        try:
+            client = NetworkManagementClient(self.credential, self.subscription_id)
+            watchers = list(client.network_watchers.list_all())
+        except Exception as exc:
+            logger.error("get_flow_logs failed to list network watchers: %s", exc)
+            return result
+
+        for watcher in watchers:
+            location = (getattr(watcher, "location", "") or "").lower().replace(" ", "")
+            watcher_id = getattr(watcher, "id", "") or ""
+            parsed = self.parse_resource_id(watcher_id)
+            watcher_rg = parsed.get("resource_group", "")
+            watcher_name = getattr(watcher, "name", "")
+            if not location or not watcher_rg or not watcher_name:
+                continue
+            try:
+                result[location] = list(client.flow_logs.list(watcher_rg, watcher_name))
+            except Exception as exc:
+                logger.error("get_flow_logs failed for watcher %s/%s: %s", watcher_rg, watcher_name, exc)
+                result[location] = None
+        return result
+
     # ------------------------------------------------------------------ #
     # Supply chain: Container Registry, IaC state                          #
     # ------------------------------------------------------------------ #
