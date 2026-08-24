@@ -1,4 +1,11 @@
-# OpenShield RAG Pipeline
+﻿# OpenShield RAG Pipeline
+
+> **Optional dependency:** ChromaDB is not included in `requirements.txt`.
+> Install the AI extras before using `ai/embed.py` or `ai/retriever.py`:
+>
+> ```bash
+> pip install -r requirements-ai.txt
+> ```
 
 Document loader and chunker for OpenShield rules and compliance frameworks.
 Loads all scanner rules and CIS, NIST, ISO 27001 and SOC2 controls
