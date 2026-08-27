@@ -44,8 +44,8 @@ DEFENDER_UNHEALTHY_REMEDIATION = (
 # provisioning state does not prove malware protection is truly off.
 INDETERMINATE_SEVERITY = "LOW"
 INDETERMINATE_DESCRIPTION = (
-    "A recognised endpoint protection extension is installed but its provisioning state "
-    "indicates it did not complete successfully, so effective protection cannot be "
+    "A recognised endpoint protection extension is installed but its provisioning state is "
+    "missing or does not confirm successful completion, so effective protection cannot be "
     "confirmed. This is not a confirmed absence of endpoint protection."
 )
 INDETERMINATE_REMEDIATION = (
@@ -63,6 +63,16 @@ KNOWN_EP_EXTENSIONS = {
 logger = logging.getLogger(__name__)
 
 
+# Microsoft renamed this Defender for Cloud recommendation from "Endpoint
+# protection should be installed..." to "EDR solution should be installed
+# on virtual machines" when it moved from the deprecated Log Analytics
+# agent to agentless EDR scanning. Matching only "endpoint protection"
+# means the index silently matches nothing against a current subscription's
+# real assessment data, so Defender's signal is never found and every VM
+# falls back to the weaker extension-name check - accept either name.
+_ENDPOINT_PROTECTION_DISPLAY_NAME_MARKERS = ("endpoint protection", "edr solution")
+
+
 def _index_endpoint_protection_assessments(assessments: Optional[List[Any]]) -> Dict[str, List[Any]]:
     """Group the subscription-wide assessments list by resource ID, once per scan.
 
@@ -73,7 +83,7 @@ def _index_endpoint_protection_assessments(assessments: Optional[List[Any]]) -> 
     index: Dict[str, List[Any]] = {}
     for assessment in assessments or []:
         display_name = (getattr(assessment, "display_name", "") or "").lower()
-        if "endpoint protection" not in display_name:
+        if not any(marker in display_name for marker in _ENDPOINT_PROTECTION_DISPLAY_NAME_MARKERS):
             continue
         resource_details = getattr(assessment, "resource_details", None)
         resource_id = (getattr(resource_details, "id", "") or "").lower()
@@ -202,19 +212,21 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             continue
 
         # A recognised EP extension is installed - name presence alone is not
-        # enough. Where the API exposes provisioning_state, an extension is
-        # only treated as healthy when it is unset/unknown (data doesn't
-        # support the check - do not invent a new false positive) or equals
-        # "Succeeded". Anything else (Failed, Canceled, ...) is surfaced as
-        # indeterminate rather than silently passed.
-        unhealthy_names = []
+        # enough. An extension is only treated as confirmed healthy when its
+        # provisioning_state is exactly "Succeeded". A missing/unexposed
+        # provisioning_state does not prove the extension succeeded any more
+        # than it proves it failed - it's unknown evidence, not a pass - so
+        # it's surfaced as indeterminate together with any other
+        # non-"Succeeded" state (Failed, Canceled, ...) rather than silently
+        # passed.
+        unconfirmed_names = []
         confirmed_healthy = False
         for name, ext in matched:
             provisioning_state = (getattr(ext, "provisioning_state", None) or "").lower()
-            if not provisioning_state or provisioning_state == "succeeded":
+            if provisioning_state == "succeeded":
                 confirmed_healthy = True
                 break
-            unhealthy_names.append(name)
+            unconfirmed_names.append(name)
 
         if confirmed_healthy:
             continue
@@ -235,7 +247,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                 "metadata": {
                     "resource_group": rg,
                     "installed_extensions": installed_names,
-                    "unhealthy_extensions": sorted(set(unhealthy_names)),
+                    "unconfirmed_extensions": sorted(set(unconfirmed_names)),
                     "signal": "extension_fallback",
                     "determination": "indeterminate",
                 },

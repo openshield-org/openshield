@@ -86,6 +86,14 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         if not network_profile:
             continue
 
+        # One finding per VM is enough, but an indeterminate result on an
+        # earlier NIC must never suppress evaluation of a later NIC - a
+        # confirmed HIGH elsewhere on the same VM must not be downgraded to
+        # LOW just because it was reached second. Keep the worst evaluated
+        # result across all of this VM's NICs and only stop early once a
+        # confirmed violation is found (nothing can outrank it).
+        vm_finding: Optional[Dict[str, Any]] = None
+
         for nic_ref in getattr(network_profile, "network_interfaces", []) or []:
             nic_id = getattr(nic_ref, "id", "")
             if not nic_id:
@@ -112,28 +120,36 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
             if has_public_ip and not has_nic_nsg and subnet_status is not True:
                 confirmed = subnet_status is False
-                findings.append(
-                    {
-                        "rule_id": RULE_ID,
-                        "rule_name": RULE_NAME,
-                        "severity": SEVERITY if confirmed else INDETERMINATE_SEVERITY,
-                        "category": CATEGORY,
-                        "resource_id": vm.id,
-                        "resource_name": vm.name,
-                        "resource_type": "Microsoft.Compute/virtualMachines",
-                        "description": DESCRIPTION if confirmed else INDETERMINATE_DESCRIPTION,
-                        "remediation": REMEDIATION if confirmed else INDETERMINATE_REMEDIATION,
-                        "playbook": PLAYBOOK,
-                        "frameworks": FRAMEWORKS,
-                        "metadata": {
-                            "nic_id": nic_id,
-                            "nic_name": nic_name,
-                            "nic_nsg_attached": has_nic_nsg,
-                            "subnet_nsg_attached": False if confirmed else None,
-                            "determination": "non_compliant" if confirmed else "indeterminate",
-                        },
-                    }
-                )
-                break  # one finding per VM is sufficient
+                if vm_finding is not None and not confirmed:
+                    # Already have a finding for this VM (confirmed or
+                    # indeterminate) and this NIC only adds another
+                    # indeterminate one - it can't raise the severity, so
+                    # keep the existing finding rather than overwrite it.
+                    continue
+                vm_finding = {
+                    "rule_id": RULE_ID,
+                    "rule_name": RULE_NAME,
+                    "severity": SEVERITY if confirmed else INDETERMINATE_SEVERITY,
+                    "category": CATEGORY,
+                    "resource_id": vm.id,
+                    "resource_name": vm.name,
+                    "resource_type": "Microsoft.Compute/virtualMachines",
+                    "description": DESCRIPTION if confirmed else INDETERMINATE_DESCRIPTION,
+                    "remediation": REMEDIATION if confirmed else INDETERMINATE_REMEDIATION,
+                    "playbook": PLAYBOOK,
+                    "frameworks": FRAMEWORKS,
+                    "metadata": {
+                        "nic_id": nic_id,
+                        "nic_name": nic_name,
+                        "nic_nsg_attached": has_nic_nsg,
+                        "subnet_nsg_attached": False if confirmed else None,
+                        "determination": "non_compliant" if confirmed else "indeterminate",
+                    },
+                }
+                if confirmed:
+                    break  # a confirmed HIGH can't be outranked by another NIC on this VM
+
+        if vm_finding is not None:
+            findings.append(vm_finding)
 
     return findings

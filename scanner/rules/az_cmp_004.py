@@ -1,6 +1,7 @@
 """AZ-CMP-004: VM without automatic OS patching enabled."""
 
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-CMP-004"
@@ -50,7 +51,49 @@ ASSESSMENT_OVERRIDE_REMEDIATION = (
 # enough evidence to override a config-based pass.
 _CONCLUSIVE_ASSESSMENT_STATUSES = {"succeeded", "completedwithwarnings"}
 
+# A "clean" assessment (zero pending critical/security patches) only counts
+# as real evidence of the VM's *current* state while it's recent - Azure
+# doesn't re-run this automatically on a fixed schedule, so an old clean
+# result proves nothing about patches that have become available since.
+STALE_ASSESSMENT_THRESHOLD_DAYS = 30
+
+# An unavailable, non-conclusive, or stale assessment means config alone is
+# the only signal - which is real evidence config is correctly set, but not
+# proof patches have actually landed. Surfaced as indeterminate rather than
+# silently treated as a clean pass, the same LOW/indeterminate split used by
+# AZ-CMP-001/003 for their own unresolvable evidence.
+INDETERMINATE_SEVERITY = "LOW"
+INDETERMINATE_DESCRIPTION = (
+    "VM is configured for automatic OS patching, but its real Azure Update Manager patch "
+    "assessment is unavailable, did not complete successfully, or is older than "
+    f"{STALE_ASSESSMENT_THRESHOLD_DAYS} days, so the VM's actual current patch state cannot "
+    "be confirmed. Config alone is not proof patches have actually been applied."
+)
+INDETERMINATE_REMEDIATION = (
+    "Trigger an on-demand patch assessment (Update Manager > Check for updates) so a current "
+    "result exists, then re-run the scan to confirm the VM's real patch state."
+)
+
 logger = logging.getLogger(__name__)
+
+
+def _is_fresh(last_modified_time: Any) -> bool:
+    """Return True only when last_modified_time parses to a UTC-aware timestamp
+    within the staleness threshold. Missing or unparseable data is not fresh -
+    absence of a usable timestamp must never be read as "recent enough"."""
+    if isinstance(last_modified_time, datetime):
+        observed = last_modified_time
+    elif isinstance(last_modified_time, str):
+        try:
+            observed = datetime.fromisoformat(last_modified_time.replace("Z", "+00:00"))
+        except ValueError:
+            return False
+    else:
+        return False
+    if observed.tzinfo is None:
+        return False
+    age = datetime.now(timezone.utc) - observed
+    return age.days <= STALE_ASSESSMENT_THRESHOLD_DAYS
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
@@ -107,16 +150,55 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             )
             continue
 
-        # Config says patching is enabled - check real assessment evidence
-        # for the false-negative case: config correct, platform hasn't
-        # actually applied the pending critical/security patches.
+        # Config says patching is enabled - check real assessment evidence.
+        # This can raise the result two ways: a conclusive, fresh assessment
+        # with pending critical/security patches overrides the config-based
+        # pass into a confirmed finding (the false-negative case: config
+        # correct, platform hasn't actually applied anything yet). Anything
+        # short of that - unavailable, non-conclusive, or stale evidence -
+        # is not proof patches were applied either, so it's surfaced as
+        # indeterminate rather than silently left as a clean pass.
+        def _indeterminate_finding(reason: str, patch_summary: Any = None) -> Dict[str, Any]:
+            metadata: Dict[str, Any] = {
+                "resource_group": rg,
+                "signal": "patch_assessment_inconclusive",
+                "determination": "indeterminate",
+                "reason": reason,
+            }
+            if patch_summary is not None:
+                metadata["assessment_status"] = (getattr(patch_summary, "status", "") or "").lower()
+                metadata["last_modified_time"] = str(getattr(patch_summary, "last_modified_time", "") or "") or None
+            return {
+                "rule_id": RULE_ID,
+                "rule_name": RULE_NAME,
+                "severity": INDETERMINATE_SEVERITY,
+                "category": CATEGORY,
+                "resource_id": vm.id,
+                "resource_name": vm_name,
+                "resource_type": "Microsoft.Compute/virtualMachines",
+                "description": INDETERMINATE_DESCRIPTION,
+                "remediation": INDETERMINATE_REMEDIATION,
+                "playbook": PLAYBOOK,
+                "frameworks": FRAMEWORKS,
+                "metadata": metadata,
+            }
+
         patch_summary = azure_client.get_vm_patch_status(rg, vm_name)
         if patch_summary is None:
+            findings.append(_indeterminate_finding("assessment_unavailable"))
             continue
 
         status = (getattr(patch_summary, "status", "") or "").lower()
+        if status not in _CONCLUSIVE_ASSESSMENT_STATUSES:
+            findings.append(_indeterminate_finding("assessment_not_conclusive", patch_summary))
+            continue
+
         critical_count = getattr(patch_summary, "critical_and_security_patch_count", None)
-        if status in _CONCLUSIVE_ASSESSMENT_STATUSES and critical_count is not None and critical_count > 0:
+        if critical_count is None:
+            findings.append(_indeterminate_finding("patch_count_unavailable", patch_summary))
+            continue
+
+        if critical_count > 0:
             findings.append(
                 {
                     "rule_id": RULE_ID,
@@ -140,5 +222,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     },
                 }
             )
+            continue
+
+        # Conclusive assessment says zero pending critical/security patches -
+        # only trust that as a real clean signal while it's recent.
+        if not _is_fresh(getattr(patch_summary, "last_modified_time", None)):
+            findings.append(_indeterminate_finding("assessment_stale", patch_summary))
 
     return findings

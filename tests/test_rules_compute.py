@@ -6,6 +6,8 @@ mock_azure and subscription_id fixtures come from tests/conftest.py and the
 helper accessors from tests/helpers/mock_azure.py.
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 import scanner.rules.az_cmp_001 as az_cmp_001
@@ -231,6 +233,86 @@ def test_cmp_001_mixed_resolvable_and_unresolvable_subnets_is_indeterminate(mock
     assert findings[0]["metadata"]["determination"] == "indeterminate"
 
 
+def test_cmp_001_confirmed_nic_after_indeterminate_nic_is_not_downgraded(mock_azure, subscription_id):
+    """A VM can have more than one exposed NIC. If the first NIC evaluated is
+    only indeterminate (unresolvable subnet) but a second NIC on the same VM
+    is a real, confirmed violation, the VM's single reported finding must be
+    the confirmed HIGH one - not the indeterminate LOW that happened to be
+    evaluated first."""
+    indeterminate_subnet_id = _subnet_id("vnet1", "subnet-unresolvable")
+    confirmed_subnet_id = _subnet_id("vnet1", "subnet-no-nsg")
+    nic_indeterminate = make_resource(
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=indeterminate_subnet_id))
+        ],
+        network_security_group=None,
+    )
+    nic_confirmed = make_resource(
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip2"), subnet=make_resource(id=confirmed_subnet_id))
+        ],
+        network_security_group=None,
+    )
+    vm = make_resource(
+        id=_vm_id("vm-two-nics"),
+        name="vm-two-nics",
+        network_profile=make_resource(
+            network_interfaces=[
+                make_resource(id=_nic_id("nic-indeterminate")),
+                make_resource(id=_nic_id("nic-confirmed")),
+            ]
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_network_interface(_RG, "nic-indeterminate", nic_indeterminate)
+    mock_azure.set_network_interface(_RG, "nic-confirmed", nic_confirmed)
+    mock_azure.set_subnet(confirmed_subnet_id, make_resource(id=confirmed_subnet_id, network_security_group=None))
+    # indeterminate_subnet_id is intentionally never registered via set_subnet().
+    findings = az_cmp_001.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "HIGH"
+    assert f["metadata"]["determination"] == "non_compliant"
+    assert f["metadata"]["nic_name"] == "nic-confirmed"
+
+
+def test_cmp_001_indeterminate_nic_after_confirmed_nic_does_not_downgrade(mock_azure, subscription_id):
+    """Same scenario in the opposite NIC order - a confirmed violation found
+    first must not be replaced by a later indeterminate one either."""
+    confirmed_subnet_id = _subnet_id("vnet1", "subnet-no-nsg")
+    indeterminate_subnet_id = _subnet_id("vnet1", "subnet-unresolvable")
+    nic_confirmed = make_resource(
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip1"), subnet=make_resource(id=confirmed_subnet_id))
+        ],
+        network_security_group=None,
+    )
+    nic_indeterminate = make_resource(
+        ip_configurations=[
+            make_resource(public_ip_address=make_resource(id="pip2"), subnet=make_resource(id=indeterminate_subnet_id))
+        ],
+        network_security_group=None,
+    )
+    vm = make_resource(
+        id=_vm_id("vm-two-nics-reversed"),
+        name="vm-two-nics-reversed",
+        network_profile=make_resource(
+            network_interfaces=[
+                make_resource(id=_nic_id("nic-confirmed")),
+                make_resource(id=_nic_id("nic-indeterminate")),
+            ]
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_network_interface(_RG, "nic-confirmed", nic_confirmed)
+    mock_azure.set_network_interface(_RG, "nic-indeterminate", nic_indeterminate)
+    mock_azure.set_subnet(confirmed_subnet_id, make_resource(id=confirmed_subnet_id, network_security_group=None))
+    findings = az_cmp_001.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "HIGH"
+    assert findings[0]["metadata"]["determination"] == "non_compliant"
+
+
 # ── AZ-CMP-002: disk using platform-managed encryption only ─────────────────
 #
 # ManagedDiskParameters (the object actually embedded in a VM's
@@ -447,13 +529,13 @@ def test_cmp_002_compliant_with_real_sdk_models_returns_no_findings(mock_azure, 
 
 
 def test_cmp_003_compliant_with_ep_extension_returns_no_findings(mock_azure, subscription_id):
-    """A VM with a recognised endpoint-protection extension is compliant."""
+    """A VM with a recognised, successfully-provisioned endpoint-protection extension is compliant."""
     vm = make_resource(id=_vm_id("vm-protected"), name="vm-protected")
     mock_azure.set_virtual_machines([vm])
     mock_azure.set_vm_extensions(
         _RG,
         "vm-protected",
-        [make_resource(type_properties_type="IaaSAntimalware")],
+        [make_resource(type_properties_type="IaaSAntimalware", provisioning_state="Succeeded")],
     )
     assert az_cmp_003.scan(mock_azure, subscription_id) == []
 
@@ -512,7 +594,7 @@ def test_cmp_003_extension_present_but_unhealthy_returns_indeterminate_finding(m
     assert f["rule_id"] == "AZ-CMP-003"
     assert f["severity"] == "LOW"
     assert f["metadata"]["determination"] == "indeterminate"
-    assert f["metadata"]["unhealthy_extensions"] == ["iaasantimalware"]
+    assert f["metadata"]["unconfirmed_extensions"] == ["iaasantimalware"]
 
 
 def test_cmp_003_duplicate_extension_types_use_healthy_record_regardless_of_order(mock_azure, subscription_id):
@@ -534,8 +616,9 @@ def test_cmp_003_duplicate_extension_types_use_healthy_record_regardless_of_orde
         assert az_cmp_003.scan(mock_azure, subscription_id) == []
 
 
-def test_cmp_003_missing_provisioning_state_falls_back_to_name_based_pass(mock_azure, subscription_id):
-    """When provisioning_state isn't exposed by the API, name presence alone remains sufficient."""
+def test_cmp_003_missing_provisioning_state_is_indeterminate_not_a_pass(mock_azure, subscription_id):
+    """When provisioning_state isn't exposed by the API, that's unknown evidence, not
+    confirmation the extension actually succeeded - name presence alone must not pass."""
     vm = make_resource(id=_vm_id("vm-no-state-data"), name="vm-no-state-data")
     mock_azure.set_virtual_machines([vm])
     mock_azure.set_vm_extensions(
@@ -543,7 +626,12 @@ def test_cmp_003_missing_provisioning_state_falls_back_to_name_based_pass(mock_a
         "vm-no-state-data",
         [make_resource(type_properties_type="IaaSAntimalware")],
     )
-    assert az_cmp_003.scan(mock_azure, subscription_id) == []
+    findings = az_cmp_003.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["unconfirmed_extensions"] == ["iaasantimalware"]
 
 
 # ── AZ-CMP-003: Defender for Cloud endpoint-protection assessment ───────────
@@ -592,13 +680,31 @@ def test_cmp_003_defender_unhealthy_returns_confirmed_high_finding_even_with_ext
     assert f["metadata"]["determination"] == "non_compliant"
 
 
+def test_cmp_003_recognises_current_edr_recommendation_display_name(mock_azure, subscription_id):
+    """Microsoft renamed this recommendation from 'Endpoint protection should be
+    installed...' to 'EDR solution should be installed on virtual machines' when it
+    moved to agentless EDR scanning. A current subscription's real assessment data
+    uses the new name - it must still be recognised as Defender's Healthy signal,
+    not silently ignored and left to fall back to the weaker extension check."""
+    vm_id = _vm_id("vm-edr-name")
+    vm = make_resource(id=vm_id, name="vm-edr-name")
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_extensions(_RG, "vm-edr-name", [])
+    mock_azure.set_security_assessments(
+        [_assessment(vm_id, display_name="EDR solution should be installed on virtual machines", status_code="Healthy")]
+    )
+    assert az_cmp_003.scan(mock_azure, subscription_id) == []
+
+
 def test_cmp_003_defender_not_applicable_falls_back_to_extension_check(mock_azure, subscription_id):
     """A NotApplicable Defender status carries no usable signal - the extension-based check
     still governs the result."""
     vm_id = _vm_id("vm-defender-na")
     vm = make_resource(id=vm_id, name="vm-defender-na")
     mock_azure.set_virtual_machines([vm])
-    mock_azure.set_vm_extensions(_RG, "vm-defender-na", [make_resource(type_properties_type="IaaSAntimalware")])
+    mock_azure.set_vm_extensions(
+        _RG, "vm-defender-na", [make_resource(type_properties_type="IaaSAntimalware", provisioning_state="Succeeded")]
+    )
     mock_azure.set_security_assessments([_assessment(vm_id, status_code="NotApplicable")])
     assert az_cmp_003.scan(mock_azure, subscription_id) == []
 
@@ -622,7 +728,9 @@ def test_cmp_003_defender_assessment_for_different_resource_is_ignored(mock_azur
     vm_id = _vm_id("vm-target")
     vm = make_resource(id=vm_id, name="vm-target")
     mock_azure.set_virtual_machines([vm])
-    mock_azure.set_vm_extensions(_RG, "vm-target", [make_resource(type_properties_type="IaaSAntimalware")])
+    mock_azure.set_vm_extensions(
+        _RG, "vm-target", [make_resource(type_properties_type="IaaSAntimalware", provisioning_state="Succeeded")]
+    )
     mock_azure.set_security_assessments([_assessment(_vm_id("vm-other"), status_code="Unhealthy")])
     # Falls back to the extension check (which passes) rather than picking up the other VM's Unhealthy status.
     assert az_cmp_003.scan(mock_azure, subscription_id) == []
@@ -673,7 +781,9 @@ def test_cmp_003_defender_unhealthy_wins_over_healthy_regardless_of_assessment_o
 
 
 def test_cmp_004_compliant_auto_updates_returns_no_findings(mock_azure, subscription_id):
-    """A Windows VM with automatic updates enabled is compliant."""
+    """A Windows VM with automatic updates enabled AND a fresh, conclusive, clean patch
+    assessment is genuinely compliant - config alone is no longer sufficient on its own,
+    since it doesn't prove patches have actually been applied."""
     vm = make_resource(
         id=_vm_id("vm-patched"),
         name="vm-patched",
@@ -683,6 +793,9 @@ def test_cmp_004_compliant_auto_updates_returns_no_findings(mock_azure, subscrip
         ),
     )
     mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG, "vm-patched", _patch_summary(status="Succeeded", critical_and_security_patch_count=0)
+    )
     assert az_cmp_004.scan(mock_azure, subscription_id) == []
 
 
@@ -711,12 +824,21 @@ def test_cmp_004_noncompliant_no_patching_returns_one_finding(mock_azure, subscr
 # ── AZ-CMP-004: real patch-assessment evidence override ─────────────────────
 
 
-def _patch_summary(status="Succeeded", critical_and_security_patch_count=0, other_patch_count=0):
-    """An AvailablePatchSummary-shaped stub, as returned by AzureClient.get_vm_patch_status()."""
+def _patch_summary(
+    status="Succeeded", critical_and_security_patch_count=0, other_patch_count=0, last_modified_time=None
+):
+    """An AvailablePatchSummary-shaped stub, as returned by AzureClient.get_vm_patch_status().
+
+    Defaults last_modified_time to "just now" so tests that aren't specifically
+    about staleness don't need to think about the freshness threshold.
+    """
+    if last_modified_time is None:
+        last_modified_time = datetime.now(timezone.utc)
     return make_resource(
         status=status,
         critical_and_security_patch_count=critical_and_security_patch_count,
         other_patch_count=other_patch_count,
+        last_modified_time=last_modified_time,
     )
 
 
@@ -763,9 +885,10 @@ def test_cmp_004_config_ok_and_assessment_clean_returns_no_findings(mock_azure, 
     assert az_cmp_004.scan(mock_azure, subscription_id) == []
 
 
-def test_cmp_004_config_ok_but_assessment_in_progress_does_not_override(mock_azure, subscription_id):
-    """An assessment that hasn't conclusively finished is not reliable evidence - it must not
-    override a config-based pass even if it happens to carry a nonzero patch count so far."""
+def test_cmp_004_config_ok_but_assessment_in_progress_is_indeterminate(mock_azure, subscription_id):
+    """An assessment that hasn't conclusively finished is not reliable evidence either way -
+    it must not become a HIGH override (the nonzero patch count so far isn't final) and must
+    not silently pass either (it doesn't confirm patches were applied). Indeterminate LOW."""
     vm = make_resource(
         id=_vm_id("vm-assessment-in-progress"),
         name="vm-assessment-in-progress",
@@ -778,12 +901,17 @@ def test_cmp_004_config_ok_but_assessment_in_progress_does_not_override(mock_azu
     mock_azure.set_vm_patch_status(
         _RG, "vm-assessment-in-progress", _patch_summary(status="InProgress", critical_and_security_patch_count=5)
     )
-    assert az_cmp_004.scan(mock_azure, subscription_id) == []
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["reason"] == "assessment_not_conclusive"
 
 
-def test_cmp_004_config_ok_and_no_assessment_data_returns_no_findings(mock_azure, subscription_id):
-    """No real assessment evidence available (never run, API failure) - behaves exactly like
-    the pre-existing config-only check with nothing to override."""
+def test_cmp_004_config_ok_and_no_assessment_data_is_indeterminate(mock_azure, subscription_id):
+    """No real assessment evidence available (never run, API failure) - config alone is not
+    proof patches were applied, so this must surface as indeterminate, not a silent pass."""
     vm = make_resource(
         id=_vm_id("vm-no-assessment-data"),
         name="vm-no-assessment-data",
@@ -794,7 +922,84 @@ def test_cmp_004_config_ok_and_no_assessment_data_returns_no_findings(mock_azure
     )
     mock_azure.set_virtual_machines([vm])
     # set_vm_patch_status not called -> None, matching "no assessment has ever run".
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["reason"] == "assessment_unavailable"
+
+
+def test_cmp_004_config_ok_but_stale_clean_assessment_is_indeterminate(mock_azure, subscription_id):
+    """A conclusive, clean (zero pending patches) assessment only counts as real evidence of
+    the VM's *current* state while it's recent. An old clean result proves nothing about
+    patches that have become available since - must not be a silent pass."""
+    vm = make_resource(
+        id=_vm_id("vm-stale-clean-assessment"),
+        name="vm-stale-clean-assessment",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    stale_time = datetime.now(timezone.utc) - timedelta(days=az_cmp_004.STALE_ASSESSMENT_THRESHOLD_DAYS + 1)
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-stale-clean-assessment",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=0, last_modified_time=stale_time),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["reason"] == "assessment_stale"
+
+
+def test_cmp_004_config_ok_and_fresh_clean_assessment_returns_no_findings(mock_azure, subscription_id):
+    """A conclusive, clean assessment within the freshness threshold is genuine evidence of
+    current compliance - must not be flagged."""
+    vm = make_resource(
+        id=_vm_id("vm-fresh-clean-assessment"),
+        name="vm-fresh-clean-assessment",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    recent_time = datetime.now(timezone.utc) - timedelta(days=1)
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-fresh-clean-assessment",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=0, last_modified_time=recent_time),
+    )
     assert az_cmp_004.scan(mock_azure, subscription_id) == []
+
+
+def test_cmp_004_config_ok_and_missing_last_modified_time_is_indeterminate(mock_azure, subscription_id):
+    """A conclusive clean assessment with no usable timestamp can't be proven fresh - absence
+    of a timestamp must never be read as 'recent enough'."""
+    vm = make_resource(
+        id=_vm_id("vm-no-timestamp"),
+        name="vm-no-timestamp",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-no-timestamp",
+        make_resource(
+            status="Succeeded", critical_and_security_patch_count=0, other_patch_count=0, last_modified_time=None
+        ),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    assert findings[0]["metadata"]["reason"] == "assessment_stale"
 
 
 def test_cmp_004_config_disabled_finding_unaffected_by_clean_assessment(mock_azure, subscription_id):
