@@ -1,4 +1,4 @@
-﻿# OpenShield RAG Pipeline
+# OpenShield RAG Pipeline
 
 > **Optional dependency:** ChromaDB is not included in `requirements.txt`.
 > Install the AI extras before using `ai/embed.py` or `ai/retriever.py`:
