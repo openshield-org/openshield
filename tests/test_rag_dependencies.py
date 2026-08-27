@@ -3,6 +3,14 @@
 from pathlib import Path
 
 
+def test_dockerfile_starts_with_from_instruction():
+    dockerfile = Path("Dockerfile").read_bytes()
+
+    assert dockerfile.startswith(b"FROM "), (
+        "Dockerfile must start directly with FROM; a UTF-8 BOM makes the first Docker instruction invalid"
+    )
+
+
 def test_vulnerable_transformer_stack_is_not_installed():
     requirements = Path("requirements.txt").read_text(encoding="utf-8").lower()
 
@@ -67,3 +75,42 @@ def test_bm25_score_higher_for_more_matches():
 def test_numpy_not_required():
     requirements = Path("requirements.txt").read_text(encoding="utf-8").lower()
     assert "numpy" not in requirements, "numpy must not be in requirements.txt; BM25 retrieval uses only stdlib math"
+
+
+def test_bm25_index_builds_and_retrieves_openshield_content(tmp_path, monkeypatch):
+    from ai import embed, retriever
+
+    index_path = tmp_path / "bm25_index.json"
+    documents = [
+        {
+            "id": "AZ-STOR-TEST",
+            "content": "Azure storage accounts should require secure transfer and disable public access.",
+            "metadata": {
+                "source": "openShield_rule",
+                "rule_id": "AZ-STOR-TEST",
+                "rule_name": "Secure Azure storage",
+            },
+        },
+        {
+            "id": "AZ-ID-TEST",
+            "content": "Privileged identities should use multifactor authentication and limited role assignments.",
+            "metadata": {
+                "source": "openShield_rule",
+                "rule_id": "AZ-ID-TEST",
+                "rule_name": "Protect privileged identities",
+            },
+        },
+    ]
+    monkeypatch.setattr(embed, "VECTORSTORE_DIR", tmp_path)
+    monkeypatch.setattr(embed, "INDEX_PATH", index_path)
+    monkeypatch.setattr(embed, "load_all_documents", lambda: documents)
+    monkeypatch.setattr(retriever, "INDEX_PATH", index_path)
+
+    assert embed.build_vectorstore() > 0
+
+    results = retriever.retrieve("Azure storage account security", n_results=5)
+
+    assert results
+    assert results[0]["source"] == "AZ-STOR-TEST"
+    assert all(result["text"] for result in results)
+    assert all(result["source"] for result in results)
