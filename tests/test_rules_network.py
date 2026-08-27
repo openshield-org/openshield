@@ -835,3 +835,4 @@ def test_net_017_direct_internet_default_creates_finding(mock_azure, subscriptio
     assert findings[0]["rule_id"] == "AZ-NET-017"
     assert findings[0]["metadata"]["address_prefix"] == prefix
 
+
