@@ -51,7 +51,7 @@ def mfa_user(**overrides):
 
 def pim_assignment(**overrides):
     base = {
-        "userId": "user-1",
+        "principalId": "user-1",
         "roleId": _GLOBAL_ADMIN_ROLE_ID,
         "assignmentType": "Eligible",
     }
@@ -60,6 +60,8 @@ def pim_assignment(**overrides):
 
 
 def ca_policy(**overrides):
+    import copy
+
     base = {
         "id": "policy-1",
         "displayName": "Test Policy",
@@ -71,8 +73,11 @@ def ca_policy(**overrides):
         },
         "grantControls": {"operator": "OR", "builtInControls": ["mfa"]},
     }
-    base.update(overrides)
-    return base
+    result = copy.deepcopy(base)
+    if "conditions" in overrides:
+        result["conditions"].update(overrides.pop("conditions"))
+    result.update(overrides)
+    return result
 
 
 def priv_group(**overrides):

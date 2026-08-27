@@ -32,8 +32,17 @@ PLAYBOOK = "playbooks/cli/fix_az_idn_022.sh"
 _AZURE_MGMT_APP_ID = "797f4846-ba00-4fd7-ba43-dac1f8f63013"
 
 
+def _covers_all_users(policy: Dict[str, Any]) -> bool:
+    conditions = policy.get("conditions") or {}
+    users = conditions.get("users") or {}
+    include_users = users.get("includeUsers") or []
+    return "All" in include_users
+
+
 def _protects_azure_management(policy: Dict[str, Any]) -> bool:
     if policy.get("state") != "enabled":
+        return False
+    if not _covers_all_users(policy):
         return False
     grant = policy.get("grantControls") or {}
     built_in = grant.get("builtInControls") or []

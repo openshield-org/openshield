@@ -1,8 +1,11 @@
 """AZ-CACHE-001: managed cache is public or permits TLS below 1.2."""
 
+import logging
 from typing import Any, Dict, List
 
 from scanner.rules._storage_common import policy_required
+
+logger = logging.getLogger(__name__)
 
 RULE_ID = "AZ-CACHE-001"
 RULE_NAME = "Managed Cache Public or Non-TLS Access"
@@ -19,7 +22,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     getter = getattr(azure_client, "get_managed_caches", None)
     if getter is None:
         return findings
-    for cache in getter():
+    caches = getter()
+    if caches is None:
+        logger.warning("%s: managed cache inventory unavailable; result is indeterminate", RULE_ID)
+        return findings
+    for cache in caches:
         if not policy_required(cache, "oshield:cache-private-tls-required"):
             continue
         public = getattr(cache, "public_network_access", None)

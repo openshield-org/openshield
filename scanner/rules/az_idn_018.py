@@ -44,30 +44,32 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     if pim is not None:
         for a in pim:
             if a.get("assignmentType") == "Eligible":
-                pim_covered.add((a.get("userId", ""), a.get("roleId", "").lower()))
+                pim_covered.add((a.get("principalId", ""), a.get("roleId", "").lower()))
 
     for member in members:
-        user_id = member.get("userId", "")
+        principal_id = member.get("userId", "")
         role_id = member.get("roleId", "").lower()
-        if not user_id or not role_id:
+        if not principal_id or not role_id:
             continue
-        if (user_id, role_id) in pim_covered:
+        if (principal_id, role_id) in pim_covered:
             continue
+        principal_type = member.get("principalType", "user")
         findings.append(
             {
                 "rule_id": RULE_ID,
                 "rule_name": RULE_NAME,
                 "severity": SEVERITY,
                 "category": CATEGORY,
-                "resource_id": f"/users/{user_id}",
-                "resource_name": member.get("userDisplayName", user_id),
+                "resource_id": f"/{principal_type}/{principal_id}",
+                "resource_name": member.get("userDisplayName", principal_id),
                 "resource_type": "Microsoft.Graph/users",
                 "description": DESCRIPTION,
                 "remediation": REMEDIATION,
                 "playbook": PLAYBOOK,
                 "frameworks": FRAMEWORKS,
                 "metadata": {
-                    "user_principal_name": member.get("userPrincipalName", ""),
+                    "principal_name": member.get("userPrincipalName", ""),
+                    "displayName": member.get("userDisplayName", ""),
                     "role_name": member.get("roleName", ""),
                     "role_id": role_id,
                 },

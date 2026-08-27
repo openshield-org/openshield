@@ -257,7 +257,7 @@ def test_stor_009_required_container_without_policy_returns_finding(mock_azure, 
 
 def test_stor_009_policy_or_api_failure_is_not_flagged(mock_azure, subscription_id):
     account = make_resource(id=_storage_id("sa-immutable-ok"), name="sa-immutable-ok")
-    policy = make_resource(state="Locked", period_since_creation_in_days=30)
+    policy = make_resource(state="Locked", immutability_period_since_creation_in_days=30)
     container = make_resource(
         name="critical-data",
         tags={"oshield:immutability-required": "true"},

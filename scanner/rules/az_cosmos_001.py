@@ -1,8 +1,11 @@
 """AZ-COSMOS-001: required Cosmos DB local authentication remains enabled."""
 
+import logging
 from typing import Any, Dict, List
 
 from scanner.rules._storage_common import policy_required
+
+logger = logging.getLogger(__name__)
 
 RULE_ID = "AZ-COSMOS-001"
 RULE_NAME = "Cosmos DB Local Authentication Enabled"
@@ -19,7 +22,11 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
     getter = getattr(azure_client, "get_cosmos_accounts", None)
     if getter is None:
         return findings
-    for account in getter():
+    accounts = getter()
+    if accounts is None:
+        logger.warning("%s: Cosmos DB inventory unavailable; result is indeterminate", RULE_ID)
+        return findings
+    for account in accounts:
         if not policy_required(account, "oshield:cosmos-local-auth-disabled"):
             continue
         value = getattr(account, "disable_local_auth", None)

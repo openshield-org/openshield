@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, List
 
+from scanner.azure_client import enum_str
 from scanner.rules._storage_common import policy_required
 
 RULE_ID = "AZ-DB-007"
@@ -28,7 +29,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         policy = get_audit(parsed["resource_group"], server.name)
         if policy is None:
             continue
-        state = "missing" if policy is False else str(getattr(policy, "state", "") or "").lower()
+        state = "missing" if policy is False else enum_str(getattr(policy, "state", None)).lower()
         if state != "enabled":
             retention = 0
         else:

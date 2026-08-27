@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, List
 
+from scanner.azure_client import enum_str
 from scanner.rules._storage_common import policy_required
 
 logger = logging.getLogger(__name__)
@@ -29,8 +30,8 @@ def _has_immutability(container: Any) -> bool:
     policy = getattr(container, "immutability_policy", None) or getattr(props, "immutability_policy", None)
     if policy is None:
         return False
-    state = str(getattr(policy, "state", "") or "").strip().lower()
-    retention = getattr(policy, "period_since_creation_in_days", None)
+    state = enum_str(getattr(policy, "state", None)).lower()
+    retention = getattr(policy, "immutability_period_since_creation_in_days", None)
     return state in {"locked", "unlocked"} and isinstance(retention, int) and retention > 0
 
 

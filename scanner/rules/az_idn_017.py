@@ -45,34 +45,36 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         logger.warning("%s: PIM assignment inventory unavailable; result is UNKNOWN", RULE_ID)
         return findings
 
-    pim_eligible_users: Set[str] = set()
+    pim_eligible_principals: Set[str] = set()
     for a in pim:
         if a.get("roleId", "").lower() == GLOBAL_ADMIN_ROLE_ID and a.get("assignmentType") == "Eligible":
-            pim_eligible_users.add(a.get("userId", ""))
+            pim_eligible_principals.add(a.get("principalId", ""))
 
     for member in members:
         if member.get("roleId", "").lower() != GLOBAL_ADMIN_ROLE_ID:
             continue
-        user_id = member.get("userId", "")
-        if not user_id:
+        principal_id = member.get("userId", "")
+        if not principal_id:
             continue
-        if user_id in pim_eligible_users:
+        if principal_id in pim_eligible_principals:
             continue
+        principal_type = member.get("principalType", "user")
         findings.append(
             {
                 "rule_id": RULE_ID,
                 "rule_name": RULE_NAME,
                 "severity": SEVERITY,
                 "category": CATEGORY,
-                "resource_id": f"/users/{user_id}",
-                "resource_name": member.get("userDisplayName", user_id),
+                "resource_id": f"/{principal_type}/{principal_id}",
+                "resource_name": member.get("userDisplayName", principal_id),
                 "resource_type": "Microsoft.Graph/users",
                 "description": DESCRIPTION,
                 "remediation": REMEDIATION,
                 "playbook": PLAYBOOK,
                 "frameworks": FRAMEWORKS,
                 "metadata": {
-                    "user_principal_name": member.get("userPrincipalName", ""),
+                    "principal_name": member.get("userPrincipalName", ""),
+                    "displayName": member.get("userDisplayName", ""),
                     "role_name": member.get("roleName", "Global Administrator"),
                     "pim_coverage": False,
                 },

@@ -30,7 +30,7 @@ PLAYBOOK = "playbooks/cli/fix_az_idn_024.sh"
 
 
 def _enforcing_policy_excludes_workloads(policy: Dict[str, Any]) -> bool:
-    """Return True if an enabled enforcing policy broadly excludes service principals."""
+    """Return True if an enabled enforcing policy does not cover service principals."""
     if policy.get("state") != "enabled":
         return False
     grant = policy.get("grantControls") or {}
@@ -38,9 +38,14 @@ def _enforcing_policy_excludes_workloads(policy: Dict[str, Any]) -> bool:
     if not built_in:
         return False
     conditions = policy.get("conditions") or {}
-    client_applications = conditions.get("clientApplications") or {}
-    excluded_sps = client_applications.get("excludeServicePrincipals") or []
-    return "All" in excluded_sps
+    client_apps = conditions.get("clientApplications") or {}
+    include_sps = client_apps.get("includeServicePrincipals") or client_apps.get("includeServicePrincipalIds") or []
+    exclude_sps = client_apps.get("excludeServicePrincipals") or client_apps.get("excludeServicePrincipalIds") or []
+    if not include_sps:
+        return True
+    if "All" in exclude_sps:
+        return True
+    return False
 
 
 def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:

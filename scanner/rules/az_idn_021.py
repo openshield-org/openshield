@@ -31,8 +31,17 @@ PLAYBOOK = "playbooks/cli/fix_az_idn_021.sh"
 _LEGACY_CLIENT_TYPES = {"exchangeActiveSync", "other"}
 
 
+def _covers_all_users(policy: Dict[str, Any]) -> bool:
+    conditions = policy.get("conditions") or {}
+    users = conditions.get("users") or {}
+    include_users = users.get("includeUsers") or []
+    return "All" in include_users
+
+
 def _blocks_legacy_auth(policy: Dict[str, Any]) -> bool:
     if policy.get("state") != "enabled":
+        return False
+    if not _covers_all_users(policy):
         return False
     grant = policy.get("grantControls") or {}
     built_in = grant.get("builtInControls") or []

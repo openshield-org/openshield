@@ -740,7 +740,7 @@ class AzureClient:
             logger.error("get_sql_server_vulnerability_assessment(%s) failed: %s", server_name, exc)
             return None
 
-    def get_cosmos_accounts(self) -> List[Any]:
+    def get_cosmos_accounts(self) -> Optional[List[Any]]:
         """List Cosmos DB accounts, if the optional management SDK is available."""
         try:
             from azure.mgmt.cosmosdb import CosmosDBManagementClient
@@ -749,9 +749,9 @@ class AzureClient:
             return list(client.database_accounts.list())
         except Exception as exc:
             logger.error("get_cosmos_accounts failed: %s", exc)
-            return []
+            return None
 
-    def get_managed_caches(self) -> List[Any]:
+    def get_managed_caches(self) -> Optional[List[Any]]:
         """List Azure Managed Redis/Cache accounts, if the SDK is available."""
         try:
             from azure.mgmt.redis import RedisManagementClient
@@ -760,7 +760,7 @@ class AzureClient:
             return list(client.redis.list())
         except Exception as exc:
             logger.error("get_managed_caches failed: %s", exc)
-            return []
+            return None
 
     # ------------------------------------------------------------------ #
     # Key Vault                                                             #
@@ -1190,59 +1190,70 @@ class AzureClient:
     def get_pim_role_assignments(self) -> Optional[List[Dict[str, Any]]]:
         """Return PIM eligible and active role assignment schedules.
 
-        Each item: {userId, roleId, assignmentType} where assignmentType is
-        'Eligible' or 'Active'.
+        Queries both roleAssignmentSchedules (Active assignments) and
+        roleEligibilitySchedules (Eligible assignments) and combines them.
+
+        Each item: {principalId, principalType, roleId, assignmentType} where
+        assignmentType is 'Active' or 'Eligible' and principalType is one of
+        'user', 'group', or 'servicePrincipal'.
 
         Requires RoleManagement.Read.Directory.
         Returns None on permission failure.
         """
-        url = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentSchedules?$top=100"
-        raw = self._get_graph_collection(url, "get_pim_role_assignments")
-        if raw is None:
-            return None
         results = []
-        for item in raw:
+        active_url = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentSchedules?$top=100"
+        active_raw = self._get_graph_collection(active_url, "get_pim_role_assignments/active")
+        if active_raw is None:
+            return None
+        for item in active_raw:
             role_def_id = (item.get("roleDefinitionId") or "").split("/")[-1].lower()
             results.append(
                 {
-                    "userId": item.get("principalId", ""),
+                    "principalId": item.get("principalId", ""),
+                    "principalType": item.get("principalType", "user"),
                     "roleId": role_def_id,
-                    "assignmentType": item.get("assignmentType", "Active"),
+                    "assignmentType": "Active",
+                }
+            )
+        eligible_url = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?$top=100"
+        eligible_raw = self._get_graph_collection(eligible_url, "get_pim_role_assignments/eligible")
+        if eligible_raw is None:
+            return None
+        for item in eligible_raw:
+            role_def_id = (item.get("roleDefinitionId") or "").split("/")[-1].lower()
+            results.append(
+                {
+                    "principalId": item.get("principalId", ""),
+                    "principalType": item.get("principalType", "user"),
+                    "roleId": role_def_id,
+                    "assignmentType": "Eligible",
                 }
             )
         return results
 
     def get_identity_protection_policies(self) -> Optional[Dict[str, Any]]:
-        """Return Identity Protection risk policy enablement state.
+        """Detect risk-based protection via Conditional Access risk conditions.
 
-        Returns dict with keys: userRiskPolicy, signInRiskPolicy — each with
-        {isEnabled, riskLevel}.
+        Rather than querying the unreliable identityProtection/policies endpoints,
+        this method inspects Conditional Access policies for risk-based conditions,
+        which is the recommended approach for modern tenants.
 
-        Requires Policy.Read.All.
+        Returns dict with keys: userRiskPolicy, signInRiskPolicy — each {isEnabled: bool}.
         Returns None on permission failure.
         """
-        import requests as _requests
-
-        try:
-            token = self.credential.get_token("https://graph.microsoft.com/.default")
-            headers = {"Authorization": f"Bearer {token.token}"}
-            result: Dict[str, Any] = {}
-            for key, path in (
-                ("userRiskPolicy", "identityProtection/policies/userRiskPolicy"),
-                ("signInRiskPolicy", "identityProtection/policies/signInRiskPolicy"),
-            ):
-                url = f"https://graph.microsoft.com/v1.0/{path}"
-                resp = _requests.get(url, headers=headers, timeout=30)
-                resp.raise_for_status()
-                data = resp.json()
-                result[key] = {
-                    "isEnabled": data.get("isEnabled", False),
-                    "riskLevel": data.get("riskLevel", "none"),
-                }
-            return result
-        except Exception as exc:
-            logger.error("get_identity_protection_policies failed: %s", exc)
+        policies = self.get_conditional_access_policies()
+        if policies is None:
             return None
+        user_risk_covered = any(
+            p.get("state") == "enabled" and (p.get("conditions") or {}).get("userRiskLevels") for p in policies
+        )
+        sign_in_risk_covered = any(
+            p.get("state") == "enabled" and (p.get("conditions") or {}).get("signInRiskLevels") for p in policies
+        )
+        return {
+            "userRiskPolicy": {"isEnabled": user_risk_covered},
+            "signInRiskPolicy": {"isEnabled": sign_in_risk_covered},
+        }
 
     def get_privileged_groups(self) -> Optional[List[Dict[str, Any]]]:
         """Return Entra ID groups that are assignable to directory roles.
