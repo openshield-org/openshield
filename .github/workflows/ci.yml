@@ -658,6 +658,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Check Alembic revision graph has exactly one head
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
+        # A migration branched from the same down_revision as another
+        # unmerged PR's migration (a fork) is invisible to a single PR's own
+        # CI run - each PR only has its own migration file, so `alembic
+        # upgrade head` succeeds in isolation. It's only detectable once both
+        # land on the same branch. This check catches that state explicitly
+        # instead of leaving `alembic upgrade head` to fail unhelpfully on
+        # whichever branch merges second.
+        run: |
+          HEAD_COUNT=$(alembic heads | grep -c '(head)')
+          if [ "$HEAD_COUNT" -ne 1 ]; then
+            echo "Alembic revision graph has $HEAD_COUNT heads, expected exactly 1:"
+            alembic heads
+            exit 1
+          fi
+          echo "Alembic revision graph has exactly one head."
+
       - name: Apply database migrations
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"

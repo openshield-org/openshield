@@ -720,6 +720,13 @@ class DatabaseManager:
             if latest_scan is None:
                 # No completed scan exists yet: there is no evidence to report.
                 # Absence of findings must never be presented as a passing score.
+                # in_scope_controls/excluded_controls/passed/failed are None
+                # here, not 0 - a literal 0 would read as "this mapping pack
+                # has zero in-scope controls" (the real, distinct
+                # NO_IN_SCOPE_CONTROLS case below), when what's actually true
+                # is that scope has not been determined yet because nothing
+                # has run. total_controls is still meaningful (the pack
+                # defines this many controls); the others are not.
                 return {
                     **pack_meta,
                     "status": "NO_SCAN_DATA",
@@ -727,11 +734,17 @@ class DatabaseManager:
                         "No completed scan is available yet, so no technical "
                         "evidence exists to report against this framework."
                     ),
+                    "evaluation_basis": (
+                        "No completed scan exists yet, so no control below could be "
+                        "evaluated. in_scope_controls/excluded_controls/passed/failed "
+                        "are null, not 0 - this is distinct from a scan that completed "
+                        "and found zero in-scope controls (status NO_IN_SCOPE_CONTROLS)."
+                    ),
                     "total_controls": len(controls),
-                    "in_scope_controls": 0,
-                    "excluded_controls": 0,
-                    "passed": 0,
-                    "failed": 0,
+                    "in_scope_controls": None,
+                    "excluded_controls": None,
+                    "passed": None,
+                    "failed": None,
                     "score_percent": None,
                     "controls": [],
                 }

@@ -74,10 +74,16 @@ def test_no_completed_scan_returns_no_scan_data_not_a_pass():
 
     assert result["status"] == "NO_SCAN_DATA"
     assert result["score_percent"] is None
-    assert result["passed"] == 0
-    assert result["failed"] == 0
+    # None, not 0 - a literal 0 would read as "this pack has zero in-scope
+    # controls" (the distinct NO_IN_SCOPE_CONTROLS case), when nothing has
+    # actually been evaluated yet.
+    assert result["passed"] is None
+    assert result["failed"] is None
+    assert result["in_scope_controls"] is None
+    assert result["excluded_controls"] is None
     assert "error" not in result  # route must return 200, not 500, for this normal state
     assert result["controls"] == []
+    assert "evaluation_basis" in result
 
 
 # ── Unknown framework / missing file ────────────────────────────────────────
