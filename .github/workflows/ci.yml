@@ -537,6 +537,11 @@ jobs:
         id: build
         run: docker build --tag "$IMAGE_TAG" --file Dockerfile .
 
+      - name: Verify BM25 retrieval in fresh image
+        run: |
+          docker run --rm --entrypoint python "$IMAGE_TAG" -c \
+            "from ai.retriever import retrieve; results = retrieve('Azure storage account security', n_results=5); assert results; print(results[0]['source'])"
+
       - name: Start image
         env:
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}

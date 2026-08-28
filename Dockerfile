@@ -15,6 +15,8 @@ RUN pip install --no-cache-dir --upgrade \
 
 COPY . .
 
+RUN python -m ai.embed
+
 RUN groupadd --system openshield && \
     useradd --system --gid openshield --no-create-home openshield && \
     chown -R openshield:openshield /app

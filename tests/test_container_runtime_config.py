@@ -104,14 +104,20 @@ def test_ci_builds_starts_and_scans_one_required_image():
     names = [step.get("name") for step in steps]
     assert "Check for Dockerfile" not in names
     assert names.index("Build image") < names.index("Start image")
+    assert names.index("Build image") < names.index("Verify BM25 retrieval in fresh image")
+    assert names.index("Verify BM25 retrieval in fresh image") < names.index("Start image")
     assert names.index("Start image") < names.index("Verify readiness and non-root runtime")
     assert names.index("Verify readiness and non-root runtime") < names.index("Run Trivy")
 
     build = _step(steps, "Build image")["run"]
+    rag_verify = _step(steps, "Verify BM25 retrieval in fresh image")["run"]
     start = _step(steps, "Start image")["run"]
     verify = _step(steps, "Verify readiness and non-root runtime")["run"]
     trivy = _step(steps, "Run Trivy")
     assert 'docker build --tag "$IMAGE_TAG"' in build
+    assert 'docker run --rm --entrypoint python "$IMAGE_TAG"' in rag_verify
+    assert "from ai.retriever import retrieve" in rag_verify
+    assert "assert results" in rag_verify
     assert '"$IMAGE_TAG"' in start
     assert "--network host" in start
     assert "127.0.0.1:${POSTGRES_PORT}/ci_db" in start

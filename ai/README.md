@@ -17,7 +17,7 @@ standard library (`math`, `json`, `re`). No C extensions, no chromadb, no numpy.
 ## Building the index
 
 ```bash
-python ai/embed.py
+python -m ai.embed
 ```
 
 The index is written atomically to `ai/vectorstore/bm25_index.json` so a

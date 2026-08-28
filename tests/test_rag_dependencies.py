@@ -1,6 +1,11 @@
 """Regression tests for the RAG dependency and embedding configuration."""
 
+import json
 from pathlib import Path
+import subprocess
+import sys
+
+import pytest
 
 
 def test_dockerfile_starts_with_from_instruction():
@@ -9,6 +14,25 @@ def test_dockerfile_starts_with_from_instruction():
     assert dockerfile.startswith(b"FROM "), (
         "Dockerfile must start directly with FROM; a UTF-8 BOM makes the first Docker instruction invalid"
     )
+
+
+def test_chunker_advances_when_newline_is_inside_overlap_window():
+    script = (
+        "from ai.chunker import _split_text; "
+        "chunks = _split_text('abcdefghijklmno\\n' + 'x' * 30, 20, 10); "
+        "assert ''.join(chunks).replace(' ', ''); print(len(chunks))"
+    )
+
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=2,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def test_vulnerable_transformer_stack_is_not_installed():
@@ -114,3 +138,24 @@ def test_bm25_index_builds_and_retrieves_openshield_content(tmp_path, monkeypatc
     assert results[0]["source"] == "AZ-STOR-TEST"
     assert all(result["text"] for result in results)
     assert all(result["source"] for result in results)
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        {},
+        {"version": "2", "avg_dl": 1.0, "idf": {}, "chunks": []},
+        {"version": "1", "avg_dl": 0, "idf": {}, "chunks": []},
+        {"version": "1", "avg_dl": 1.0, "idf": [], "chunks": []},
+        {"version": "1", "avg_dl": 1.0, "idf": {}, "chunks": [{}]},
+    ],
+)
+def test_malformed_bm25_index_raises_vector_store_not_built(tmp_path, monkeypatch, index):
+    from ai import retriever
+
+    index_path = tmp_path / "bm25_index.json"
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+    monkeypatch.setattr(retriever, "INDEX_PATH", index_path)
+
+    with pytest.raises(retriever.VectorStoreNotBuilt, match="BM25 index invalid"):
+        retriever.retrieve("Azure storage")

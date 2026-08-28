@@ -2,6 +2,7 @@
 
 import json
 import logging
+import math
 import re
 from pathlib import Path
 
@@ -61,11 +62,65 @@ def _tokenize(text: str) -> list:
 
 def _load_index() -> dict:
     if not INDEX_PATH.exists():
-        raise VectorStoreNotBuilt("BM25 index not found. Run 'python ai/embed.py' first.")
+        raise VectorStoreNotBuilt("BM25 index not found. Run 'python -m ai.embed' first.")
     try:
-        return json.loads(INDEX_PATH.read_text(encoding="utf-8"))
+        index = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
     except Exception as exc:
         raise VectorStoreNotBuilt(f"BM25 index unreadable: {exc}") from exc
+    _validate_index(index)
+    return index
+
+
+def _validate_index(index: object) -> None:
+    """Reject incompatible or malformed indexes before scoring."""
+
+    def invalid(reason: str) -> None:
+        raise VectorStoreNotBuilt(f"BM25 index invalid: {reason}")
+
+    if not isinstance(index, dict):
+        invalid("root must be an object")
+    if index.get("version") != "1":
+        invalid("unsupported or missing version")
+
+    avg_dl = index.get("avg_dl")
+    if isinstance(avg_dl, bool) or not isinstance(avg_dl, (int, float)) or not math.isfinite(avg_dl) or avg_dl <= 0:
+        invalid("avg_dl must be a positive finite number")
+
+    idf = index.get("idf")
+    if not isinstance(idf, dict):
+        invalid("idf must be an object")
+    for term, value in idf.items():
+        if (
+            not isinstance(term, str)
+            or isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            invalid("idf entries must map terms to finite non-negative numbers")
+
+    chunks = index.get("chunks")
+    if not isinstance(chunks, list):
+        invalid("chunks must be an array")
+    for chunk in chunks:
+        if not isinstance(chunk, dict):
+            invalid("each chunk must be an object")
+        if not isinstance(chunk.get("content"), str) or not isinstance(chunk.get("metadata"), dict):
+            invalid("each chunk requires string content and object metadata")
+        terms = chunk.get("terms")
+        dl = chunk.get("dl")
+        if not isinstance(terms, dict) or isinstance(dl, bool) or not isinstance(dl, int) or dl < 0:
+            invalid("each chunk requires object terms and a non-negative integer dl")
+        for term, frequency in terms.items():
+            if (
+                not isinstance(term, str)
+                or isinstance(frequency, bool)
+                or not isinstance(frequency, int)
+                or frequency <= 0
+            ):
+                invalid("chunk terms must map tokens to positive integer frequencies")
+        if sum(terms.values()) != dl:
+            invalid("chunk term frequencies must sum to dl")
 
 
 def _bm25_score(query_terms: list, doc_terms: dict, dl: int, avg_dl: float, idf: dict) -> float:
