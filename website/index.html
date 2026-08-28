@@ -3,6 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      CSP for this site is a real HTTP response header set in vercel.json, not
+      a <meta> tag here — a header applies before any markup parses and
+      supports directives (frame-ancestors) a <meta> tag silently ignores.
+      script-src there keeps 'unsafe-inline' for this file's own static
+      onclick="" navigation handlers (fixed markup this file ships, never
+      generated from remote/user data). That does NOT weaken the XSS fix:
+      every string built from markdown, blog content, or the live editor
+      preview is sanitized with DOMPurify before it reaches innerHTML, and the
+      sanitized output never contains inline event-handler attributes in the
+      first place (see setSafeHTML() in script.js) — there is nothing for
+      'unsafe-inline' to execute even from injected content. See #297.
+    -->
     <title>OpenShield | Enterprise-Grade Open Source CSPM</title>
     
     <!-- SEO & Social Metadata -->
@@ -28,6 +41,8 @@
     <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked@18.0.6/lib/marked.umd.js" integrity="sha384-uGn1eBC40GtuBgao0epc/cz9O4Lo8/flg/10SW+69UjLI5nP31iT4UPc65Xz10Le" crossorigin="anonymous"></script>
+    <!-- DOMPurify: sanitizes every dynamically-rendered HTML string (markdown output and templated content alike) before it reaches innerHTML -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.14/dist/purify.min.js" integrity="sha384-46dPGH1XlTmj7bc50bqLjTdORXs/3EP2QpA/6EWbelYWOY9VGp+87RT61S3Mcslb" crossorigin="anonymous"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha384-PPIZEGYM1v8zp5Py7UjFb79S58UeqCL9pYVnVPURKEqvioPROaVAJKKLzvH2rDnI" crossorigin="anonymous">
     <!-- Tailwind + Typography Plugin -->
@@ -596,7 +611,7 @@
                         <p class="text-lg text-slate-500 mt-2">Browse our library of security checks and compliance mappings.</p>
                     </div>
                     <div class="flex items-center gap-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2 rounded-2xl">
-                        <select id="rule-filter" onchange="renderRules()" class="bg-transparent text-sm font-bold text-slate-600 dark:text-slate-300 outline-none px-4 py-2 cursor-pointer appearance-none">
+                        <select id="rule-filter" onchange="renderRules()" aria-label="Filter rules by compliance framework" class="bg-transparent text-sm font-bold text-slate-600 dark:text-slate-300 outline-none px-4 py-2 cursor-pointer appearance-none">
                             <option value="all">All Frameworks</option>
                             <option value="CIS">CIS Benchmark</option>
                             <option value="NIST">NIST CSF</option>
@@ -771,20 +786,26 @@
                         </div>
                         
                         <div class="pt-6 border-t border-slate-100 dark:border-white/5">
-                            <div class="flex justify-between items-center mb-4">
-                                <label class="block text-xs font-bold uppercase tracking-widest text-slate-500">Security: GitHub Access Token</label>
-                                <a href="https://github.com/settings/tokens/new?scopes=repo&description=OpenShield%20Website%20Editor" target="_blank" class="text-[10px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center transition-colors">
-                                    <i data-lucide="help-circle" class="w-3 h-3 mr-1"></i>
-                                    Get Token
+                            <label class="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Submit This Entry</label>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-4">
+                                This editor no longer asks for a GitHub token in the browser — a page that can request
+                                a <code>repo</code>-scope credential is a real risk if anything on it is ever
+                                compromised. Export the entry below, then open a pull request the normal way.
+                            </p>
+                            <div class="flex flex-wrap gap-4 mb-4">
+                                <button type="button" id="export-entry-btn" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-6 py-3 rounded-xl font-bold hover:scale-105 transition shadow-lg shadow-slate-900/10 dark:shadow-white/10">
+                                    Export Entry
+                                </button>
+                                <button type="button" id="copy-entry-btn" class="hidden bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-6 py-3 rounded-xl font-bold hover:border-brand-500/50 transition">
+                                    Copy
+                                </button>
+                                <a href="https://github.com/openshield-org/openshield/edit/dev/website/content.js" target="_blank" rel="noopener" class="flex items-center px-6 py-3 rounded-xl font-bold text-sm border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:border-brand-500/50 transition">
+                                    <i data-lucide="git-pull-request" class="w-4 h-4 mr-2"></i>
+                                    Open a Pull Request
                                 </a>
                             </div>
-                            <div class="flex gap-4">
-                                <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxx" class="flex-grow bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition dark:text-white">
-                                <button type="button" onclick="submitToGithub()" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-6 py-3 rounded-xl font-bold hover:scale-105 transition shadow-lg shadow-slate-900/10 dark:shadow-white/10">
-                                    Publish
-                                </button>
-                            </div>
-                            <p class="mt-2 text-[10px] text-slate-400">Tokens are never stored. Requires <code>repo</code> scope to create branches and PRs.</p>
+                            <textarea id="export-entry-output" readonly rows="8" class="hidden w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-xs font-mono focus:ring-2 focus:ring-brand-500 outline-none transition dark:text-white" placeholder="Exported entry will appear here..."></textarea>
+                            <p id="export-entry-note" class="mt-2 text-[10px] text-slate-400"></p>
                         </div>
                     </form>
                 </div>

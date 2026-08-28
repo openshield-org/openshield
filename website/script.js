@@ -14,17 +14,39 @@ function escapeHTML(str) {
     return p.innerHTML;
 }
 
+// Every dynamically-built HTML string - whether it's this file's own
+// template markup or markdown rendered from a blog post / the live editor
+// preview - goes through this before it ever reaches innerHTML. DOMPurify's
+// default config strips <script>, inline event-handler attributes
+// (onerror=, onclick=, ...), javascript: URLs, and unknown/dangerous tags.
+// It never contains an inline handler afterward, so it does not depend on
+// the page's CSP allowing 'unsafe-inline' scripts to be safe - it's safe
+// because nothing executable survives sanitization.
+const SANITIZE_CONFIG = {
+    ADD_TAGS: ['iframe'],
+    ADD_ATTR: ['allowfullscreen', 'frameborder', 'loading', 'target'],
+};
+
+function sanitizeHTML(html) {
+    return DOMPurify.sanitize(html, SANITIZE_CONFIG);
+}
+
+function setSafeHTML(el, html) {
+    if (!el) return;
+    el.innerHTML = sanitizeHTML(html);
+}
+
 function dedent(str) {
     if (!str) return '';
     const lines = str.split('\n');
     const first = lines.find(l => l.trim() !== '');
     if (!first) return str.trim();
     const baseIndent = first.match(/^\s*/)[0];
-    
+
     let inPre = false;
     return lines.map(l => {
         let line = l.startsWith(baseIndent) ? l.substring(baseIndent.length) : l;
-        
+
         // If we are not in a pre block, trim the line to move tags to column 0 for marked.js
         if (!inPre) {
             const trimmed = line.trim();
@@ -38,6 +60,19 @@ function dedent(str) {
             return line;
         }
     }).join('\n').trim();
+}
+
+// Renders markdown to sanitized HTML, ready to assign to innerHTML directly.
+// Centralised here so every markdown-derived surface (blog posts, docs
+// pages, the live editor preview) sanitizes identically - there is exactly
+// one path from untrusted markdown text to the DOM.
+function renderMarkdown(raw) {
+    const html = marked.parse(dedent(raw || ''));
+    const clean = sanitizeHTML(html);
+    const temp = document.createElement('div');
+    temp.innerHTML = clean;
+    temp.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
+    return temp.innerHTML;
 }
 
 // ------------------------------------------------------------------ //
@@ -76,6 +111,7 @@ function initTheme() {
 // ------------------------------------------------------------------ //
 
 async function typeWriter(text, element, speed = 40) {
+    if (!element) return;
     for (let i = 0; i < text.length; i++) {
         element.textContent += text.charAt(i);
         await new Promise(resolve => setTimeout(resolve, speed));
@@ -93,12 +129,19 @@ async function runTerminalSession() {
         container.textContent = '';
         const session = sessions[currentSession];
 
+        // Built with real DOM APIs, not an HTML string, so the
+        // .command-text span genuinely exists for typeWriter() to type into
+        // - no innerHTML/sanitizer round-trip needed for two static nodes.
         const cmdRow = document.createElement('div');
         cmdRow.className = 'flex items-start';
-        cmdRow.textContent = '<span class="text-brand-500 mr-3 shrink-0">❯</span><span class="command-text"></span>';
+        const prompt = document.createElement('span');
+        prompt.className = 'text-brand-500 mr-3 shrink-0';
+        prompt.textContent = '❯';
+        const cmdTextSpan = document.createElement('span');
+        cmdTextSpan.className = 'command-text';
+        cmdRow.append(prompt, cmdTextSpan);
         container.appendChild(cmdRow);
-        
-        const cmdTextSpan = cmdRow.querySelector('.command-text');
+
         await typeWriter(session.command, cmdTextSpan);
         await new Promise(resolve => setTimeout(resolve, 800));
 
@@ -149,13 +192,13 @@ function showBlogPost(postId) {
     const postContent = document.getElementById('post-content');
     if (postContent) {
         const imageHtml = post.image
-            ? `<img src="${post.image}" class="w-full h-80 object-cover rounded-[2.5rem] mb-12 border border-slate-200 dark:border-white/10 shadow-2xl">`
+            ? `<img src="${escapeHTML(post.image)}" class="w-full h-80 object-cover rounded-[2.5rem] mb-12 border border-slate-200 dark:border-white/10 shadow-2xl">`
             : '';
         const videoHtml = post.video
-            ? `<div class="relative w-full aspect-video rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl mb-12"><iframe src="${post.video}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
+            ? `<div class="relative w-full aspect-video rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl mb-12"><iframe src="${escapeHTML(post.video)}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
             : '';
 
-        postContent.textContent = `
+        setSafeHTML(postContent, `
             ${imageHtml}
             ${videoHtml}
             <header class="mb-12 border-b border-slate-100 dark:border-white/5 pb-12">
@@ -168,15 +211,9 @@ function showBlogPost(postId) {
                 <p class="text-slate-500 text-sm">By ${escapeHTML(post.author)}</p>
             </header>
             <div class="prose prose-slate dark:prose-invert prose-lg max-none">
-                ${(() => {
-                    const html = marked.parse(dedent(post.content));
-                    const temp = document.createElement('div');
-                    temp.textContent = html;
-                    temp.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
-                    return temp.innerHTML;
-                })()}
+                ${renderMarkdown(post.content)}
             </div>
-        `;
+        `);
         showSection('post-detail');
         window.history.pushState(null, null, `#blog/${postId}`);
         if (window.lucide) lucide.createIcons();
@@ -207,8 +244,18 @@ function toggleMobileMenu() {
 }
 
 // ------------------------------------------------------------------ //
-// 5. Blog Editor & GitHub Integration                                  //
+// 5. Blog Editor                                                       //
 // ------------------------------------------------------------------ //
+//
+// This editor no longer talks to the GitHub API from the browser (issue
+// #297): a public page that asks any visitor for a classic, repo-scoped
+// personal access token is a serious risk the moment anything on that page
+// can be made to run attacker script - which is exactly the class of bug
+// this same fix closes elsewhere on the page. "Export Entry" formats the
+// entry the same way the old client-side flow did and hands it to the
+// contributor to paste into website/content.js themselves, opening a PR the
+// normal way. A properly scoped server-side publishing integration is
+// explicitly out of scope here - see the issue for why.
 
 function initEditor() {
     const form = document.getElementById('editor-form');
@@ -221,13 +268,12 @@ function initEditor() {
 
     document.getElementById('edit-image-input')?.addEventListener('change', handleImageSelect);
     initImageDropZone();
+
+    document.getElementById('export-entry-btn')?.addEventListener('click', exportEntry);
+    document.getElementById('copy-entry-btn')?.addEventListener('click', copyExportedEntry);
 }
 
 let selectedImageFile = null;
-
-// GitHub Contents API rejects base64 payloads over 1 MB.
-// Base64 adds ~33% overhead, so the raw file must be under ~750 KB.
-const MAX_IMAGE_BYTES = 700 * 1024;
 
 const EMBED_ALLOWED_HOSTS = new Set(['www.youtube.com', 'youtube.com', 'player.vimeo.com']);
 
@@ -262,10 +308,6 @@ function processImageFile(file) {
     if (!file) return;
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
         alert('Only PNG, JPG, and WEBP images are supported.');
-        return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-        alert(`Image is ${(file.size / 1024).toFixed(0)} KB. Please use an image under 700 KB to ensure it uploads to GitHub successfully.`);
         return;
     }
     selectedImageFile = file;
@@ -340,31 +382,40 @@ function toggleEditorFields() {
     document.getElementById('label-title').textContent = labelMap[type] || 'Title';
     document.getElementById('edit-title').placeholder = placeholderMap[type] || '';
 
+    resetExportedEntry();
     updatePreview();
+}
+
+function wireAvatarFallback(img) {
+    if (!img) return;
+    img.addEventListener('error', function onError() {
+        this.removeEventListener('error', onError);
+        this.src = 'https://github.com/github.png';
+    });
 }
 
 function updatePreview() {
     const type = document.getElementById('edit-type').value;
     const title = document.getElementById('edit-title').value || (type === 'blog' ? 'Post Title' : 'Event Name');
     const date = document.getElementById('edit-date').value || 'Date';
-    
+
     const preview = document.getElementById('editor-preview');
     if (!preview) return;
 
     if (type === 'blog') {
         const author = document.getElementById('edit-author').value || 'Author';
-        const content = document.getElementById('edit-content').value || '<p>Content will appear here...</p>';
+        const content = document.getElementById('edit-content').value || '_Content will appear here..._';
         const imageSrc = document.getElementById('image-preview-img').src;
         const imageHtml = !document.getElementById('image-preview-container').classList.contains('hidden')
-            ? `<img src="${imageSrc}" class="w-full h-64 object-cover rounded-3xl mb-8 border border-slate-200 dark:border-white/10 shadow-lg">`
+            ? `<img src="${escapeHTML(imageSrc)}" class="w-full h-64 object-cover rounded-3xl mb-8 border border-slate-200 dark:border-white/10 shadow-lg">`
             : '';
         const videoRaw = document.getElementById('edit-video')?.value || '';
         const embedUrl = toEmbedUrl(videoRaw);
         const videoHtml = embedUrl
-            ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${embedUrl}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
+            ? `<div class="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-lg mb-8"><iframe src="${escapeHTML(embedUrl)}" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`
             : '';
 
-        preview.textContent = `
+        setSafeHTML(preview, `
             ${imageHtml}
             <header class="mb-8 border-b border-slate-100 dark:border-white/5 pb-8">
                 <div class="flex items-center text-brand-500 text-xs font-bold mb-4 uppercase tracking-widest">
@@ -377,19 +428,13 @@ function updatePreview() {
             </header>
             ${videoHtml}
             <div class="prose prose-slate dark:prose-invert">
-                ${(() => {
-                    const html = marked.parse(dedent(content));
-                    const temp = document.createElement('div');
-                    temp.textContent = html;
-                    temp.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
-                    return temp.innerHTML;
-                })()}
+                ${renderMarkdown(content)}
             </div>
-        `;
+        `);
     } else if (type === 'event') {
         const location = document.getElementById('edit-location').value || 'Location';
         const status = document.getElementById('edit-status').value || 'Upcoming';
-        preview.textContent = `
+        setSafeHTML(preview, `
             <div class="flex flex-col items-center justify-center text-center py-20">
                 <div class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest mb-6">
                     Event Preview
@@ -400,17 +445,17 @@ function updatePreview() {
                     ${escapeHTML(status)}
                 </div>
             </div>
-        `;
+        `);
     } else if (type === 'contributor') {
         const handle = document.getElementById('edit-handle').value || 'username';
         const role = document.getElementById('edit-role').value || 'Contributor';
-        preview.textContent = `
+        setSafeHTML(preview, `
             <div class="flex flex-col items-center justify-center text-center py-20">
                 <div class="inline-flex items-center px-3 py-1 rounded-full bg-slate-500/10 border border-slate-500/20 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-8">
                     Contributor Preview
                 </div>
                 <div class="relative mb-6">
-                    <img src="https://github.com/${handle}.png" alt="${handle}" class="w-24 h-24 rounded-full border-4 border-slate-200 dark:border-white/10 shadow-xl" onerror="this.src='https://github.com/github.png'">
+                    <img id="contributor-preview-avatar" src="${escapeHTML(`https://github.com/${handle}.png`)}" alt="${escapeHTML(handle)}" class="w-24 h-24 rounded-full border-4 border-slate-200 dark:border-white/10 shadow-xl">
                     <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border-2 border-white dark:border-dark-950">
                         <i class="fab fa-github text-white text-xs"></i>
                     </div>
@@ -419,12 +464,18 @@ function updatePreview() {
                 <p class="text-slate-500 font-medium mb-1">${escapeHTML(role)}</p>
                 <p class="text-brand-500 text-sm font-mono">@${escapeHTML(handle)}</p>
             </div>
-        `;
+        `);
+        // The onerror avatar fallback used to be an inline attribute in the
+        // template string itself; DOMPurify strips inline event-handler
+        // attributes from sanitized output by design (that's what closes the
+        // XSS this whole fix is about), so it's wired up here instead, the
+        // same way every other dynamic click/error handler on this page now is.
+        wireAvatarFallback(document.getElementById('contributor-preview-avatar'));
     } else if (type === 'release') {
         const version = document.getElementById('edit-release-version').value || 'vX.Y.Z';
         const releaseType = document.getElementById('edit-release-type').value || 'minor';
         const notes = (document.getElementById('edit-release-notes').value || '').split('\n').filter(l => l.trim());
-        preview.textContent = `
+        setSafeHTML(preview, `
             <div class="py-8">
                 <div class="flex items-center gap-4 mb-4">
                     <span class="font-mono text-2xl font-extrabold text-slate-900 dark:text-white">${escapeHTML(version)}</span>
@@ -441,65 +492,60 @@ function updatePreview() {
                     `).join('')}
                 </ul>
             </div>
-        `;
+        `);
     }
+
+    resetExportedEntry();
 }
 
-async function submitToGithub() {
-    const token = document.getElementById('github-token').value;
-    if (!token) {
-        alert('Please provide a GitHub Personal Access Token for authentication.');
-        return;
-    }
-
+function buildEntry() {
     const type = document.getElementById('edit-type').value;
-    let entry;
-    let entryTitle;
-    
+
     if (type === 'blog') {
         const videoRaw = document.getElementById('edit-video')?.value || '';
-        entry = {
+        const entry = {
             id: document.getElementById('edit-id').value,
             title: document.getElementById('edit-title').value,
             date: document.getElementById('edit-date').value,
             excerpt: document.getElementById('edit-excerpt').value,
             author: document.getElementById('edit-author').value,
-            image: "",
+            // Images are no longer uploaded from the browser (that required
+            // the token this fix removes). Left blank; exportEntry()'s note
+            // tells the contributor to add the file under
+            // website/assets/blog/ and fill this in as part of their PR.
+            image: '',
             video: toEmbedUrl(videoRaw) || undefined,
             content: document.getElementById('edit-content').value
         };
-        entryTitle = entry.title;
         if (!entry.id || !entry.title || !entry.content) {
-            alert('ID, Title, and Content are required for blog posts.');
-            return;
+            return { error: 'ID, Title, and Content are required for blog posts.' };
         }
+        return { type, entry, arrayKey: 'blog' };
     } else if (type === 'event') {
-        entry = {
+        const entry = {
             title: document.getElementById('edit-title').value,
             date: document.getElementById('edit-date').value,
             location: document.getElementById('edit-location').value,
             link: document.getElementById('edit-link').value,
             status: document.getElementById('edit-status').value
         };
-        entryTitle = entry.title;
         if (!entry.title || !entry.date) {
-            alert('Title and Date are required for events.');
-            return;
+            return { error: 'Title and Date are required for events.' };
         }
+        return { type, entry, arrayKey: 'events' };
     } else if (type === 'contributor') {
-        entry = {
+        const entry = {
             name: document.getElementById('edit-title').value,
             role: document.getElementById('edit-role').value,
             handle: document.getElementById('edit-handle').value
         };
-        entryTitle = entry.name;
         if (!entry.name || !entry.handle) {
-            alert('Name and GitHub Handle are required for contributors.');
-            return;
+            return { error: 'Name and GitHub Handle are required for contributors.' };
         }
+        return { type, entry, arrayKey: 'contributors' };
     } else if (type === 'release') {
         const notesRaw = document.getElementById('edit-release-notes').value || '';
-        entry = {
+        const entry = {
             version: document.getElementById('edit-release-version').value,
             date: document.getElementById('edit-date').value,
             type: document.getElementById('edit-release-type').value,
@@ -507,138 +553,62 @@ async function submitToGithub() {
             notes: notesRaw.split('\n').map(l => l.trim()).filter(l => l.length > 0),
             github: document.getElementById('edit-release-github').value
         };
-        entryTitle = entry.version;
         if (!entry.version || !entry.title || entry.notes.length === 0) {
-            alert('Version, Title, and at least one release note are required.');
-            return;
+            return { error: 'Version, Title, and at least one release note are required.' };
         }
+        return { type, entry, arrayKey: 'releases' };
+    }
+    return { error: 'Unknown entry type.' };
+}
+
+function resetExportedEntry() {
+    const output = document.getElementById('export-entry-output');
+    const copyBtn = document.getElementById('copy-entry-btn');
+    const note = document.getElementById('export-entry-note');
+    output?.classList.add('hidden');
+    copyBtn?.classList.add('hidden');
+    if (output) output.value = '';
+    if (note) note.textContent = '';
+}
+
+function exportEntry() {
+    const result = buildEntry();
+    const note = document.getElementById('export-entry-note');
+    const output = document.getElementById('export-entry-output');
+    const copyBtn = document.getElementById('copy-entry-btn');
+    if (!output || !note || !copyBtn) return;
+
+    if (result.error) {
+        output.classList.add('hidden');
+        copyBtn.classList.add('hidden');
+        note.textContent = result.error;
+        return;
     }
 
-    const btn = event.target;
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Preparing PR...';
+    const snippet = `${JSON.stringify(result.entry, null, 4)},`;
+    output.value = snippet;
+    output.classList.remove('hidden');
+    copyBtn.classList.remove('hidden');
 
+    const imageNote = (result.type === 'blog' && selectedImageFile)
+        ? ' Your selected image is not uploaded automatically — add it under website/assets/blog/ in your PR and set the "image" field above to its path.'
+        : '';
+    note.textContent = `Paste this into the "${result.arrayKey}" array in website/content.js, then open a pull request.${imageNote}`;
+}
+
+async function copyExportedEntry() {
+    const output = document.getElementById('export-entry-output');
+    const note = document.getElementById('export-entry-note');
+    if (!output || !output.value) return;
     try {
-        const owner = 'openshield-org';
-        const repo = 'openshield';
-        const path = 'website/content.js';
-        const baseBranch = 'dev';
-        const newBranch = `feat/website-${type}-${Date.now()}`;
-
-        const headers = {
-            'Authorization': `token ${token}`,
-            'Content-Type': 'application/json'
-        };
-
-        // 1. Get current SHA of 'dev' branch
-        const devRefRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${baseBranch}`, { headers });
-        if (!devRefRes.ok) throw new Error(`Could not find ${baseBranch} branch.`);
-        const devRefData = await devRefRes.json();
-        const devSha = devRefData.object.sha;
-
-        // 2. Create a new feature branch from 'dev'
-        btn.textContent = 'Creating Branch...';
-        const createBranchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                ref: `refs/heads/${newBranch}`,
-                sha: devSha
-            })
-        });
-        if (!createBranchRes.ok) throw new Error('Failed to create new branch. Check your token permissions.');
-
-        // 3. Handle Image Upload if selected
-        if (type === 'blog' && selectedImageFile) {
-            btn.textContent = 'Uploading Image...';
-            const fileName = `${entry.id}-${Date.now()}.${selectedImageFile.name.split('.').pop()}`;
-            const imagePath = `website/assets/blog/${fileName}`;
-            const base64Image = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-                reader.readAsDataURL(selectedImageFile);
-            });
-
-            const imageUploadRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${imagePath}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({
-                    message: `assets(website): upload blog image - ${entryTitle}`,
-                    content: base64Image,
-                    branch: newBranch
-                })
-            });
-
-            if (imageUploadRes.ok) {
-                entry.image = `assets/blog/${fileName}`;
-            } else {
-                console.error('Failed to upload image, continuing without it.');
-            }
+        await navigator.clipboard.writeText(output.value);
+        if (note) {
+            const original = note.textContent;
+            note.textContent = 'Copied to clipboard.';
+            setTimeout(() => { note.textContent = original; }, 2000);
         }
-
-        // 4. Get content.js current state & SHA (from dev)
-        const fileRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${baseBranch}`, { headers });
-        const fileData = await fileRes.json();
-        const content = atob(fileData.content);
-        const fileSha = fileData.sha;
-
-        // 5. Inject new entry into content.js
-        const arrayKeyMap = {
-            'blog': 'blog: [',
-            'event': 'events: [',
-            'contributor': 'contributors: ['
-        };
-        const arrayKey = arrayKeyMap[type];
-        const arrayStart = content.indexOf(arrayKey);
-        if (arrayStart === -1) throw new Error(`Could not find ${type} array in content.js`);
-        
-        const insertPos = arrayStart + arrayKey.length;
-        const newEntryString = `\n        ${JSON.stringify(entry, null, 4)},`;
-        const updatedContent = content.slice(0, insertPos) + newEntryString + content.slice(insertPos);
-
-        // 6. Commit change to the NEW branch
-        btn.textContent = 'Committing Changes...';
-        const commitRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({
-                message: `feat(website): add ${type} - ${entryTitle}`,
-                content: btoa(unescape(encodeURIComponent(updatedContent))),
-                sha: fileSha,
-                branch: newBranch
-            })
-        });
-        if (!commitRes.ok) throw new Error('Failed to commit changes to the new branch.');
-
-        // 7. Create Pull Request from newBranch to baseBranch
-        btn.textContent = 'Opening Pull Request...';
-        const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                title: `feat(website): add ${type} - ${entryTitle}`,
-                body: `This PR adds a new ${type} entry via the in-website editor.\n\n**Title:** ${entryTitle}\n**Author/Location:** ${entry.author || entry.location}`,
-                head: newBranch,
-                base: baseBranch
-            })
-        });
-
-        if (!prRes.ok) {
-            const error = await prRes.json();
-            throw new Error(error.message || 'Failed to create Pull Request.');
-        }
-
-        const prData = await prRes.json();
-        alert(`Success! Your Pull Request has been created: ${prData.html_url}\n\nMaintainers will review and merge it shortly.`);
-        showSection(type === 'contributor' ? 'community' : (type === 'blog' ? 'blog' : 'events'));
-        window.open(prData.html_url, '_blank');
-
-    } catch (err) {
-        alert(`Error: ${err.message}`);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
+    } catch {
+        output.select();
     }
 }
 
@@ -650,13 +620,13 @@ function renderEcosystem() {
     const container = document.getElementById('ecosystem-container');
     if (!container) return;
 
-    container.textContent = siteContent.ecosystem.map((item, idx) => {
+    setSafeHTML(container, siteContent.ecosystem.map((item, idx) => {
         const isLarge = idx === 0 || idx === 3;
         const colSpan = isLarge ? 'md:col-span-8' : 'md:col-span-4';
-        
-        const iconHtml = item.icon === 'shield' 
+
+        const iconHtml = item.icon === 'shield'
             ? `<i class="fas fa-shield-halved fa-fw text-2xl"></i>`
-            : `<i data-lucide="${item.icon}" class="w-7 h-7"></i>`;
+            : `<i data-lucide="${escapeHTML(item.icon)}" class="w-7 h-7"></i>`;
 
         return `
             <div class="${colSpan} bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-10 rounded-[2.5rem] backdrop-blur-sm group hover:bg-slate-50 dark:hover:bg-white/[0.07] transition-all shadow-sm">
@@ -667,7 +637,9 @@ function renderEcosystem() {
                 <p class="text-slate-600 dark:text-slate-400 leading-relaxed">${escapeHTML(item.description)}</p>
             </div>
         `;
-    }).join('');
+    }).join(''));
+
+    if (window.lucide) lucide.createIcons();
 }
 
 function renderRules() {
@@ -678,26 +650,26 @@ function renderRules() {
     const filterFw = document.getElementById('rule-filter')?.value || 'all';
 
     const filteredRules = siteContent.rules.filter(rule => {
-        const matchesSearch = rule.id.toLowerCase().includes(searchTerm) || 
-                              rule.name.toLowerCase().includes(searchTerm) || 
+        const matchesSearch = rule.id.toLowerCase().includes(searchTerm) ||
+                              rule.name.toLowerCase().includes(searchTerm) ||
                               rule.category.toLowerCase().includes(searchTerm) ||
                               rule.description.toLowerCase().includes(searchTerm);
-        
+
         const matchesFw = filterFw === 'all' || rule.frameworks[filterFw] !== undefined;
-        
+
         return matchesSearch && matchesFw;
     });
 
     if (filteredRules.length === 0) {
-        container.textContent = `
+        setSafeHTML(container, `
             <div class="col-span-full text-center py-12 bg-slate-50 dark:bg-white/5 border border-dashed border-slate-300 dark:border-white/10 rounded-3xl">
                 <p class="text-slate-500">No rules match your search criteria.</p>
             </div>
-        `;
+        `);
         return;
     }
 
-    container.textContent = filteredRules.map(rule => `
+    setSafeHTML(container, filteredRules.map(rule => `
         <div class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-8 rounded-3xl hover:border-brand-500/50 transition-all group shadow-sm flex flex-col h-full">
             <div class="flex justify-between items-start mb-6">
                 <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">${escapeHTML(rule.id)}</span>
@@ -708,13 +680,13 @@ function renderRules() {
             <div class="flex flex-wrap gap-2 mt-auto">
                 ${Object.entries(rule.frameworks).map(([f, v]) => `
                     <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-white/5 text-[10px] font-mono text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10">
-                        ${f}: ${v}
+                        ${escapeHTML(f)}: ${escapeHTML(String(v))}
                     </span>
                 `).join('')}
             </div>
         </div>
-    `).join('');
-    
+    `).join(''));
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -722,12 +694,16 @@ function renderDocsSidebar() {
     const nav = document.getElementById('docs-nav');
     if (!nav) return;
 
-    nav.textContent = siteContent.docs.map(doc => `
-        <button onclick="showDocPage('${doc.id}')" id="nav-${doc.id}" class="doc-nav-btn block w-full text-left px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 rounded-2xl transition-all flex items-center group">
+    setSafeHTML(nav, siteContent.docs.map(doc => `
+        <button data-doc-id="${escapeHTML(doc.id)}" id="nav-${escapeHTML(doc.id)}" class="doc-nav-btn block w-full text-left px-5 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 rounded-2xl transition-all flex items-center group">
             <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-brand-500 mr-3 transition-colors"></span>
             ${escapeHTML(doc.title)}
         </button>
-    `).join('');
+    `).join(''));
+
+    nav.querySelectorAll('[data-doc-id]').forEach(btn => {
+        btn.addEventListener('click', () => showDocPage(btn.dataset.docId));
+    });
 }
 
 function showDocPage(docId) {
@@ -736,38 +712,33 @@ function showDocPage(docId) {
 
     const container = document.getElementById('docs-content-container');
     if (container) {
-        const rawHtml = marked.parse(dedent(doc.content));
-        const tempDiv = document.createElement('div');
-        tempDiv.textContent = rawHtml;
-        tempDiv.querySelectorAll('pre').forEach(pre => pre.classList.add('not-prose'));
-        
-        container.textContent = `
-            ${tempDiv.innerHTML}
+        setSafeHTML(container, `
+            ${renderMarkdown(doc.content)}
             <div class="mt-16 pt-8 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row justify-between items-center gap-6 not-prose">
                 <div>
                     <p class="text-sm font-bold text-slate-900 dark:text-white mb-1">Help us improve these docs</p>
                     <p class="text-xs text-slate-500">Notice an issue or want to add a section? This page is community-maintained.</p>
                 </div>
-                <a href="https://github.com/openshield-org/openshield/edit/dev/website/content.js" target="_blank" class="flex items-center px-5 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 hover:border-brand-500/50 transition-all group shadow-sm no-underline">
-                    <i data-lucide="edit-3" class="w-4 h-4 mr-2 text-brand-500 group-hover:scale-110 transition-transform"></i> 
+                <a href="https://github.com/openshield-org/openshield/edit/dev/website/content.js" target="_blank" rel="noopener" class="flex items-center px-5 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 hover:border-brand-500/50 transition-all group shadow-sm no-underline">
+                    <i data-lucide="edit-3" class="w-4 h-4 mr-2 text-brand-500 group-hover:scale-110 transition-transform"></i>
                     Edit this page on GitHub
                 </a>
             </div>
-        `;
+        `);
         window.history.pushState(null, null, `#docs/${docId}`);
-        
+
         // Update active state in sidebar
         document.querySelectorAll('.doc-nav-btn').forEach(btn => {
             btn.classList.remove('bg-brand-500/10', 'text-brand-600', 'dark:text-white', 'shadow-sm');
             btn.querySelector('span')?.classList.remove('bg-brand-500');
         });
-        
+
         const activeBtn = document.getElementById(`nav-${docId}`);
         if (activeBtn) {
             activeBtn.classList.add('bg-brand-500/10', 'text-brand-600', 'dark:text-white', 'shadow-sm');
             activeBtn.querySelector('span')?.classList.add('bg-brand-500');
         }
-        
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
         if (window.lucide) lucide.createIcons();
     }
@@ -775,24 +746,30 @@ function showDocPage(docId) {
 
 function renderBlog() {
     const container = document.getElementById('blog-container');
-    if (container) {
-        container.textContent = siteContent.blog.map(post => {
-            const imageHtml = post.image 
-                ? `<img src="${post.image}" class="w-full h-48 object-cover rounded-2xl mb-6 border border-slate-200 dark:border-white/10 shadow-sm">`
-                : '';
-            return `
-                <article class="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 p-8 rounded-3xl hover:border-brand-500/50 transition-all cursor-pointer group" onclick="showBlogPost('${post.id}')">
-                    ${imageHtml}
-                    <h3 class="text-2xl font-bold mb-4 text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors">${escapeHTML(post.title)}</h3>
-                    <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-6 text-sm">${escapeHTML(post.excerpt)}</p>
-                    <button class="text-brand-600 font-bold text-xs uppercase tracking-widest flex items-center">
-                        Read Full Deep Dive 
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition"></i>
-                    </button>
-                </article>
-            `;
-        }).join('');
-    }
+    if (!container) return;
+
+    setSafeHTML(container, siteContent.blog.map(post => {
+        const imageHtml = post.image
+            ? `<img src="${escapeHTML(post.image)}" class="w-full h-48 object-cover rounded-2xl mb-6 border border-slate-200 dark:border-white/10 shadow-sm">`
+            : '';
+        return `
+            <article data-post-id="${escapeHTML(post.id)}" class="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 p-8 rounded-3xl hover:border-brand-500/50 transition-all cursor-pointer group">
+                ${imageHtml}
+                <h3 class="text-2xl font-bold mb-4 text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors">${escapeHTML(post.title)}</h3>
+                <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-6 text-sm">${escapeHTML(post.excerpt)}</p>
+                <button class="text-brand-600 font-bold text-xs uppercase tracking-widest flex items-center">
+                    Read Full Deep Dive
+                    <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition"></i>
+                </button>
+            </article>
+        `;
+    }).join(''));
+
+    container.querySelectorAll('[data-post-id]').forEach(article => {
+        article.addEventListener('click', () => showBlogPost(article.dataset.postId));
+    });
+
+    if (window.lucide) lucide.createIcons();
 }
 
 function renderEvents() {
@@ -800,15 +777,15 @@ function renderEvents() {
     if (!container || !siteContent.events) return;
 
     if (siteContent.events.length === 0) {
-        container.textContent = `
+        setSafeHTML(container, `
             <div class="text-center py-12 bg-slate-50 dark:bg-white/5 border border-dashed border-slate-300 dark:border-white/10 rounded-3xl">
                 <p class="text-slate-500">No upcoming events. Stay tuned!</p>
             </div>
-        `;
+        `);
         return;
     }
 
-    container.textContent = siteContent.events.map(event => `
+    setSafeHTML(container, siteContent.events.map(event => `
         <div class="flex flex-col md:flex-row justify-between items-center p-8 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-3xl hover:border-brand-500/50 transition-all gap-6">
             <div>
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">${escapeHTML(event.title)}</h3>
@@ -818,12 +795,12 @@ function renderEvents() {
                 <span class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest">
                     ${escapeHTML(event.status)}
                 </span>
-                <a href="${escapeHTML(event.link)}" target="_blank" class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2 rounded-xl font-bold text-sm hover:scale-105 transition-all">
+                <a href="${escapeHTML(event.link)}" target="_blank" rel="noopener" class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2 rounded-xl font-bold text-sm hover:scale-105 transition-all">
                     Register
                 </a>
             </div>
         </div>
-    `).join('');
+    `).join(''));
 }
 
 function renderRoadmap() {
@@ -847,7 +824,7 @@ function renderRoadmap() {
 
         const config = statusConfig[status];
 
-        container.textContent = groups[status].map(item => `
+        setSafeHTML(container, groups[status].map(item => `
             <div class="p-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl group transition-all hover:border-${config.color}-500/30">
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">${escapeHTML(item.category)}</span>
@@ -855,7 +832,7 @@ function renderRoadmap() {
                 </div>
                 <h4 class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-${config.color}-500 transition-colors leading-tight">${escapeHTML(item.title)}</h4>
             </div>
-        `).join('');
+        `).join(''));
     });
 }
 
@@ -865,7 +842,7 @@ function renderReleases() {
 
     const typeColors = { major: 'blue', minor: 'emerald', patch: 'slate' };
 
-    container.textContent = siteContent.releases.map((release, idx) => {
+    setSafeHTML(container, siteContent.releases.map((release, idx) => {
         const color = typeColors[release.type] || 'slate';
         const isLatest = idx === 0;
         return `
@@ -878,7 +855,7 @@ function renderReleases() {
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-sm text-slate-500">${escapeHTML(release.date)}</span>
-                        <a href="${escapeHTML(release.github)}" target="_blank" class="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-slate-200 dark:border-white/10 rounded-xl hover:border-brand-500/50 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
+                        <a href="${escapeHTML(release.github)}" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-slate-200 dark:border-white/10 rounded-xl hover:border-brand-500/50 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all">
                             <i data-lucide="github" class="w-3.5 h-3.5"></i> View on GitHub
                         </a>
                     </div>
@@ -894,7 +871,7 @@ function renderReleases() {
                 </ul>
             </div>
         `;
-    }).join('');
+    }).join(''));
 
     if (window.lucide) lucide.createIcons();
 }
@@ -903,10 +880,10 @@ function renderFAQ() {
     const container = document.getElementById('faq-container');
     if (!container || !siteContent.faq) return;
 
-    container.textContent = siteContent.faq.map((item, idx) => `
+    setSafeHTML(container, siteContent.faq.map((item, idx) => `
         <div class="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden transition-all">
             <button
-                onclick="toggleFAQ(${idx})"
+                data-faq-idx="${idx}"
                 class="w-full flex items-center justify-between px-8 py-6 text-left group"
             >
                 <span class="text-base font-bold text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors pr-8">${escapeHTML(item.question)}</span>
@@ -916,7 +893,11 @@ function renderFAQ() {
                 <p class="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">${escapeHTML(item.answer)}</p>
             </div>
         </div>
-    `).join('');
+    `).join(''));
+
+    container.querySelectorAll('[data-faq-idx]').forEach(btn => {
+        btn.addEventListener('click', () => toggleFAQ(Number(btn.dataset.faqIdx)));
+    });
 
     if (window.lucide) lucide.createIcons();
 }
@@ -934,15 +915,17 @@ function renderShowcase() {
     const container = document.getElementById('showcase-container');
     if (!container || !siteContent.showcase) return;
 
-    container.textContent = siteContent.showcase.map(item => `
+    setSafeHTML(container, siteContent.showcase.map(item => `
         <div class="bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 p-8 rounded-3xl hover:border-brand-500/50 transition-all text-center">
             <div class="w-16 h-16 mx-auto bg-slate-50 dark:bg-white/5 text-slate-900 dark:text-white rounded-2xl flex items-center justify-center mb-6">
-                <i data-lucide="${item.icon}" class="w-8 h-8"></i>
+                <i data-lucide="${escapeHTML(item.icon)}" class="w-8 h-8"></i>
             </div>
             <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">${escapeHTML(item.name)}</h3>
             <p class="text-slate-500 text-sm">${escapeHTML(item.description)}</p>
         </div>
-    `).join('');
+    `).join(''));
+
+    if (window.lucide) lucide.createIcons();
 }
 
 async function renderContributors() {
@@ -950,14 +933,14 @@ async function renderContributors() {
     if (!container || !siteContent.contributors) return;
 
     // Strictly show only the primary release team
-    container.textContent = siteContent.contributors.map(c => `
-        <a href="https://github.com/${c.handle}" target="_blank" title="${c.name} (${c.role})" class="group relative">
-            <img src="https://github.com/${c.handle}.png" alt="${c.name}" class="w-14 h-14 rounded-full border-2 border-slate-900 dark:border-white/10 transition-transform group-hover:scale-110 group-hover:border-slate-400 group-hover:z-10 relative">
+    setSafeHTML(container, siteContent.contributors.map(c => `
+        <a href="https://github.com/${escapeHTML(c.handle)}" target="_blank" rel="noopener" title="${escapeHTML(c.name)} (${escapeHTML(c.role)})" class="group relative">
+            <img src="${escapeHTML(`https://github.com/${c.handle}.png`)}" alt="${escapeHTML(c.name)}" class="w-14 h-14 rounded-full border-2 border-slate-900 dark:border-white/10 transition-transform group-hover:scale-110 group-hover:border-slate-400 group-hover:z-10 relative">
             <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
-                ${c.name}
+                ${escapeHTML(c.name)}
             </div>
         </a>
-    `).join('');
+    `).join(''));
 }
 
 // Initialization
@@ -983,6 +966,18 @@ window.addEventListener('load', () => {
 // 8. Interactive Playground                                            //
 // ------------------------------------------------------------------ //
 
+function setButtonContent(btn, iconName, label, extraIconClass) {
+    if (!btn) return;
+    btn.textContent = '';
+    if (iconName) {
+        const icon = document.createElement('i');
+        icon.setAttribute('data-lucide', iconName);
+        icon.className = `w-4 h-4 mr-2 ${extraIconClass || ''}`.trim();
+        btn.appendChild(icon);
+    }
+    btn.appendChild(document.createTextNode(label));
+}
+
 async function runMockScan() {
     const btn = document.getElementById('btn-run-mock');
     const terminal = document.getElementById('mock-terminal-output');
@@ -997,22 +992,25 @@ async function runMockScan() {
 
     if (!btn || !terminal || !feed) return;
 
+    const env = document.getElementById('pg-env').value;
+    const framework = document.getElementById('pg-framework').value;
+
     // Reset UI
     btn.disabled = true;
-    btn.textContent = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i> Running...';
-    terminal.textContent = '<div class="text-brand-400 font-bold">$ openshield scan --env ' + document.getElementById('pg-env').value + ' --pkg ' + document.getElementById('pg-framework').value + '</div>';
+    setButtonContent(btn, 'loader', 'Running...', 'animate-spin');
+    setSafeHTML(terminal, `<div class="text-brand-400 font-bold">$ openshield scan --env ${escapeHTML(env)} --pkg ${escapeHTML(framework)}</div>`);
     feed.textContent = '';
     scoreEl.textContent = '100';
     scoreEl.className = 'text-6xl font-black text-emerald-500 transition-colors duration-500';
     Object.values(counters).forEach(c => c.textContent = '0');
     statusEl.textContent = 'Status: Initializing...';
     statusEl.className = 'text-[10px] font-bold text-brand-500 uppercase tracking-tighter';
-    
+
     if (window.lucide) lucide.createIcons();
 
     const events = [
         { type: 'log', val: '[INFO] Initializing OpenShield Core v0.1.0...', delay: 400 },
-        { type: 'log', val: '[INFO] Loading security modules for ' + document.getElementById('pg-framework').value.toUpperCase() + '...', delay: 600 },
+        { type: 'log', val: '[INFO] Loading security modules for ' + framework.toUpperCase() + '...', delay: 600 },
         { type: 'log', val: '[INFO] Authenticating with Azure Resource Manager...', delay: 800 },
         { type: 'status', val: 'Status: Discovery Phase', color: 'text-blue-500' },
         { type: 'log', val: '[INFO] Discovering resources in subscription \'mock-sub-123\'...', delay: 500 },
@@ -1050,7 +1048,7 @@ async function runMockScan() {
                 stats.pass++;
                 counters.pass.textContent = stats.pass;
             }
-        } 
+        }
         else if (event.type === 'status') {
             statusEl.textContent = event.val;
             statusEl.className = 'text-[10px] font-bold uppercase tracking-tighter ' + event.color;
@@ -1060,7 +1058,7 @@ async function runMockScan() {
             const startScore = currentScore;
             currentScore -= event.scoreDrop;
             animateValue(scoreEl, startScore, currentScore, 500);
-            
+
             // Color logic for score
             if (currentScore < 60) scoreEl.className = 'text-6xl font-black text-red-500 animate-score-pop';
             else if (currentScore < 85) scoreEl.className = 'text-6xl font-black text-amber-500 animate-score-pop';
@@ -1070,24 +1068,27 @@ async function runMockScan() {
             stats[key]++;
             counters[key].textContent = stats[key];
 
-            // Add Card
+            // Add Card — event fields are all from the fixed, hardcoded
+            // `events` array above (never from siteContent or user input),
+            // but escapeHTML() is used anyway so this stays correct if that
+            // ever changes.
             const card = document.createElement('div');
             card.className = 'bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 p-4 rounded-2xl animate-slide-in-right shadow-sm';
             const color = event.sev === 'CRITICAL' ? 'red' : 'amber';
-            card.textContent = `
+            setSafeHTML(card, `
                 <div class="flex justify-between items-start mb-2">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${event.id}</span>
-                    <span class="px-1.5 py-0.5 rounded text-[7px] font-bold bg-${color}-500/10 text-${color}-500 border border-${color}-500/20">${event.sev}</span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${escapeHTML(event.id)}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[7px] font-bold bg-${color}-500/10 text-${color}-500 border border-${color}-500/20">${escapeHTML(event.sev)}</span>
                 </div>
-                <h5 class="text-xs font-bold text-slate-900 dark:text-white mb-1">${event.name}</h5>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">${event.desc}</p>
-            `;
+                <h5 class="text-xs font-bold text-slate-900 dark:text-white mb-1">${escapeHTML(event.name)}</h5>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">${escapeHTML(event.desc)}</p>
+            `);
             feed.prepend(card);
         }
     }
 
     btn.disabled = false;
-    btn.textContent = '<i data-lucide="rotate-cw" class="w-4 h-4 mr-2"></i> Re-run Scan';
+    setButtonContent(btn, 'rotate-cw', 'Re-run Scan');
     if (window.lucide) lucide.createIcons();
 }
 

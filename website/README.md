@@ -23,7 +23,7 @@ Vercel picks up `vercel.json` automatically. Every push to `main` triggers a red
 
 ## Adding Content
 
-All content lives in `website/content.js`. Edit it directly on a branch and open a PR to `dev`. Alternatively, use the built-in editor at the Blog Editor section (requires a GitHub personal access token with `repo` scope).
+All content lives in `website/content.js`. Edit it directly on a branch and open a PR to `dev`. The built-in editor at the Blog Editor section can build and format the entry for you, but it no longer publishes for you directly — it does not ask for or use a GitHub token. Use "Export Entry" to get the formatted snippet, paste it into the right array in `website/content.js`, and open the PR yourself (see #297 — a page that can request a `repo`-scoped credential in the browser is a real risk on its own).
 
 ### Blog post
 
@@ -47,7 +47,7 @@ All content lives in `website/content.js`. Edit it directly on a branch and open
 **Images in blog posts:**
 - Cover image: commit to `website/assets/blog/` and set `image: "assets/blog/filename.jpg"`
 - Inline images: use standard Markdown `![alt](assets/blog/filename.jpg)` inside the `content` field
-- Max file size for GitHub API upload via the editor: **700 KB**. Larger files must be committed manually.
+- The editor no longer uploads images for you — commit the file to `website/assets/blog/` yourself as part of your PR.
 
 **Video embeds:**
 - Paste a YouTube watch URL (`https://www.youtube.com/watch?v=...`) or Vimeo URL (`https://vimeo.com/...`) into the `video` field
@@ -121,7 +121,7 @@ Paste the output as the `rules` array in `content.js`.
 
 | Section | Editor support |
 |---|---|
-| Blog posts | Yes — Blog Post type (image upload, video embed, Markdown content) |
+| Blog posts | Yes — Blog Post type (image preview, video embed, Markdown content) |
 | Events | Yes — Community Event type |
 | Contributors | Yes — New Contributor type |
 | Releases | Yes — Release type |
@@ -142,6 +142,25 @@ cd website
 python3 -m http.server 8080
 # open http://localhost:8080
 ```
+
+---
+
+## Testing
+
+`node test_toEmbedUrl.mjs` runs the fast, pure-function tests (no browser needed).
+
+Rendering, navigation, the removed GitHub-token flow, an XSS regression corpus, and
+accessibility (axe + keyboard) are covered by Playwright:
+
+```bash
+cd website
+npm install
+npx playwright install --with-deps chromium   # first run only
+npm run test:e2e
+```
+
+The suite serves the site itself on `127.0.0.1:4173` (see `playwright.config.js`) —
+no separate server needs to be running first.
 
 ---
 
