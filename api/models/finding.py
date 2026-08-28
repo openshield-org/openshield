@@ -46,6 +46,44 @@ def _get_pool(dsn: str) -> "psycopg2.pool.ThreadedConnectionPool":
         return pool
 
 
+def get_pool_stats(dsn: Optional[str] = None) -> Dict[str, Any]:
+    """Return a point-in-time snapshot of the shared connection pool's utilization.
+
+    Reports only counts (in-use / idle / configured maximum) - never the DSN,
+    host, credentials, or anything else that could describe the database
+    deployment. Safe to expose on a public surface (Prometheus /metrics, the
+    /ready probe) precisely because it carries no operational secrets, only
+    capacity numbers an operator needs to see the pool approaching exhaustion
+    before it happens.
+
+    Returns zeroed stats with no pool created yet (no request has connected
+    since process start) rather than raising, so callers on the request path
+    (like /ready) never fail because of a stats lookup.
+    """
+    dsn = dsn or os.environ.get("DATABASE_URL", "")
+    with _POOLS_LOCK:
+        pool = _POOLS.get(dsn)
+
+    if pool is None:
+        return {"max_connections": _POOL_MAX_CONN, "in_use": 0, "idle": 0, "utilization_percent": 0.0}
+
+    # psycopg2's pool has no public stats API; _used/_pool/maxconn are the
+    # same attributes getconn()/putconn() themselves mutate under this same
+    # lock, so a snapshot taken while holding it can't land mid-mutation.
+    with pool._lock:
+        in_use = len(pool._used)
+        idle = len(pool._pool)
+        max_connections = pool.maxconn
+
+    utilization_percent = round((in_use / max_connections) * 100, 1) if max_connections else 0.0
+    return {
+        "max_connections": max_connections,
+        "in_use": in_use,
+        "idle": idle,
+        "utilization_percent": utilization_percent,
+    }
+
+
 FRAMEWORK_FILE_MAP = {
     "cis": "cis_azure_benchmark.json",
     "nist": "nist_csf.json",

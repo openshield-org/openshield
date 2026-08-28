@@ -25,12 +25,14 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Harvest Now Decrypt Later exposure window calculation per cryptographic asset
 - Deterministic Render deployment workflow for separate API and worker services
 - Terraform configuration for Render, Vercel, and GitHub OIDC
+- Database connection pool utilization and exhaustion telemetry (`openshield_db_pool_connections_*`) on `/metrics`
 
 ### Fixed
 
 - High-severity CodeQL findings in Python and JavaScript code
 - Security findings identified during Semgrep analysis
 - Sensitive identity metadata removed from scanner debug logging
+- `/ready` and `/metrics` rate-limited per source IP so the unauthenticated probe/scrape surface can no longer be used to exhaust the database connection pool
 
 ### Security
 
