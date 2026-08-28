@@ -34,6 +34,7 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - AI provider errors no longer expose upstream response details
 - Request body limits, AI rate limiting, and playbook path validation added
 - GitHub Actions dependencies pinned to immutable commit SHAs
+- JWTs must now carry an `exp` claim and a recognized `role`; a `viewer` token can no longer perform any write operation (scan trigger, AI endpoints), and `POST /api/scans/trigger` now checks `subscription_id` against an optional `OPENSHIELD_AUTHORIZED_SUBSCRIPTIONS` allowlist
 
 ## [0.3.0] - 2026-07-08
 
