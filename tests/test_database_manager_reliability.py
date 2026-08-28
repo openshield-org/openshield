@@ -55,7 +55,7 @@ def test_get_score_deducts_points_for_findings():
     with patch.object(db, "_get_conn", return_value=conn):
         score = db.get_score()
     # 100 - (10 * 2 + 5 * 1) = 75
-    assert score == {"status": "OK", "score": 75}
+    assert score == {"status": "OK", "score": 75, "max_score": 100}
 
 
 # REL-002 (recover_stale_scans's interval handling) is now covered by

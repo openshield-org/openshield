@@ -100,7 +100,7 @@ def test_get_score_is_100_after_clean_scan():
     with patch.object(db, "_get_conn", return_value=conn):
         score = db.get_score()
 
-    assert score == {"status": "OK", "score": 100}
+    assert score == {"status": "OK", "score": 100, "max_score": 100}
 
 
 def test_get_score_does_not_include_old_scan_findings():
@@ -113,7 +113,7 @@ def test_get_score_does_not_include_old_scan_findings():
     with patch.object(db, "_get_conn", return_value=conn):
         score = db.get_score()
 
-    assert score == {"status": "OK", "score": 100}
+    assert score == {"status": "OK", "score": 100, "max_score": 100}
 
 
 def test_get_score_no_completed_scan_returns_no_scan_data_not_a_pass():

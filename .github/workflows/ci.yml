@@ -371,85 +371,14 @@ jobs:
       # Every control must carry evidence-based mapping metadata, not just
       # exist in the file (issue #302). This is what actually stops a
       # future PR from force-mapping a rule into a framework with no
-      # rationale for the relationship.
+      # rationale for the relationship, or leaving a synthetic non-mapping
+      # misclassified as direct technical evidence. Logic lives in
+      # .github/scripts/validate_mapping_pack.py so it's unit-testable
+      # (tests/test_mapping_pack_validation.py) rather than only exercised
+      # here, embedded in workflow YAML.
       - name: Compliance mapping semantics validation
         id: mapping_semantics_check
-        run: |
-          echo "=== Validating compliance mapping-pack semantics ==="
-          python - <<'PYEOF'
-          import json
-          import os
-          import sys
-
-          framework_dir = "compliance/frameworks"
-          valid_mapping_types = {"direct", "supporting", "organizational", "not_applicable"}
-          valid_review_statuses = {"pending_review", "reviewed"}
-          required_pack_fields = [
-              "mapping_pack_version",
-              "mapping_pack_status",
-              "mapping_pack_source",
-              "mapping_pack_published",
-          ]
-
-          failures = []
-
-          for fname in sorted(os.listdir(framework_dir)):
-              if not fname.endswith(".json"):
-                  continue
-              fpath = os.path.join(framework_dir, fname)
-              try:
-                  with open(fpath) as f:
-                      data = json.load(f)
-              except (json.JSONDecodeError, OSError) as e:
-                  failures.append(f"{fname}: could not parse — {e}")
-                  continue
-
-              for field in required_pack_fields:
-                  if not data.get(field):
-                      failures.append(f"{fname}: missing or empty top-level '{field}'")
-
-              for rule_id, control in data.get("controls", {}).items():
-                  prefix = f"{fname}:{rule_id}"
-
-                  mapping_type = control.get("mapping_type")
-                  if mapping_type not in valid_mapping_types:
-                      failures.append(f"{prefix}: mapping_type '{mapping_type}' not in {sorted(valid_mapping_types)}")
-
-                  for field in ("evidence_type", "primary_source", "rationale"):
-                      value = control.get(field)
-                      if not isinstance(value, str) or not value.strip():
-                          failures.append(f"{prefix}: '{field}' must be a non-empty string")
-
-                  review_status = control.get("review_status")
-                  if review_status not in valid_review_statuses:
-                      failures.append(f"{prefix}: review_status '{review_status}' not in {sorted(valid_review_statuses)}")
-
-                  owner = control.get("owner")
-                  if owner is not None and not (isinstance(owner, str) and owner.strip()):
-                      failures.append(f"{prefix}: 'owner' must be null or a non-empty string")
-
-                  review_date = control.get("review_date")
-                  if review_date is not None and not (isinstance(review_date, str) and review_date.strip()):
-                      failures.append(f"{prefix}: 'review_date' must be null or a non-empty ISO date string")
-
-                  # A control cannot be marked reviewed without an accountable owner
-                  # and a review date — otherwise "reviewed" is unverifiable.
-                  if review_status == "reviewed" and (not owner or not review_date):
-                      failures.append(f"{prefix}: review_status is 'reviewed' but owner and/or review_date is missing")
-
-                  # not_applicable/organizational controls must not claim to be
-                  # measured by an automated scan.
-                  if mapping_type in ("not_applicable", "organizational") and control.get("evidence_type") == "automated_configuration_scan":
-                      failures.append(f"{prefix}: mapping_type '{mapping_type}' cannot have evidence_type 'automated_configuration_scan'")
-
-          if failures:
-              print("COMPLIANCE MAPPING SEMANTICS FAILURES:")
-              for f in failures:
-                  print(f"  - {f}")
-              sys.exit(1)
-          else:
-              print("All compliance mappings carry valid mapping-pack semantics.")
-          PYEOF
+        run: python .github/scripts/validate_mapping_pack.py
 
   # ── Secret scanning (Gitleaks CLI, no gitleaks-action license needed) ─────
   secret-scan:
@@ -772,6 +701,9 @@ jobs:
 
       - name: Run severity contract tests
         run: npm run test:severity
+
+      - name: Run score/compliance null-state tests
+        run: node src/utils/api.test.mjs
 
       - name: Run accessibility and internationalization checks
         run: npm run test:a11y && npm run test:i18n
