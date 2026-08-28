@@ -22,7 +22,19 @@ test.describe('The browser-based GitHub token flow is removed', () => {
     test('the client never calls the GitHub API', async ({ page }) => {
         const apiCalls = [];
         page.on('request', (req) => {
-            if (req.url().includes('api.github.com')) apiCalls.push(req.url());
+            // Parse the actual host rather than a substring match on the
+            // full URL - a plain .includes('api.github.com') would also
+            // match a spoofed host like "api.github.com.evil.com" and
+            // silently stop catching the one thing this test exists to
+            // catch (flagged by CodeQL - fixing it for real, not just to
+            // clear the check).
+            let host;
+            try {
+                host = new URL(req.url()).hostname;
+            } catch {
+                return;
+            }
+            if (host === 'api.github.com') apiCalls.push(req.url());
         });
         await gotoAndInit(page);
         await goToSection(page, 'blog-editor');
