@@ -800,10 +800,16 @@ class DatabaseManager:
                 # framework existed, or before the snapshot feature shipped).
                 mapping_provenance = "live_fallback_no_snapshot"
 
+        # A separate, plain (non-RealDict) cursor for this one - its rows are
+        # unpacked positionally below, and a RealDictCursor row is a plain
+        # OrderedDict with no __iter__ override, so `a, b, c, d = row` would
+        # silently unpack its *keys* ("rule_id", "severity", ...) rather than
+        # their values instead of failing loudly.
+        with conn.cursor() as cur2:
             # Grouped by severity/category too (not just DISTINCT rule_id) so
             # each failing control can report which severity/category/how many
             # resources are affected, not just a bare FAIL.
-            cur.execute(
+            cur2.execute(
                 """
                 SELECT rule_id, severity, category, COUNT(*)
                 FROM findings
@@ -812,7 +818,7 @@ class DatabaseManager:
                 """,
                 (scan_id,),
             )
-            finding_rows = cur.fetchall()
+            finding_rows = cur2.fetchall()
 
         failures: Dict[str, Dict[str, Any]] = {}
         for rule_id, raw_severity, category, resource_count in finding_rows:
@@ -830,7 +836,6 @@ class DatabaseManager:
                 current["severity"] = severity
                 current["category"] = category
 
-        noncompliant_rule_ids = set(failures.keys())
         # Rules the scan engine could not complete for this scan (raised,
         # or returned malformed data) - recorded by save_scan() alongside
         # the mapping snapshot. A rule missing from findings only proves

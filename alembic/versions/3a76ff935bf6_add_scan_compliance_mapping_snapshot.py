@@ -1,20 +1,18 @@
 """Add compliance_mapping_snapshot to scans.
 
 Revision ID: 3a76ff935bf6
-Revises: c7a2e9f1b3d4
+Revises: d8e4f6a1b2c3
 Create Date: 2026-08-22 00:00:00.000000
 
-PR #308 (severity contract v1, d8e4f6a1b2c3) was cut from this same parent,
-c7a2e9f1b3d4 - both PRs would fork the Alembic revision graph if merged
-independently as-is. Chaining this migration's down_revision onto
-d8e4f6a1b2c3 ahead of time was tried and reverted: Alembic resolves the
-full revision map from the files present in the branch it's run against,
-so pointing at a revision that only exists on #308's unmerged branch
-breaks `alembic upgrade head` in this PR's own CI (KeyError on the
-missing revision) until #308 actually lands on dev. The chain has to be
-resolved at merge time instead: whichever of #308 / this PR merges
-second rebases onto dev and repoints its down_revision at whatever
-became the new head.
+This migration and PR #308's (severity contract v1, d8e4f6a1b2c3) were both
+cut from the same parent, c7a2e9f1b3d4, which would have forked the Alembic
+revision graph if both merged independently. Pointing down_revision at
+d8e4f6a1b2c3 ahead of time was tried and reverted earlier in this PR's
+history: Alembic resolves the full revision map from the files present in
+the branch it's run against, so a revision that only existed on #308's
+still-unmerged branch broke `alembic upgrade head` in this PR's own CI.
+#308 has since merged, so d8e4f6a1b2c3 now exists on `dev` and this chains
+onto it correctly - `alembic heads` returns exactly one head again.
 """
 
 from typing import Sequence, Union
@@ -25,7 +23,7 @@ from sqlalchemy.dialects import postgresql
 
 # Revision identifiers, used by Alembic.
 revision: str = "3a76ff935bf6"
-down_revision: Union[str, Sequence[str], None] = "c7a2e9f1b3d4"
+down_revision: Union[str, Sequence[str], None] = "d8e4f6a1b2c3"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

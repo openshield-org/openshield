@@ -310,7 +310,14 @@
     "AZ-CMP-007": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. A.13.1.1 requires network controls that manage and protect access to systems. JIT limits management-port exposure to approved, time-boxed windows."
+      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. A.13.1.1 requires network controls that manage and protect access to systems. JIT limits management-port exposure to approved, time-boxed windows.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-CMP-007 evaluates one Azure technical setting (Just-In-Time VM access coverage for open management ports) that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-CMP-003": {
       "control_id": "A.12.2.1",

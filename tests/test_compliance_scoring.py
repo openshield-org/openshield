@@ -130,7 +130,7 @@ def test_direct_control_with_no_findings_is_pass(tmp_path, monkeypatch):
 def test_control_with_finding_is_fail(tmp_path, monkeypatch):
     controls = {"AZ-TEST-001": _control("1.1", "direct")}
     scan_row = {"scan_id": "scan-1", "compliance_mapping_snapshot": None}
-    finding_rows = [{"rule_id": "AZ-TEST-001"}]
+    finding_rows = [("AZ-TEST-001", "HIGH", "Storage", 1)]
     db, conn, framework_file = _patched_db_with_framework(tmp_path, controls, scan_row, finding_rows)
 
     monkeypatch.setattr(finding_module, "FRAMEWORKS_DIR", tmp_path)
@@ -153,7 +153,7 @@ def test_not_applicable_and_organizational_excluded_from_denominator(tmp_path, m
         "AZ-TEST-004": _control("1.4", "organizational"),
     }
     scan_row = {"scan_id": "scan-1", "compliance_mapping_snapshot": None}
-    finding_rows = [{"rule_id": "AZ-TEST-002"}]
+    finding_rows = [("AZ-TEST-002", "HIGH", "Storage", 1)]
     db, conn, framework_file = _patched_db_with_framework(tmp_path, controls, scan_row, finding_rows)
 
     monkeypatch.setattr(finding_module, "FRAMEWORKS_DIR", tmp_path)
@@ -194,7 +194,7 @@ def test_rule_that_did_not_complete_is_not_evaluated_not_pass(tmp_path, monkeypa
         "scan_id": "scan-1",
         "compliance_mapping_snapshot": {"_scan_rule_outcomes": {"failed_rule_ids": ["AZ-TEST-003"]}},
     }
-    finding_rows = [{"rule_id": "AZ-TEST-002"}]
+    finding_rows = [("AZ-TEST-002", "HIGH", "Storage", 1)]
     db, conn, framework_file = _patched_db_with_framework(tmp_path, controls, scan_row, finding_rows)
 
     monkeypatch.setattr(finding_module, "FRAMEWORKS_DIR", tmp_path)

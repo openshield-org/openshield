@@ -28,6 +28,22 @@ function loadApiModule(fetchImpl) {
   );
   assert.ok(!source.includes('import.meta'), 'failed to neutralize import.meta usage — test harness is stale');
 
+  // normalizeScore()/normalizeComplianceFramework() (what this file actually
+  // tests) never call normalizeRisk()/normalizeSeverity() themselves - those
+  // belong to severity.js and have their own dedicated tests
+  // (npm run test:severity). Stubbed here (not inlined) so this file stays
+  // scoped to what it's actually testing, rather than re-executing a second
+  // module's already-tested logic; the stub only needs to satisfy the
+  // functions in this file that reference the names at module scope.
+  assert.ok(
+    source.includes("import { normalizeRisk, normalizeSeverity } from './severity.js';"),
+    'expected severity.js import — test harness is stale',
+  );
+  source = source.replace(
+    "import { normalizeRisk, normalizeSeverity } from './severity.js';",
+    'const normalizeRisk = (value) => value; const normalizeSeverity = (value) => value;',
+  );
+
   source = source.replace(/^export const /gm, 'const ');
   source = source.replace(/^export default api;\s*$/m, '');
   source += '\nreturn { api, normalizeScore, normalizeComplianceFramework };';

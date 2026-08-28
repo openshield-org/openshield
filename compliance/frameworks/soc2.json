@@ -358,7 +358,14 @@
     "AZ-CMP-007": {
       "control_id": "CC6.6",
       "control_name": "Restricts Access from Outside the Network Boundary",
-      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. CC6.6 requires that access from outside the network boundary is restricted. JIT opens management ports only for approved, time-boxed requests instead of continuously."
+      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. CC6.6 requires that access from outside the network boundary is restricted. JIT opens management ports only for approved, time-boxed requests instead of continuously.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Restricts Access from Outside the Network Boundary') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-CMP-007 evaluates one Azure technical control (Just-In-Time VM access coverage for open management ports) that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-KV-001": {
       "control_id": "A1.2",

@@ -322,7 +322,14 @@
     "AZ-CMP-007": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. PR.AC-3 requires that remote access is managed. JIT restricts management-port access to approved, time-boxed requests instead of leaving the ports standing open."
+      "description": "A VM has management ports (SSH/RDP) open to the internet with no Just-In-Time VM access policy covering them. PR.AC-3 requires that remote access is managed. JIT restricts management-port access to approved, time-boxed requests instead of leaving the ports standing open.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.AC-3",
+      "rationale": "NIST CSF 1.1 subcategory PR.AC-3 ('Remote access is managed') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-CMP-007 evaluates one Azure technical control (whether Just-In-Time VM access covers open management ports) that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-KV-001": {
       "control_id": "PR.IP-4",

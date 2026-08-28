@@ -322,7 +322,14 @@
     "AZ-CMP-007": {
       "control_id": "N/A-CMP-007",
       "control_name": "Just-In-Time (JIT) VM access - Defender for Cloud recommendation, no numbered CIS Azure Foundations 2.0.0 control",
-      "description": "CIS Microsoft Azure Foundations Benchmark 2.0.0 has no numbered recommendation for Just-In-Time VM access (it is a Microsoft Defender for Cloud recommendation), so under the repository's one-CIS-ID-per-rule convention this rule is not assigned a fabricated control id. It is mapped under NIST CSF PR.AC-3, ISO 27001 A.13.1.1, and SOC 2 CC6.6 instead."
+      "description": "CIS Microsoft Azure Foundations Benchmark 2.0.0 has no numbered recommendation for Just-In-Time VM access (it is a Microsoft Defender for Cloud recommendation), so under the repository's one-CIS-ID-per-rule convention this rule is not assigned a fabricated control id. It is mapped under NIST CSF PR.AC-3, ISO 27001 A.13.1.1, and SOC 2 CC6.6 instead.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-CMP-007",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-CMP-007: Just-In-Time (JIT) VM access is a Microsoft Defender for Cloud recommendation, not a numbered CIS Azure Foundations 2.0.0 control) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-KV-001": {
       "control_id": "N/A-KV-001",
