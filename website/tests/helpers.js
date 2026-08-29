@@ -58,5 +58,20 @@ export async function gotoAndInit(page) {
 // instead of this helper.
 export async function goToSection(page, sectionId) {
     await page.evaluate((id) => showSection(id), sectionId);
-    await page.waitForSelector(`#${sectionId}.section.active`);
+    // Wait for DOM state (the active class plus the element's own inline
+    // display), not Playwright's rendered-visibility check. showSection()
+    // races a 300ms setTimeout (which inlines display:none on any section
+    // still lacking .active once it fires) against a requestAnimationFrame
+    // (which adds .active to the section being activated) - under CPU
+    // contention the rAF callback can land more than 300ms late, so the
+    // timeout's hide check can momentarily apply display:none to the very
+    // section this call is trying to activate. A rendered-visibility wait
+    // can get stuck observing that transient state; checking this element's
+    // own class/style directly does not depend on it resolving before the
+    // next paint. Same pattern already used for the mobile-menu and FAQ
+    // tests in this suite.
+    await page.waitForFunction((id) => {
+        const el = document.getElementById(id);
+        return Boolean(el) && el.classList.contains('active') && el.style.display !== 'none';
+    }, sectionId);
 }

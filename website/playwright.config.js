@@ -12,7 +12,11 @@ export default defineConfig({
         trace: 'retain-on-failure',
     },
     webServer: {
-        command: 'python3 -m http.server 4173 --bind 127.0.0.1',
+        // Applies vercel.json's real headers (including CSP), unlike plain
+        // `python3 -m http.server` - see tests/csp_server.py. Every test in
+        // this suite now runs against production-representative headers,
+        // not just the ones in security.spec.js that assert on them.
+        command: 'python3 tests/csp_server.py 4173',
         url: 'http://127.0.0.1:4173/index.html',
         reuseExistingServer: !process.env.CI,
         timeout: 15000,

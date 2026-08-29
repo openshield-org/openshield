@@ -7,14 +7,17 @@
       CSP for this site is a real HTTP response header set in vercel.json, not
       a <meta> tag here — a header applies before any markup parses and
       supports directives (frame-ancestors) a <meta> tag silently ignores.
-      script-src there keeps 'unsafe-inline' for this file's own static
-      onclick="" navigation handlers (fixed markup this file ships, never
-      generated from remote/user data). That does NOT weaken the XSS fix:
-      every string built from markdown, blog content, or the live editor
-      preview is sanitized with DOMPurify before it reaches innerHTML, and the
-      sanitized output never contains inline event-handler attributes in the
-      first place (see setSafeHTML() in script.js) — there is nothing for
-      'unsafe-inline' to execute even from injected content. See #297.
+      script-src there does not permit 'unsafe-inline': this file has no
+      inline <script> blocks or inline event-handler attributes (theme-init.js
+      and tailwind-config.js replace the two that used to be inline; every
+      former onclick/onchange/oninput attribute is wired in script.js off
+      data-*/id attributes instead - see the "Static navigation/control
+      wiring" section there). Dynamically-rendered content (markdown, blog
+      content, the live editor preview) is sanitized with DOMPurify before it
+      reaches innerHTML, and the sanitized output never contains inline
+      event-handler attributes in the first place (see setSafeHTML() in
+      script.js), so CSP is a real fallback here, not a bypassable one. See
+      #297.
     -->
     <title>OpenShield | Enterprise-Grade Open Source CSPM</title>
     
@@ -30,13 +33,7 @@
     <meta name="twitter:description" content="Enterprise-grade Cloud Security Posture Management, purely open.">
     
     <!-- Blocking Theme Script to prevent flickering -->
-    <script>
-        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    </script>
+    <script src="theme-init.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
     <!-- Marked.js for Markdown parsing -->
@@ -47,36 +44,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha384-PPIZEGYM1v8zp5Py7UjFb79S58UeqCL9pYVnVPURKEqvioPROaVAJKKLzvH2rDnI" crossorigin="anonymous">
     <!-- Tailwind + Typography Plugin -->
     <script src="https://cdn.tailwindcss.com/3.4.17?plugins=typography@0.5.16" integrity="sha384-98Wwx1937T3GidSAwih9DtTYWtmUM+etXWic+XaYleGUnH7QDMDAMYH0XA6byBLe" crossorigin="anonymous"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            50:  '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                        },
-                        dark: {
-                            800: '#1e293b',
-                            900: '#0f172a',
-                            950: '#020617',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="tailwind-config.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
         .section { display: none; opacity: 0; transition: opacity 0.3s ease; }
@@ -102,7 +70,7 @@
     <div class="fixed top-6 left-0 w-full z-50 px-4">
         <nav class="max-w-7xl mx-auto border border-slate-200/50 dark:border-white/10 bg-white/70 dark:bg-dark-950/70 backdrop-blur-2xl rounded-2xl shadow-xl shadow-brand-500/5 transition-all duration-300">
             <div class="px-6 h-16 flex justify-between items-center">
-                <div class="flex items-center space-x-3 cursor-pointer group" onclick="showSection('home')">
+                <div class="flex items-center space-x-3 cursor-pointer group" data-nav-section="home">
                     <!-- OpenShield Shield-Lock Logo -->
                     <div class="relative w-10 h-10 flex items-center justify-center group-hover:scale-110 transition duration-300">
                         <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="OpenShield">
@@ -123,15 +91,15 @@
                 </div>
                 
                 <div class="hidden md:flex items-center space-x-6 text-sm font-semibold">
-                    <button onclick="showSection('home')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Overview</button>
-                    <button onclick="showSection('blog')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Blog</button>
-                    <button onclick="showSection('rules')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Rules</button>
-                    <button onclick="showSection('docs')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Docs</button>
-                    <button onclick="showSection('roadmap')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Roadmap</button>
-                    <button onclick="showSection('releases')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Releases</button>
-                    <button onclick="showSection('faq')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">FAQ</button>
-                    <button onclick="showSection('community')" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Community</button>
-                    <button onclick="showSection('playground')" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition font-bold">Playground</button>
+                    <button data-nav-section="home" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Overview</button>
+                    <button data-nav-section="blog" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Blog</button>
+                    <button data-nav-section="rules" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Rules</button>
+                    <button data-nav-section="docs" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Docs</button>
+                    <button data-nav-section="roadmap" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Roadmap</button>
+                    <button data-nav-section="releases" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Releases</button>
+                    <button data-nav-section="faq" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">FAQ</button>
+                    <button data-nav-section="community" class="text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white transition">Community</button>
+                    <button data-nav-section="playground" class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition font-bold">Playground</button>
                     <div class="w-px h-4 bg-slate-200 dark:bg-white/10"></div>
                     
                     <!-- Theme Toggle -->
@@ -152,15 +120,15 @@
 
             <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 dark:border-white/5 bg-white dark:bg-dark-950 p-4 rounded-b-2xl shadow-2xl transition-colors duration-300">
                 <div class="space-y-1">
-                    <button onclick="showSection('home'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Overview</button>
-                    <button onclick="showSection('blog'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Blog</button>
-                    <button onclick="showSection('rules'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Rules</button>
-                    <button onclick="showSection('docs'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Docs</button>
-                    <button onclick="showSection('roadmap'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Roadmap</button>
-                    <button onclick="showSection('releases'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Releases</button>
-                    <button onclick="showSection('faq'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">FAQ</button>
-                    <button onclick="showSection('community'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Community</button>
-                    <button onclick="showSection('playground'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md font-bold">Playground</button>
+                    <button data-nav-section="home" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Overview</button>
+                    <button data-nav-section="blog" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Blog</button>
+                    <button data-nav-section="rules" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Rules</button>
+                    <button data-nav-section="docs" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Docs</button>
+                    <button data-nav-section="roadmap" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Roadmap</button>
+                    <button data-nav-section="releases" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Releases</button>
+                    <button data-nav-section="faq" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">FAQ</button>
+                    <button data-nav-section="community" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-white rounded-md font-medium">Community</button>
+                    <button data-nav-section="playground" data-close-mobile-menu class="block w-full text-left px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-md font-bold">Playground</button>
                     <a href="https://github.com/openshield-org/openshield" target="_blank" class="block w-full text-left px-3 py-2 text-slate-900 dark:text-white font-bold">GitHub</a>
                 </div>
             </div>
@@ -189,13 +157,13 @@
                         </p>
                     </div>
                     <div class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-                        <button onclick="showSection('docs')" class="bg-brand-500 hover:bg-brand-600 text-white px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-all shadow-xl shadow-brand-500/30 text-center text-lg">
+                        <button data-nav-section="docs" class="bg-brand-500 hover:bg-brand-600 text-white px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-all shadow-xl shadow-brand-500/30 text-center text-lg">
                             Get Started
                         </button>
                         <a href="https://openshield-gules.vercel.app" target="_blank" class="bg-gradient-to-r from-brand-500 to-cyan-500 text-white px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-all shadow-xl shadow-brand-500/30 text-center text-lg">
                             Open Dashboard
                         </a>
-                        <button onclick="showSection('rules')" class="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-all border border-slate-200 dark:border-white/10 text-center text-lg">
+                        <button data-nav-section="rules" class="bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-all border border-slate-200 dark:border-white/10 text-center text-lg">
                             Rules Gallery
                         </button>
                     </div>
@@ -482,7 +450,7 @@
                         <a href="https://github.com/openshield-org/openshield/blob/dev/CONTRIBUTING.md" target="_blank" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-8 py-4 rounded-2xl font-bold hover:scale-105 transition shadow-lg text-lg">
                             Become a Contributor
                         </a>
-                        <button onclick="showSection('blog-editor'); document.getElementById('edit-type').value='contributor'; toggleEditorFields();" class="border border-slate-700 dark:border-white/10 text-slate-400 hover:text-white px-8 py-4 rounded-2xl font-bold hover:scale-105 transition text-lg">
+                        <button data-add-contributor class="border border-slate-700 dark:border-white/10 text-slate-400 hover:text-white px-8 py-4 rounded-2xl font-bold hover:scale-105 transition text-lg">
                             Add Contributor
                         </button>
                     </div>
@@ -520,7 +488,7 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="runMockScan()" id="btn-run-mock" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-8 py-3 rounded-2xl font-black hover:scale-105 transition-all shadow-xl shadow-slate-900/10 dark:shadow-white/5 flex items-center group">
+                    <button id="btn-run-mock" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-8 py-3 rounded-2xl font-black hover:scale-105 transition-all shadow-xl shadow-slate-900/10 dark:shadow-white/5 flex items-center group">
                         <i data-lucide="play" class="w-4 h-4 mr-2 fill-current group-hover:text-brand-500 transition-colors"></i> 
                         Execute Scan
                     </button>
@@ -611,7 +579,7 @@
                         <p class="text-lg text-slate-500 mt-2">Browse our library of security checks and compliance mappings.</p>
                     </div>
                     <div class="flex items-center gap-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 p-2 rounded-2xl">
-                        <select id="rule-filter" onchange="renderRules()" aria-label="Filter rules by compliance framework" class="bg-transparent text-sm font-bold text-slate-600 dark:text-slate-300 outline-none px-4 py-2 cursor-pointer appearance-none">
+                        <select id="rule-filter" aria-label="Filter rules by compliance framework" class="bg-transparent text-sm font-bold text-slate-600 dark:text-slate-300 outline-none px-4 py-2 cursor-pointer appearance-none">
                             <option value="all">All Frameworks</option>
                             <option value="CIS">CIS Benchmark</option>
                             <option value="NIST">NIST CSF</option>
@@ -623,7 +591,7 @@
                 
                 <div class="relative">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
-                    <input type="text" id="rule-search" oninput="renderRules()" placeholder="Search rules by ID, name, or service (e.g., 'Storage', 'AZ-KV-001')" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-brand-500 transition-shadow shadow-inner">
+                    <input type="text" id="rule-search" placeholder="Search rules by ID, name, or service (e.g., 'Storage', 'AZ-KV-001')" class="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:ring-2 focus:ring-brand-500 transition-shadow shadow-inner">
                 </div>
             </div>
             <div id="rules-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
@@ -660,7 +628,7 @@
                     <h2 class="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Technical Insights</h2>
                     <p class="text-lg text-slate-500 mt-2">Deep dives into security research and project updates.</p>
                 </div>
-                <button onclick="showSection('blog-editor')" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition shadow-lg text-sm flex items-center shrink-0">
+                <button data-nav-section="blog-editor" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition shadow-lg text-sm flex items-center shrink-0">
                     <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
                     Post an Article
                 </button>
@@ -671,7 +639,7 @@
         <!-- Blog Editor (Internal) -->
         <section id="blog-editor" class="section max-w-5xl mx-auto px-4 py-16">
             <div class="flex items-center justify-between mb-12">
-                <button onclick="showSection('blog')" class="bg-slate-200/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-all flex items-center group">
+                <button data-nav-section="blog" class="bg-slate-200/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-all flex items-center group">
                     <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                     Back to Blog
                 </button>
@@ -687,7 +655,7 @@
                     <form id="editor-form" class="space-y-6">
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Content Type</label>
-                            <select id="edit-type" onchange="toggleEditorFields()" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition dark:text-white">
+                            <select id="edit-type" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none transition dark:text-white">
                                 <option value="blog">Blog Post</option>
                                 <option value="event">Community Event</option>
                                 <option value="contributor">New Contributor</option>
@@ -730,7 +698,7 @@
                             </div>
                             <div id="image-preview-container" class="hidden mt-4 relative group">
                                 <img id="image-preview-img" src="#" alt="Preview" class="w-full h-40 object-cover rounded-2xl border border-slate-200 dark:border-white/10">
-                                <button type="button" onclick="removeSelectedImage()" class="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button type="button" data-remove-image class="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -827,7 +795,7 @@
                     <h2 class="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">Events</h2>
                     <p class="text-lg text-slate-500 mt-2">Join the OpenShield community in person and online.</p>
                 </div>
-                <button onclick="showSection('blog-editor')" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition shadow-lg text-sm flex items-center shrink-0">
+                <button data-nav-section="blog-editor" class="bg-slate-900 dark:bg-white text-white dark:text-dark-950 px-6 py-2.5 rounded-xl font-bold hover:scale-105 transition shadow-lg text-sm flex items-center shrink-0">
                     <i data-lucide="calendar-plus" class="w-4 h-4 mr-2"></i>
                     Add Event
                 </button>
@@ -837,7 +805,7 @@
 
         <!-- Post Detail -->
         <section id="post-detail" class="section max-w-4xl mx-auto px-4 py-16">
-            <button onclick="showSection('blog')" class="bg-slate-200/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-all mb-12 flex items-center group">
+            <button data-nav-section="blog" class="bg-slate-200/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-all mb-12 flex items-center group">
                 <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Back to Archive
             </button>
@@ -852,7 +820,7 @@
     <footer class="max-w-7xl mx-auto mb-12 px-4 mt-12">
         <div class="bg-white dark:bg-dark-950 border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] shadow-xl shadow-brand-500/5 transition-colors duration-300">
             <div class="flex flex-col md:flex-row justify-between items-center gap-8 mb-8">
-                <div class="flex items-center space-x-3 cursor-pointer" onclick="showSection('home')">
+                <div class="flex items-center space-x-3 cursor-pointer" data-nav-section="home">
                     <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <linearGradient id="ffg" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
@@ -870,9 +838,9 @@
                 </div>
                 
                 <div class="flex flex-wrap justify-center gap-x-8 gap-y-4 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    <button onclick="showSection('docs')" class="hover:text-brand-600 dark:hover:text-white transition uppercase">Documentation</button>
-                    <button onclick="showSection('rules')" class="hover:text-brand-600 dark:hover:text-white transition uppercase">Security Rules</button>
-                    <button onclick="showSection('community')" class="hover:text-brand-600 dark:hover:text-white transition uppercase">Community</button>
+                    <button data-nav-section="docs" class="hover:text-brand-600 dark:hover:text-white transition uppercase">Documentation</button>
+                    <button data-nav-section="rules" class="hover:text-brand-600 dark:hover:text-white transition uppercase">Security Rules</button>
+                    <button data-nav-section="community" class="hover:text-brand-600 dark:hover:text-white transition uppercase">Community</button>
                     <a href="feed.xml" target="_blank" class="flex items-center hover:text-orange-500 transition group">
                         <i data-lucide="rss" class="w-3 h-3 mr-1 group-hover:animate-pulse"></i>
                         RSS Feed

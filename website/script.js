@@ -1107,3 +1107,32 @@ function animateValue(obj, start, end, duration) {
 
 window.addEventListener('popstate', handleRouting);
 document.getElementById('mobile-menu-btn')?.addEventListener('click', toggleMobileMenu);
+
+// ------------------------------------------------------------------ //
+// Static navigation/control wiring                                     //
+// ------------------------------------------------------------------ //
+// This file's own static markup used inline onclick/onchange/oninput
+// attributes for these controls until issue #297: CSP's script-src no
+// longer permits 'unsafe-inline', so every one of them is wired here
+// instead, off data-* attributes/ids present in the fixed HTML this file
+// ships (never generated from remote/user data - see setSafeHTML()).
+
+document.querySelectorAll('[data-nav-section]').forEach((el) => {
+    el.addEventListener('click', () => {
+        showSection(el.dataset.navSection);
+        if ('closeMobileMenu' in el.dataset) toggleMobileMenu();
+    });
+});
+
+document.querySelector('[data-add-contributor]')?.addEventListener('click', () => {
+    showSection('blog-editor');
+    const editType = document.getElementById('edit-type');
+    if (editType) editType.value = 'contributor';
+    toggleEditorFields();
+});
+
+document.querySelector('[data-remove-image]')?.addEventListener('click', removeSelectedImage);
+document.getElementById('btn-run-mock')?.addEventListener('click', runMockScan);
+document.getElementById('rule-filter')?.addEventListener('change', renderRules);
+document.getElementById('rule-search')?.addEventListener('input', renderRules);
+document.getElementById('edit-type')?.addEventListener('change', toggleEditorFields);

@@ -4,7 +4,7 @@ import { gotoAndInit } from './helpers.js';
 test.describe('Navigation and routing', () => {
     test('clicking a nav link shows the target section and updates the hash', async ({ page }) => {
         await gotoAndInit(page);
-        await page.locator('button[onclick*="showSection(\'blog\')"]').first().click();
+        await page.locator('button[data-nav-section="blog"]').first().click();
         await expect(page).toHaveURL(/#blog$/);
         await expect(page.locator('#blog.section.active')).toBeVisible();
     });
