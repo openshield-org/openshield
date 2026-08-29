@@ -5,6 +5,8 @@
 // The backend always has data — either seeded or from a real scan.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { normalizeRisk, normalizeSeverity } from './severity.js';
+
 const API_BASE = import.meta.env.VITE_API_URL
   || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://openshield-api.onrender.com');
 
@@ -40,7 +42,7 @@ function normalizeFinding(f) {
     id:               f.id,
     ruleId:           f.rule_id          || f.ruleId,
     ruleName:         f.rule_name        || f.ruleName,
-    severity:         f.severity,
+    severity:         normalizeSeverity(f.severity),
     category:         f.category,
     resourceName:     f.resource_name    || f.resourceName,
     resourceGroup:    (f.resource_id || f.resourceId)?.split('/')?.[4] ?? f.resourceGroup ?? '',
@@ -70,7 +72,7 @@ function normalizeResource(r) {
     resourceGroup: r.resource_group  || r.resourceGroup,
     subscription:  r.subscription_id || r.subscription,
     location:      r.location,
-    risk:          r.risk_level      || r.risk,
+    risk:          normalizeRisk(r.risk_level || r.risk),
     findingCount:  r.finding_count   || r.findingCount || 0,
     discoveredAt:  r.discovered_at   || r.discoveredAt,
     config:        r.config          || {},
@@ -79,11 +81,16 @@ function normalizeResource(r) {
 
 function normalizeResourcesResponse(data) {
   const s = data.summary || {};
+  const byRiskLevel = {};
+  Object.entries(s.by_risk_level || s.byRiskLevel || {}).forEach(([risk, count]) => {
+    const canonical = normalizeRisk(risk);
+    byRiskLevel[canonical] = (byRiskLevel[canonical] || 0) + count;
+  });
   return {
     summary: {
       total:       s.total,
       byCategory:  s.by_category   || s.byCategory  || {},
-      byRiskLevel: s.by_risk_level  || s.byRiskLevel || {},
+      byRiskLevel,
       lastScanAt:  s.last_scan_at   || s.lastScanAt,
     },
     resources: (data.resources || []).map(normalizeResource),
@@ -104,7 +111,7 @@ function normalizePrioritizationResponse(data) {
       risk:              m.risk,
       effort:            m.effort,
       category:          m.category,
-      severity:          m.severity,
+      severity:          normalizeSeverity(m.severity),
       affectedResources: m.affected_resources || m.affectedResources,
       resource:          m.resource,
     })),
@@ -113,7 +120,7 @@ function normalizePrioritizationResponse(data) {
       ruleId:   r.rule_id   || r.ruleId,
       name:     r.name,
       score:    r.score,
-      severity: r.severity,
+      severity: normalizeSeverity(r.severity),
       category: r.category,
       effort:   r.effort,
       impact:   r.impact,
@@ -136,7 +143,7 @@ function normalizeDriftEvent(e) {
   return {
     id:            e.id,
     type:          e.type,
-    severity:      e.severity,
+    severity:      normalizeSeverity(e.severity),
     ruleId:        e.rule_id       || e.ruleId,
     ruleName:      e.rule_name     || e.ruleName,
     resourceName:  e.resource_name || e.resourceName,
@@ -197,7 +204,7 @@ function normalizeComplianceControl(c, frameworkName) {
     name:      c.control_name,
     status:    c.status,
     ruleId:    c.rule_id,
-    severity:  c.severity  || 'MEDIUM',
+    severity:  normalizeSeverity(c.severity, { nullable: true }),
     category:  c.category  || 'General',
     resources: c.resources || 0,
   };

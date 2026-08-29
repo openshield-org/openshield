@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 RULE_ID = "AZ-XXXX-000"  # Unique ID. Check existing rules to avoid clashes.
 RULE_NAME = "Human-readable name"  # Shown in the dashboard and reports.
-SEVERITY = "HIGH"  # HIGH | MEDIUM | LOW | INFO
+SEVERITY = "HIGH"  # CRITICAL | HIGH | MEDIUM | LOW | INFO
 CATEGORY = "Storage"  # Storage | Network | Identity | Database | Compute | Key Vault | Kubernetes
 FRAMEWORKS = {
     "CIS": "3.5",  # CIS Azure Benchmark control ID
@@ -100,7 +100,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 | Field | What to write |
 |---|---|
 | `RULE_ID` | `AZ-[CATEGORY]-[NUMBER]`. Prefix map: STOR, NET, IDN, DB, CMP, KV. Look at existing rules for the next number. |
-| `SEVERITY` | `HIGH` = direct exploitation risk, `MEDIUM` = indirect or partial risk, `LOW` = best practice, `INFO` = informational only |
+| `SEVERITY` | Use the canonical [finding severity contract](severity-contract.md): `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, or `INFO` |
 | `CATEGORY` | Matches the resource type being scanned |
 | `FRAMEWORKS` | Use real CIS, NIST, and ISO 27001 control IDs. SOC 2 is mapped in `compliance/frameworks/soc2.json`. |
 | `DESCRIPTION` | Focus on WHY it matters — what is the real-world attack scenario? |

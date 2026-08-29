@@ -1,5 +1,6 @@
 OPENSHIELD FRONTEND API ENDPOINT REFERENCE
 Last verified: 2026-08-18
+Finding severity source: contracts/severity.v1.json
 
 This file describes the API contract used by the React frontend. The source of
 truth is the implementation in frontend/src/utils/api.js,
@@ -138,7 +139,7 @@ GET /api/findings
 
 Supported query parameters (each may appear at most once):
 
-  severity   HIGH, MEDIUM, LOW, or INFO
+  severity   CRITICAL, HIGH, MEDIUM, LOW, or INFO
   category   A supported rule category
   rule_id    A rule ID such as AZ-STOR-001
   scan_id    Canonical scan UUID
@@ -235,7 +236,7 @@ has findings. The highest finding severity becomes each resource's risk value.
     "summary": {
       "total": 1,
       "by_category": { "Storage": 1 },
-      "by_risk_level": { "HIGH": 1, "MEDIUM": 0, "LOW": 0, "NONE": 0 },
+      "by_risk_level": { "CRITICAL": 0, "HIGH": 1, "MEDIUM": 0, "LOW": 0, "INFO": 0, "NONE": 0 },
       "last_scan_at": "<ISO-8601 timestamp>"
     },
     "resources": [

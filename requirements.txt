@@ -8,6 +8,8 @@ azure-mgmt-compute==30.0.0
 azure-mgmt-resource==23.0.0
 azure-mgmt-resourcegraph==8.0.1
 azure-mgmt-sql==3.0.1
+azure-mgmt-cosmosdb==10.0.0
+azure-mgmt-redis==14.5.0
 azure-mgmt-keyvault==10.3.0
 azure-mgmt-rdbms==10.1.0
 azure-mgmt-authorization==4.0.0
