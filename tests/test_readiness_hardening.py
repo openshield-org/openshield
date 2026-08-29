@@ -118,6 +118,94 @@ def test_probe_rate_limit_prunes_expired_keys_instead_of_growing_forever(monkeyp
     assert len(observability._probe_hits[("203.0.113.5", "/probe")]) == 1
 
 
+def test_probe_rate_limit_sweeps_stale_one_shot_addresses_globally(monkeypatch):
+    """A caller that rotates its source address to defeat same-key cleanup
+    (issue: each address is a one-shot key that's never revisited, so it's
+    never pruned) must still be bounded - the periodic global sweep has to
+    catch keys nobody ever hits a second time, not just the one the current
+    request touched."""
+    monkeypatch.setattr(observability, "_PROBE_SWEEP_INTERVAL", 5)
+    client = _tiny_app(max_requests=1, window_seconds=1.0).test_client()
+    fake_now = [1000.0]
+    monkeypatch.setattr(observability.time, "monotonic", lambda: fake_now[0])
+
+    # 20 distinct one-shot source addresses, each hit exactly once - none of
+    # them is ever revisited, so per-key cleanup alone would never touch them.
+    for i in range(20):
+        addr = f"203.0.113.{i}"
+        assert client.get("/probe", environ_overrides={"REMOTE_ADDR": addr}).status_code == 200
+    assert len(observability._probe_hits) == 20
+
+    # Advance well past the window, then trigger enough calls (from yet more
+    # different addresses) for the sweep interval to fire.
+    fake_now[0] += 5.0
+    for i in range(20, 25):
+        client.get("/probe", environ_overrides={"REMOTE_ADDR": f"203.0.113.{i}"})
+
+    # Every one of the original 20 stale one-shot keys is gone. Only recent
+    # activity (some subset of the newest addresses) remains tracked.
+    for i in range(20):
+        assert ("203.0.113.{}".format(i), "/probe") not in observability._probe_hits
+    assert len(observability._probe_hits) <= 5
+
+
+def test_probe_rate_limit_enforces_a_hard_cap_with_lru_eviction(monkeypatch):
+    """Even within the window (nothing has expired yet), the number of
+    tracked keys must never exceed the hard cap - bounds worst-case memory
+    against a burst of many distinct addresses regardless of timing."""
+    monkeypatch.setattr(observability, "_PROBE_MAX_TRACKED_KEYS", 3)
+    monkeypatch.setattr(observability, "_PROBE_SWEEP_INTERVAL", 1_000_000)  # don't let the sweep interfere
+    client = _tiny_app(max_requests=5, window_seconds=100.0).test_client()
+
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.1"})
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.2"})
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.3"})
+    assert list(observability._probe_hits.keys()) == [
+        ("10.0.0.1", "/probe"),
+        ("10.0.0.2", "/probe"),
+        ("10.0.0.3", "/probe"),
+    ]
+
+    # A 4th distinct address at the cap evicts the least-recently-touched
+    # key (10.0.0.1, never touched again) rather than growing past the cap.
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.4"})
+    assert len(observability._probe_hits) == 3
+    assert ("10.0.0.1", "/probe") not in observability._probe_hits
+    assert ("10.0.0.4", "/probe") in observability._probe_hits
+
+
+def test_probe_rate_limit_touching_a_key_protects_it_from_eviction(monkeypatch):
+    """Re-hitting an existing key must move it to the back of the eviction
+    order - an active caller must not be evicted just because other callers
+    showed up afterward."""
+    monkeypatch.setattr(observability, "_PROBE_MAX_TRACKED_KEYS", 2)
+    monkeypatch.setattr(observability, "_PROBE_SWEEP_INTERVAL", 1_000_000)
+    client = _tiny_app(max_requests=5, window_seconds=100.0).test_client()
+
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.1"})
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.2"})
+    # Touch 10.0.0.1 again - it's now the most recently active, not the
+    # least, even though it was inserted first.
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.1"})
+
+    # A 3rd distinct address should evict 10.0.0.2 (untouched since its
+    # first hit), not 10.0.0.1 (touched most recently).
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.3"})
+    assert ("10.0.0.1", "/probe") in observability._probe_hits
+    assert ("10.0.0.2", "/probe") not in observability._probe_hits
+    assert ("10.0.0.3", "/probe") in observability._probe_hits
+
+
+def test_probe_rate_limit_429_includes_retry_after_header():
+    client = _tiny_app(max_requests=1, window_seconds=7.0).test_client()
+
+    client.get("/probe")
+    resp = client.get("/probe")
+
+    assert resp.status_code == 429
+    assert resp.headers.get("Retry-After") == "7"
+
+
 # --------------------------------------------------------------------------- #
 # /ready - rate limiting wired into the real route                            #
 # --------------------------------------------------------------------------- #

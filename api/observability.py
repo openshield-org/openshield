@@ -17,7 +17,7 @@ import re
 import threading
 import time
 import uuid
-from collections import deque
+from collections import OrderedDict, deque
 from functools import wraps
 from typing import Callable, Deque, Dict, Optional, Tuple
 
@@ -226,8 +226,45 @@ _PROBE_WINDOW_SECONDS = 10.0
 # stable set of scraper IPs, so this stays generous; it exists to blunt a
 # single caller hammering the endpoint, not to constrain normal scraping.
 _METRICS_MAX_REQUESTS_PER_WINDOW = 20
+# Hard ceiling on distinct (address, path) keys tracked at once. Same-key
+# cleanup alone isn't enough: a caller that continuously rotates its source
+# address (or a spoofed forwarded address wherever the trusted-proxy
+# boundary is misconfigured) creates a new one-shot dict entry per address,
+# and a key that's never revisited is never pruned by the per-call cleanup
+# below - making the tracking dict itself an unbounded memory sink. This
+# caps it regardless of how many distinct addresses show up.
+_PROBE_MAX_TRACKED_KEYS = 10_000
+# A full scan over every tracked key on every single request would undercut
+# the point of a cheap in-memory limiter, so the sweep below runs every Nth
+# call instead of every call. This bounds how long a key whose owner never
+# returns can survive to at most this many requests' worth of accumulation
+# - the hard cap above is what actually bounds worst-case memory regardless
+# of traffic shape or how the sweep is scheduled.
+_PROBE_SWEEP_INTERVAL = 200
 _probe_lock = threading.Lock()
-_probe_hits: Dict[Tuple[str, str], Deque[float]] = {}
+# An OrderedDict, not a plain dict: every touch (new hit or a sweep pruning
+# it survives) moves a key to the end, so the front is always the least
+# recently touched key - the correct, deterministic thing to evict first
+# when the hard cap above is reached.
+_probe_hits: "OrderedDict[Tuple[str, str], Deque[float]]" = OrderedDict()
+_probe_call_count = 0
+
+
+def _sweep_expired_probe_hits(now: float, window_seconds: float) -> None:
+    """Remove every tracked key whose hits have all expired.
+
+    Must be called with _probe_lock already held. This is the global
+    cleanup pass: the per-call logic in probe_rate_limit only ever prunes
+    the one key the current request touched, which does nothing for a
+    key that's never hit again.
+    """
+    cutoff = now - window_seconds
+    for key in list(_probe_hits.keys()):
+        hits = _probe_hits[key]
+        while hits and hits[0] < cutoff:
+            hits.popleft()
+        if not hits:
+            del _probe_hits[key]
 
 
 def probe_rate_limit(max_requests: int, window_seconds: float = _PROBE_WINDOW_SECONDS):
@@ -244,29 +281,41 @@ def probe_rate_limit(max_requests: int, window_seconds: float = _PROBE_WINDOW_SE
             if current_app.testing:
                 return fn(*args, **kwargs)
 
+            global _probe_call_count
             key = (request.remote_addr or "unknown", request.path)
             now = time.monotonic()
             with _probe_lock:
+                _probe_call_count += 1
+                if _probe_call_count % _PROBE_SWEEP_INTERVAL == 0:
+                    _sweep_expired_probe_hits(now, window_seconds)
+
                 hits = _probe_hits.get(key)
                 if hits is not None:
                     cutoff = now - window_seconds
                     while hits and hits[0] < cutoff:
                         hits.popleft()
                     if not hits:
-                        # Prune empty entries immediately rather than letting
-                        # every distinct caller's key accumulate forever -
-                        # a key only exists while it has a hit in-window.
                         del _probe_hits[key]
                         hits = None
+
                 if hits is None:
+                    if len(_probe_hits) >= _PROBE_MAX_TRACKED_KEYS:
+                        # Deterministic eviction: drop the least recently
+                        # touched key, not an arbitrary/insertion-order one.
+                        _probe_hits.popitem(last=False)
                     hits = deque()
+
                 allowed = len(hits) < max_requests
                 if allowed:
                     hits.append(now)
-                    _probe_hits[key] = hits
+                # Re-inserting (or just touching) moves this key to the end -
+                # it's the most recently active key, so it's the last thing
+                # eviction should reach for.
+                _probe_hits[key] = hits
+                _probe_hits.move_to_end(key)
 
             if not allowed:
-                return jsonify({"status": "rate_limited"}), 429
+                return jsonify({"status": "rate_limited"}), 429, {"Retry-After": str(int(window_seconds))}
 
             return fn(*args, **kwargs)
 
