@@ -1042,52 +1042,122 @@
     "AZ-NET-018": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "PaaS resources using Private Link should not retain unnecessary public network exposure."
+      "description": "PaaS resources using Private Link should not retain unnecessary public network exposure.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-018 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-019": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Private Endpoint connections must be approved and operational."
+      "description": "Private Endpoint connections must be approved and operational.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-019 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-020": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Private Endpoints require an associated service-appropriate Private DNS zone."
+      "description": "Private Endpoints require an associated service-appropriate Private DNS zone.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-020 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-021": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Private Endpoint ARM DNS configuration must associate service names with private addresses; effective resolver-path validation remains separate evidence."
+      "description": "Private Endpoint FQDNs must resolve to private addresses through the controlled network path.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-021 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-022": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Critical PaaS resources restrict public exposure unless an approved exception exists."
+      "description": "Critical PaaS resources restrict public exposure unless an approved exception exists.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-022 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-023": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Azure Firewall denies traffic identified by Microsoft threat intelligence."
+      "description": "Azure Firewall denies traffic identified by Microsoft threat intelligence.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-023 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-024": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Application Gateway WAF operates in Prevention mode at the application boundary."
+      "description": "Application Gateway WAF operates in Prevention mode at the application boundary.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-024 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-025": {
       "control_id": "A.12.4.1",
       "control_name": "Event logging",
-      "description": "Application Gateway WAF diagnostic categories supported by its SKU are exported to an approved monitoring destination."
+      "description": "Application Gateway WAF diagnostic categories are exported to an approved monitoring destination.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.12.4.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.12.4.1 ('Event logging') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-025 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-026": {
       "control_id": "A.14.2.5",
       "control_name": "Secure system engineering principles",
-      "description": "Current managed application and bot rules are maintained at the web perimeter."
+      "description": "Current managed application and bot rules are maintained at the web perimeter.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.14.2.5",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.14.2.5 ('Secure system engineering principles') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-026 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-027": {
       "control_id": "A.13.1.1",
       "control_name": "Network controls",
-      "description": "Rate limiting protects internet-facing application entry points."
+      "description": "Rate limiting protects internet-facing application entry points.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.13.1.1",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.13.1.1 ('Network controls') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-NET-027 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-SECOPS-001": {
       "control_id": "A.12.4.1",
@@ -1200,57 +1270,14 @@
     "AZ-SECOPS-010": {
       "control_id": "A.16.1.2",
       "control_name": "Reporting information security events",
-      "description": "No monitored destination exists for security alerts or Sentinel incidents. A.16.1.2 requires information security events to be reported through appropriate management channels as quickly as possible; an alert with no notified recipient cannot be reported or acted on."
-    },
-    "AZ-NET-018": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "PaaS resources using Private Link should not retain unnecessary public network exposure."
-    },
-    "AZ-NET-019": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Private Endpoint connections must be approved and operational."
-    },
-    "AZ-NET-020": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Private Endpoints require an associated service-appropriate Private DNS zone."
-    },
-    "AZ-NET-021": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Private Endpoint FQDNs must resolve to private addresses through the controlled network path."
-    },
-    "AZ-NET-022": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Critical PaaS resources restrict public exposure unless an approved exception exists."
-    },
-    "AZ-NET-023": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Azure Firewall denies traffic identified by Microsoft threat intelligence."
-    },
-    "AZ-NET-024": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Application Gateway WAF operates in Prevention mode at the application boundary."
-    },
-    "AZ-NET-025": {
-      "control_id": "A.12.4.1",
-      "control_name": "Event logging",
-      "description": "Application Gateway WAF diagnostic categories are exported to an approved monitoring destination."
-    },
-    "AZ-NET-026": {
-      "control_id": "A.14.2.5",
-      "control_name": "Secure system engineering principles",
-      "description": "Current managed application and bot rules are maintained at the web perimeter."
-    },
-    "AZ-NET-027": {
-      "control_id": "A.13.1.1",
-      "control_name": "Network controls",
-      "description": "Rate limiting protects internet-facing application entry points."
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. A.16.1.2 requires information security events to be reported through appropriate management channels as quickly as possible; an alert with no notified recipient cannot be reported or acted on.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "ISO/IEC 27001:2013:2013, Annex A control A.16.1.2",
+      "rationale": "ISO/IEC 27001:2013 Annex A control A.16.1.2 ('Reporting information security events') requires a documented ISMS control, not solely a technical configuration state. OpenShield rule AZ-SECOPS-010 evaluates one Azure technical setting that provides supporting automated evidence toward this control; full conformance also requires the organizational policy and process elements ISO 27001 mandates.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     }
   }
 }

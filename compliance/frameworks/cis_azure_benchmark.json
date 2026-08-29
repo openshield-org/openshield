@@ -1042,52 +1042,122 @@
     "AZ-NET-018": {
       "control_id": "N/A-NET-018",
       "control_name": "Private Endpoint public access baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private connectivity should replace unnecessary public PaaS exposure; CIS Azure Foundations 2.0.0 has no universal control covering every supported Private Link target."
+      "description": "Private connectivity should replace unnecessary public PaaS exposure; CIS Azure Foundations 2.0.0 has no universal control covering every supported Private Link target.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-018",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-018: Private Endpoint public access baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-019": {
       "control_id": "N/A-NET-019",
       "control_name": "Private Endpoint connection approval baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private Endpoint connections must be approved to provide the intended private path; no universal CIS Azure Foundations 2.0.0 recommendation covers this state."
+      "description": "Private Endpoint connections must be approved to provide the intended private path; no universal CIS Azure Foundations 2.0.0 recommendation covers this state.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-019",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-019: Private Endpoint connection approval baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-020": {
       "control_id": "N/A-NET-020",
       "control_name": "Private Endpoint DNS association baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private Endpoints require service-appropriate private DNS integration; CIS Azure Foundations 2.0.0 has no universal recommendation for this association."
+      "description": "Private Endpoints require service-appropriate private DNS integration; CIS Azure Foundations 2.0.0 has no universal recommendation for this association.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-020",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-020: Private Endpoint DNS association baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-021": {
       "control_id": "N/A-NET-021",
-      "control_name": "Private Endpoint custom DNS configuration baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private Endpoint custom DNS configuration should associate service names with private addresses. This is ARM configuration evidence, not an effective-resolution probe; CIS Azure Foundations 2.0.0 has no universal recommendation for it."
+      "control_name": "Private Endpoint FQDN resolution baseline (no direct CIS Azure Foundations 2.0.0 control)",
+      "description": "Private Endpoint names should resolve to private addresses; CIS Azure Foundations 2.0.0 has no universal recommendation for this resolution evidence.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-021",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-021: Private Endpoint FQDN resolution baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-022": {
       "control_id": "N/A-NET-022",
       "control_name": "Critical PaaS public exposure baseline (no universal CIS Azure Foundations 2.0.0 control)",
-      "description": "Critical PaaS resources should use private access or an approved exception; CIS Azure Foundations 2.0.0 provides service-specific rather than universal coverage."
+      "description": "Critical PaaS resources should use private access or an approved exception; CIS Azure Foundations 2.0.0 provides service-specific rather than universal coverage.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-022",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-022: Critical PaaS public exposure baseline (no universal CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-023": {
       "control_id": "N/A-NET-023",
       "control_name": "Azure Firewall threat intelligence enforcement baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Deny mode blocks traffic involving known malicious addresses and domains; CIS Azure Foundations 2.0.0 has no direct recommendation for this mode."
+      "description": "AlertAndDeny blocks traffic involving known malicious addresses and domains; CIS Azure Foundations 2.0.0 has no direct recommendation for this mode.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-023",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-023: Azure Firewall threat intelligence enforcement baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-024": {
       "control_id": "N/A-NET-024",
       "control_name": "Application Gateway WAF Prevention mode baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Prevention mode blocks matching application attacks; CIS Azure Foundations 2.0.0 has no direct recommendation for the gateway mode."
+      "description": "Prevention mode blocks matching application attacks; CIS Azure Foundations 2.0.0 has no direct recommendation for the gateway mode.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-024",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-024: Application Gateway WAF Prevention mode baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-025": {
       "control_id": "N/A-NET-025",
       "control_name": "Application Gateway WAF diagnostic logging baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "SKU-supported Application Gateway diagnostic logs support perimeter monitoring. Performance logging is required on v1; v2 exposes performance telemetry through metrics. CIS Azure Foundations 2.0.0 has no direct universal recommendation for these categories."
+      "description": "Access, performance, and firewall logs support perimeter monitoring; CIS Azure Foundations 2.0.0 has no direct universal recommendation for all categories.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-025",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-025: Application Gateway WAF diagnostic logging baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-026": {
       "control_id": "N/A-NET-026",
       "control_name": "Current WAF managed rules and bot protection baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Current base and bot managed rule sets protect the application perimeter; CIS Azure Foundations 2.0.0 has no direct rule-set-version recommendation."
+      "description": "Current base and bot managed rule sets protect the application perimeter; CIS Azure Foundations 2.0.0 has no direct rule-set-version recommendation.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-026",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-026: Current WAF managed rules and bot protection baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-027": {
       "control_id": "N/A-NET-027",
       "control_name": "Internet-facing application rate limiting baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Rate limiting protects public applications from abusive request volume; CIS Azure Foundations 2.0.0 has no direct Application Gateway rate-rule recommendation."
+      "description": "Rate limiting protects public applications from abusive request volume; CIS Azure Foundations 2.0.0 has no direct Application Gateway rate-rule recommendation.",
+      "mapping_type": "not_applicable",
+      "evidence_type": "not_applicable",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control N/A-NET-027",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 has no numbered control this rule maps to (N/A-NET-027: Internet-facing application rate limiting baseline (no direct CIS Azure Foundations 2.0.0 control)) - this rule's evidence is not counted as a CIS pass/fail because there is no corresponding CIS requirement for it to be evidence of.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-SECOPS-001": {
       "control_id": "5.1.1",
@@ -1200,57 +1270,14 @@
     "AZ-SECOPS-010": {
       "control_id": "2.1.20",
       "control_name": "Ensure That 'Notify about alerts with the following severity' is Set to 'High'",
-      "description": "No enabled Azure Monitor action group with a notification receiver exists, and no Sentinel automation rule routes incidents onward. CIS 2.1.20 requires Defender security alerts to notify a monitored destination; this rule generalizes that requirement to the concrete Azure notification primitive (action groups) and the Sentinel-native incident routing mechanism (automation rules)."
-    },
-    "AZ-NET-018": {
-      "control_id": "N/A-NET-018",
-      "control_name": "Private Endpoint public access baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private connectivity should replace unnecessary public PaaS exposure; CIS Azure Foundations 2.0.0 has no universal control covering every supported Private Link target."
-    },
-    "AZ-NET-019": {
-      "control_id": "N/A-NET-019",
-      "control_name": "Private Endpoint connection approval baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private Endpoint connections must be approved to provide the intended private path; no universal CIS Azure Foundations 2.0.0 recommendation covers this state."
-    },
-    "AZ-NET-020": {
-      "control_id": "N/A-NET-020",
-      "control_name": "Private Endpoint DNS association baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private Endpoints require service-appropriate private DNS integration; CIS Azure Foundations 2.0.0 has no universal recommendation for this association."
-    },
-    "AZ-NET-021": {
-      "control_id": "N/A-NET-021",
-      "control_name": "Private Endpoint FQDN resolution baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Private Endpoint names should resolve to private addresses; CIS Azure Foundations 2.0.0 has no universal recommendation for this resolution evidence."
-    },
-    "AZ-NET-022": {
-      "control_id": "N/A-NET-022",
-      "control_name": "Critical PaaS public exposure baseline (no universal CIS Azure Foundations 2.0.0 control)",
-      "description": "Critical PaaS resources should use private access or an approved exception; CIS Azure Foundations 2.0.0 provides service-specific rather than universal coverage."
-    },
-    "AZ-NET-023": {
-      "control_id": "N/A-NET-023",
-      "control_name": "Azure Firewall threat intelligence enforcement baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "AlertAndDeny blocks traffic involving known malicious addresses and domains; CIS Azure Foundations 2.0.0 has no direct recommendation for this mode."
-    },
-    "AZ-NET-024": {
-      "control_id": "N/A-NET-024",
-      "control_name": "Application Gateway WAF Prevention mode baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Prevention mode blocks matching application attacks; CIS Azure Foundations 2.0.0 has no direct recommendation for the gateway mode."
-    },
-    "AZ-NET-025": {
-      "control_id": "N/A-NET-025",
-      "control_name": "Application Gateway WAF diagnostic logging baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Access, performance, and firewall logs support perimeter monitoring; CIS Azure Foundations 2.0.0 has no direct universal recommendation for all categories."
-    },
-    "AZ-NET-026": {
-      "control_id": "N/A-NET-026",
-      "control_name": "Current WAF managed rules and bot protection baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Current base and bot managed rule sets protect the application perimeter; CIS Azure Foundations 2.0.0 has no direct rule-set-version recommendation."
-    },
-    "AZ-NET-027": {
-      "control_id": "N/A-NET-027",
-      "control_name": "Internet-facing application rate limiting baseline (no direct CIS Azure Foundations 2.0.0 control)",
-      "description": "Rate limiting protects public applications from abusive request volume; CIS Azure Foundations 2.0.0 has no direct Application Gateway rate-rule recommendation."
+      "description": "No enabled Azure Monitor action group with a notification receiver exists, and no Sentinel automation rule routes incidents onward. CIS 2.1.20 requires Defender security alerts to notify a monitored destination; this rule generalizes that requirement to the concrete Azure notification primitive (action groups) and the Sentinel-native incident routing mechanism (automation rules).",
+      "mapping_type": "direct",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "CIS Microsoft Azure Foundations Benchmark v2.0.0, control 2.1.20",
+      "rationale": "CIS Microsoft Azure Foundations Benchmark v2.0.0 control 2.1.20 ('Ensure That 'Notify about alerts with the following severity' is Set to 'High'') is a specific, automatable Azure configuration requirement. OpenShield rule AZ-SECOPS-010 evaluates this exact setting via the Azure Resource Manager/Graph API, so its PASS/FAIL result is direct technical evidence for this control.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     }
   }
 }

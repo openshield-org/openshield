@@ -1042,52 +1042,122 @@
     "AZ-NET-018": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Disabling unnecessary public access ensures the Private Endpoint is the managed remote access path."
+      "description": "Disabling unnecessary public access ensures the Private Endpoint is the managed remote access path.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.AC-3",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.AC-3 ('Remote access is managed') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-018 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-019": {
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
-      "description": "Approved Private Endpoint connections preserve the intended private network boundary."
+      "description": "Approved Private Endpoint connections preserve the intended private network boundary.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.AC-5",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.AC-5 ('Network integrity is protected') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-019 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-020": {
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
-      "description": "Private DNS zone association directs service names through the intended private endpoint path."
+      "description": "Private DNS zone association directs service names through the intended private endpoint path.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.AC-5",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.AC-5 ('Network integrity is protected') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-020 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-021": {
       "control_id": "PR.AC-5",
       "control_name": "Network integrity is protected",
-      "description": "Private Endpoint ARM DNS configuration associates service names with private addresses; effective resolver-path validation remains separate evidence."
+      "description": "Private address resolution provides evidence that service traffic follows the private network boundary.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.AC-5",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.AC-5 ('Network integrity is protected') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-021 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-022": {
       "control_id": "PR.AC-3",
       "control_name": "Remote access is managed",
-      "description": "Critical PaaS public access is disabled unless an explicit approved exception exists."
+      "description": "Critical PaaS public access is disabled unless an explicit approved exception exists.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.AC-3",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.AC-3 ('Remote access is managed') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-022 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-023": {
       "control_id": "DE.CM-1",
       "control_name": "The network is monitored",
-      "description": "Azure Firewall threat intelligence alerts on and denies traffic involving known malicious infrastructure."
+      "description": "Azure Firewall threat intelligence alerts on and denies traffic involving known malicious infrastructure.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory DE.CM-1",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory DE.CM-1 ('The network is monitored') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-023 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-024": {
       "control_id": "PR.PT-4",
       "control_name": "Communications and control networks are protected",
-      "description": "Application Gateway WAF Prevention mode actively blocks matching application attacks."
+      "description": "Application Gateway WAF Prevention mode actively blocks matching application attacks.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.PT-4",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.PT-4 ('Communications and control networks are protected') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-024 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-025": {
       "control_id": "DE.CM-1",
       "control_name": "The network is monitored",
-      "description": "Application Gateway SKU-supported diagnostic logs provide perimeter monitoring evidence; v2 performance telemetry is supplied through metrics."
+      "description": "Application Gateway access, performance, and firewall logs provide perimeter monitoring evidence.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory DE.CM-1",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory DE.CM-1 ('The network is monitored') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-025 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-026": {
       "control_id": "PR.PT-4",
       "control_name": "Communications and control networks are protected",
-      "description": "Current base and bot managed rules protect the web application perimeter."
+      "description": "Current base and bot managed rules protect the web application perimeter.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.PT-4",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.PT-4 ('Communications and control networks are protected') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-026 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-027": {
       "control_id": "PR.PT-4",
       "control_name": "Communications and control networks are protected",
-      "description": "Rate-limit rules protect internet-facing applications from abusive request volume."
+      "description": "Rate-limit rules protect internet-facing applications from abusive request volume.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory PR.PT-4",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory PR.PT-4 ('Communications and control networks are protected') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-NET-027 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-SECOPS-001": {
       "control_id": "PR.PT-1",
@@ -1200,57 +1270,14 @@
     "AZ-SECOPS-010": {
       "control_id": "RS.CO-2",
       "control_name": "Incidents are reported consistent with established criteria",
-      "description": "No monitored destination exists for security alerts or Sentinel incidents. RS.CO-2 requires incidents to be reported consistent with established criteria; an alert with no notified recipient is never reported to anyone who can act on it."
-    },
-    "AZ-NET-018": {
-      "control_id": "PR.AC-3",
-      "control_name": "Remote access is managed",
-      "description": "Disabling unnecessary public access ensures the Private Endpoint is the managed remote access path."
-    },
-    "AZ-NET-019": {
-      "control_id": "PR.AC-5",
-      "control_name": "Network integrity is protected",
-      "description": "Approved Private Endpoint connections preserve the intended private network boundary."
-    },
-    "AZ-NET-020": {
-      "control_id": "PR.AC-5",
-      "control_name": "Network integrity is protected",
-      "description": "Private DNS zone association directs service names through the intended private endpoint path."
-    },
-    "AZ-NET-021": {
-      "control_id": "PR.AC-5",
-      "control_name": "Network integrity is protected",
-      "description": "Private address resolution provides evidence that service traffic follows the private network boundary."
-    },
-    "AZ-NET-022": {
-      "control_id": "PR.AC-3",
-      "control_name": "Remote access is managed",
-      "description": "Critical PaaS public access is disabled unless an explicit approved exception exists."
-    },
-    "AZ-NET-023": {
-      "control_id": "DE.CM-1",
-      "control_name": "The network is monitored",
-      "description": "Azure Firewall threat intelligence alerts on and denies traffic involving known malicious infrastructure."
-    },
-    "AZ-NET-024": {
-      "control_id": "PR.PT-4",
-      "control_name": "Communications and control networks are protected",
-      "description": "Application Gateway WAF Prevention mode actively blocks matching application attacks."
-    },
-    "AZ-NET-025": {
-      "control_id": "DE.CM-1",
-      "control_name": "The network is monitored",
-      "description": "Application Gateway access, performance, and firewall logs provide perimeter monitoring evidence."
-    },
-    "AZ-NET-026": {
-      "control_id": "PR.PT-4",
-      "control_name": "Communications and control networks are protected",
-      "description": "Current base and bot managed rules protect the web application perimeter."
-    },
-    "AZ-NET-027": {
-      "control_id": "PR.PT-4",
-      "control_name": "Communications and control networks are protected",
-      "description": "Rate-limit rules protect internet-facing applications from abusive request volume."
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. RS.CO-2 requires incidents to be reported consistent with established criteria; an alert with no notified recipient is never reported to anyone who can act on it.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "NIST Cybersecurity Framework 1.1, subcategory RS.CO-2",
+      "rationale": "NIST Cybersecurity Framework 1.1 subcategory RS.CO-2 ('Incidents are reported consistent with established criteria') describes a broader security outcome that requires organizational process in addition to technical configuration. OpenShield rule AZ-SECOPS-010 evaluates one Azure technical control that provides supporting automated evidence toward this outcome; it does not by itself fully satisfy the subcategory.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     }
   }
 }

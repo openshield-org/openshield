@@ -1042,52 +1042,122 @@
     "AZ-NET-018": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Private Link targets restrict unnecessary public network access."
+      "description": "Private Link targets restrict unnecessary public network access.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-018 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-019": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Private Endpoint connections are approved and operational before they are relied upon as an access boundary."
+      "description": "Private Endpoint connections are approved and operational before they are relied upon as an access boundary.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-019 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-020": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Private DNS association preserves the approved private access path."
+      "description": "Private DNS association preserves the approved private access path.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-020 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-021": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Private Endpoint ARM DNS configuration associates service names with private addresses; effective resolver-path validation remains separate evidence."
+      "description": "Private Endpoint service names resolve to private addresses within the approved access boundary.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-021 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-022": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Critical PaaS resources restrict public access unless an approved exception exists."
+      "description": "Critical PaaS resources restrict public access unless an approved exception exists.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-022 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-023": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Azure Firewall denies traffic involving infrastructure identified by threat intelligence."
+      "description": "Azure Firewall denies traffic involving infrastructure identified by threat intelligence.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-023 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-024": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Application Gateway WAF Prevention mode blocks matching malicious requests."
+      "description": "Application Gateway WAF Prevention mode blocks matching malicious requests.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-024 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-025": {
       "control_id": "CC7.2",
       "control_name": "System monitoring",
-      "description": "Application Gateway SKU-supported diagnostic logs support anomaly monitoring; v2 performance telemetry is supplied through metrics."
+      "description": "Application Gateway access, performance, and firewall logs support anomaly monitoring.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC7.2",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC7.2 ('System monitoring') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-025 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-026": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Current application and bot managed rules protect the logical access boundary."
+      "description": "Current application and bot managed rules protect the logical access boundary.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-026 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-NET-027": {
       "control_id": "CC6.6",
       "control_name": "Logical Access Security Measures",
-      "description": "Rate-limit rules protect public application access from abusive request volume."
+      "description": "Rate-limit rules protect public application access from abusive request volume.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC6.6",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC6.6 ('Logical Access Security Measures') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-NET-027 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     },
     "AZ-SECOPS-001": {
       "control_id": "CC7.2",
@@ -1200,57 +1270,14 @@
     "AZ-SECOPS-010": {
       "control_id": "CC7.4",
       "control_name": "Incident Response",
-      "description": "No monitored destination exists for security alerts or Sentinel incidents. CC7.4 requires the entity to respond to identified security incidents; an alert nobody is notified of cannot trigger the incident-response process CC7.4 requires."
-    },
-    "AZ-NET-018": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Private Link targets restrict unnecessary public network access."
-    },
-    "AZ-NET-019": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Private Endpoint connections are approved and operational before they are relied upon as an access boundary."
-    },
-    "AZ-NET-020": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Private DNS association preserves the approved private access path."
-    },
-    "AZ-NET-021": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Private Endpoint service names resolve to private addresses within the approved access boundary."
-    },
-    "AZ-NET-022": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Critical PaaS resources restrict public access unless an approved exception exists."
-    },
-    "AZ-NET-023": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Azure Firewall denies traffic involving infrastructure identified by threat intelligence."
-    },
-    "AZ-NET-024": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Application Gateway WAF Prevention mode blocks matching malicious requests."
-    },
-    "AZ-NET-025": {
-      "control_id": "CC7.2",
-      "control_name": "System monitoring",
-      "description": "Application Gateway access, performance, and firewall logs support anomaly monitoring."
-    },
-    "AZ-NET-026": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Current application and bot managed rules protect the logical access boundary."
-    },
-    "AZ-NET-027": {
-      "control_id": "CC6.6",
-      "control_name": "Logical Access Security Measures",
-      "description": "Rate-limit rules protect public application access from abusive request volume."
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. CC7.4 requires the entity to respond to identified security incidents; an alert nobody is notified of cannot trigger the incident-response process CC7.4 requires.",
+      "mapping_type": "supporting",
+      "evidence_type": "automated_configuration_scan",
+      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC7.4",
+      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC7.4 ('Incident Response') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-SECOPS-010 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
+      "owner": null,
+      "review_status": "pending_review",
+      "review_date": null
     }
   }
 }
