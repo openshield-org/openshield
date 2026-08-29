@@ -472,15 +472,12 @@ jobs:
         run: pip install pip-audit
 
       # transformers (transitive via sentence-transformers) has no non-breaking fix yet; tracked separately
-      # chromadb CVE-2026-45830/45833: no patched version; removal tracked in PR #317
       - name: Run pip-audit
         run: |
           pip-audit -r requirements.txt \
             --ignore-vuln PYSEC-2025-217 \
             --ignore-vuln CVE-2026-1839 \
-            --ignore-vuln CVE-2026-4372 \
-            --ignore-vuln CVE-2026-45830 \
-            --ignore-vuln CVE-2026-45833
+            --ignore-vuln CVE-2026-4372
 
   # ── Software Bill of Materials (Syft, CycloneDX) ──────────────────────────
   sbom:
