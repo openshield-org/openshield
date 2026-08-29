@@ -1039,6 +1039,56 @@
       "review_status": "pending_review",
       "review_date": null
     },
+    "AZ-NET-018": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private Link targets restrict unnecessary public network access."
+    },
+    "AZ-NET-019": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private Endpoint connections are approved and operational before they are relied upon as an access boundary."
+    },
+    "AZ-NET-020": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private DNS association preserves the approved private access path."
+    },
+    "AZ-NET-021": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private Endpoint ARM DNS configuration associates service names with private addresses; effective resolver-path validation remains separate evidence."
+    },
+    "AZ-NET-022": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Critical PaaS resources restrict public access unless an approved exception exists."
+    },
+    "AZ-NET-023": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Azure Firewall denies traffic involving infrastructure identified by threat intelligence."
+    },
+    "AZ-NET-024": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Application Gateway WAF Prevention mode blocks matching malicious requests."
+    },
+    "AZ-NET-025": {
+      "control_id": "CC7.2",
+      "control_name": "System monitoring",
+      "description": "Application Gateway SKU-supported diagnostic logs support anomaly monitoring; v2 performance telemetry is supplied through metrics."
+    },
+    "AZ-NET-026": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Current application and bot managed rules protect the logical access boundary."
+    },
+    "AZ-NET-027": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Rate-limit rules protect public application access from abusive request volume."
+    },
     "AZ-SECOPS-001": {
       "control_id": "CC7.2",
       "control_name": "System Monitoring",
@@ -1150,14 +1200,57 @@
     "AZ-SECOPS-010": {
       "control_id": "CC7.4",
       "control_name": "Incident Response",
-      "description": "No monitored destination exists for security alerts or Sentinel incidents. CC7.4 requires the entity to respond to identified security incidents; an alert nobody is notified of cannot trigger the incident-response process CC7.4 requires.",
-      "mapping_type": "supporting",
-      "evidence_type": "automated_configuration_scan",
-      "primary_source": "SOC 2 Type II (2017 Trust Services Criteria), criterion CC7.4",
-      "rationale": "AICPA SOC 2 (2017 Trust Services Criteria) criterion CC7.4 ('Incident Response') is evaluated by an independent auditor across technical, procedural and organizational evidence. OpenShield rule AZ-SECOPS-010 evaluates one Azure technical control that provides supporting automated evidence toward this criterion; it is not a substitute for an auditor's evaluation.",
-      "owner": null,
-      "review_status": "pending_review",
-      "review_date": null
+      "description": "No monitored destination exists for security alerts or Sentinel incidents. CC7.4 requires the entity to respond to identified security incidents; an alert nobody is notified of cannot trigger the incident-response process CC7.4 requires."
+    },
+    "AZ-NET-018": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private Link targets restrict unnecessary public network access."
+    },
+    "AZ-NET-019": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private Endpoint connections are approved and operational before they are relied upon as an access boundary."
+    },
+    "AZ-NET-020": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private DNS association preserves the approved private access path."
+    },
+    "AZ-NET-021": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Private Endpoint service names resolve to private addresses within the approved access boundary."
+    },
+    "AZ-NET-022": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Critical PaaS resources restrict public access unless an approved exception exists."
+    },
+    "AZ-NET-023": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Azure Firewall denies traffic involving infrastructure identified by threat intelligence."
+    },
+    "AZ-NET-024": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Application Gateway WAF Prevention mode blocks matching malicious requests."
+    },
+    "AZ-NET-025": {
+      "control_id": "CC7.2",
+      "control_name": "System monitoring",
+      "description": "Application Gateway access, performance, and firewall logs support anomaly monitoring."
+    },
+    "AZ-NET-026": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Current application and bot managed rules protect the logical access boundary."
+    },
+    "AZ-NET-027": {
+      "control_id": "CC6.6",
+      "control_name": "Logical Access Security Measures",
+      "description": "Rate-limit rules protect public application access from abusive request volume."
     }
   }
 }

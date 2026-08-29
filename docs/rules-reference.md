@@ -1,6 +1,6 @@
 ﻿# Rules Reference
 
-OpenShield currently ships 80 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
+OpenShield currently ships 90 Azure scan rules. This table is generated from the module-level constants in `scanner/rules/`.
 
 | Rule ID | Name | Severity | Category | CIS | NIST | ISO 27001 |
 |---|---|---|---|---|---|---|
@@ -47,6 +47,16 @@ OpenShield currently ships 80 Azure scan rules. This table is generated from the
 | AZ-NET-013 | Azure Firewall Not Enabled on Virtual Network | HIGH | Network | 6.4 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-014 | VNet Peering Configured Without Gateway Transit Restrictions | MEDIUM | Network | 6.6 | PR.AC-5 | A.13.1.1 |
 | AZ-NET-015 | Public DNS Zone Exposes Internal Infrastructure Details | MEDIUM | Network | 9.8 | PR.AC-5 | A.13.1.1 |
+| AZ-NET-018 | Private Endpoint Target Retains Public Network Access | HIGH | Network | N/A-NET-018 | PR.AC-3 | A.13.1.1 |
+| AZ-NET-019 | Private Endpoint Connection Is Not Approved | HIGH | Network | N/A-NET-019 | PR.AC-5 | A.13.1.1 |
+| AZ-NET-020 | Private Endpoint Lacks Private DNS Zone Association | HIGH | Network | N/A-NET-020 | PR.AC-5 | A.13.1.1 |
+| AZ-NET-021 | Private Endpoint DNS Configuration Reports Only Public Addresses | HIGH | Network | N/A-NET-021 | PR.AC-5 | A.13.1.1 |
+| AZ-NET-022 | Critical PaaS Resource Is Publicly Accessible Without Approved Exception | HIGH | Network | N/A-NET-022 | PR.AC-3 | A.13.1.1 |
+| AZ-NET-023 | Azure Firewall Threat Intelligence Is Not in Deny Mode | HIGH | Network | N/A-NET-023 | DE.CM-1 | A.13.1.1 |
+| AZ-NET-024 | Application Gateway WAF Is Not in Prevention Mode | HIGH | Network | N/A-NET-024 | PR.PT-4 | A.13.1.1 |
+| AZ-NET-025 | Application Gateway WAF Diagnostic Logging Is Not Enabled | MEDIUM | Network | N/A-NET-025 | DE.CM-1 | A.12.4.1 |
+| AZ-NET-026 | WAF Lacks Current Managed Rules or Bot Protection | HIGH | Network | N/A-NET-026 | PR.PT-4 | A.14.2.5 |
+| AZ-NET-027 | Internet-Facing Application Gateway Lacks Approved Rate Limiting | HIGH | Network | N/A-NET-027 | PR.PT-4 | A.13.1.1 |
 | AZ-PQC-001 | TLS Using Classical Key Exchange Algorithm | HIGH | PostQuantum | 9.9 | PR.DS-2 | A.10.1.1 |
 | AZ-PQC-002 | Key Vault Key Using Non-Quantum-Safe Algorithm | HIGH | PostQuantum | 8.1 | PR.DS-2 | A.10.1.1 |
 | AZ-PQC-003 | Key Vault Certificate Using Non-Quantum-Safe Signature Algorithm | MEDIUM | PostQuantum | 8.9 | PR.DS-2 | A.10.1.1 |

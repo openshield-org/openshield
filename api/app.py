@@ -32,6 +32,16 @@ _MIN_JWT_SECRET_LENGTH = 32
 _MAX_AUTHORIZATION_HEADER_LENGTH = 8192
 _GENERATE_CMD = 'python -c "import secrets; print(secrets.token_urlsafe(32))"'
 
+# A token's signature proves who signed it, not what the bearer is allowed to
+# do. Every accepted token must carry one of these roles (see issue #294):
+# a missing/unrecognized role is treated the same as an invalid signature.
+# Only operator/admin may perform a write (any non-GET/HEAD); viewer is
+# read-only. This is enforced regardless of demo mode - public_demo only
+# ever widens *read* access to skip the token requirement entirely, it does
+# not touch write authorization.
+_KNOWN_ROLES = {"viewer", "operator", "admin"}
+_WRITE_ROLES = {"operator", "admin"}
+
 
 def _is_production() -> bool:
     return (
@@ -141,6 +151,14 @@ def create_app() -> Flask:
             "Do not use this setting with real Azure scan data in production."
         )
 
+    if not os.environ.get("OPENSHIELD_AUTHORIZED_SUBSCRIPTIONS"):
+        logger.warning(
+            "!!! SECURITY WARNING: OPENSHIELD_AUTHORIZED_SUBSCRIPTIONS NOT SET !!! "
+            "Any authenticated operator/admin token can trigger a scan against any "
+            "subscription_id. Set this to a comma-separated allowlist of the "
+            "subscription(s) this deployment is authorized to scan."
+        )
+
     @app.teardown_appcontext
     def close_db(error=None):
         """Return the request's pooled database connection after the request."""
@@ -182,6 +200,12 @@ def create_app() -> Flask:
                 token,
                 app.config["JWT_SECRET"],
                 algorithms=["HS256"],
+                # A token with no expiry can never be invalidated short of a
+                # full JWT_SECRET rotation - require every accepted token to
+                # carry one (issue #294). MissingRequiredClaimError is a
+                # subclass of InvalidTokenError, so it's already handled by
+                # the except clause below.
+                options={"require": ["exp"]},
             )
             g.user = payload
         except jwt.ExpiredSignatureError:
@@ -189,6 +213,18 @@ def create_app() -> Flask:
         except jwt.InvalidTokenError:
             logger.warning("Invalid JWT token")
             return jsonify({"error": "Invalid token", "request_id": get_request_id()}), 401
+
+        role = payload.get("role")
+        if role not in _KNOWN_ROLES:
+            logger.warning("JWT rejected: missing or unrecognized role %r", role)
+            return jsonify({"error": "Invalid token", "request_id": get_request_id()}), 401
+        if request.method not in ("GET", "HEAD") and role not in _WRITE_ROLES:
+            return jsonify(
+                {
+                    "error": "This token's role is not authorized for write operations",
+                    "request_id": get_request_id(),
+                }
+            ), 403
 
         return None
 

@@ -8,7 +8,20 @@ setting is enabled.
 
 ## Authentication
 
-`/health` and `/` are always public. All other routes — including all `/api/*` GET endpoints — require an `Authorization: Bearer <jwt>` header signed with `JWT_SECRET`.
+`/`, `/health`, `/ready`, and `/metrics` are always public. All other routes — including all `/api/*` GET endpoints — require an `Authorization: Bearer <jwt>` header signed with `JWT_SECRET`.
+
+Every accepted token must carry:
+
+- `exp` — a token with no expiry is rejected outright. There is no way to mint a permanently-valid token; regenerate before it expires.
+- `role` — one of `viewer`, `operator`, or `admin`. A missing or unrecognized role is treated the same as an invalid signature (`401`).
+
+`viewer` is read-only: any non-`GET`/`HEAD` request (scan trigger, AI endpoints) from a `viewer` token is rejected with `403`, regardless of demo mode. Only `operator` and `admin` may perform a write. This is enforced in `api/app.py`'s JWT middleware, not per-route, so it applies uniformly to every current and future write endpoint.
+
+`scripts/generate_demo_jwt.py` mints a `viewer` token with a bounded expiry (`DEMO_JWT_TTL_HOURS`, default 24h) — see the script's own docstring before embedding one as `VITE_JWT_TOKEN`.
+
+### Subscription authorization
+
+`POST /api/scans/trigger` also checks `subscription_id` against `OPENSHIELD_AUTHORIZED_SUBSCRIPTIONS`, a comma-separated allowlist. A valid `operator`/`admin` token can otherwise trigger a scan against *any* subscription_id — role alone doesn't say which subscription a caller is entitled to. Left unset, every subscription_id is accepted (matches historical behavior); the API logs a loud startup warning when it's unset. This is a single-tenant containment boundary, not a substitute for real per-tenant authorization — see issue #294 for the full multi-tenant/OIDC scope this is a stopgap for.
 
 ## Input limits
 

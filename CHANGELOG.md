@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add all ten evidence-rich enterprise network and perimeter controls `AZ-NET-018` through `AZ-NET-027` for issue #253, preserving API failures and incomplete data as indeterminate.
+
 All notable changes to OpenShield are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
@@ -34,6 +38,7 @@ OpenShield uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - AI provider errors no longer expose upstream response details
 - Request body limits, AI rate limiting, and playbook path validation added
 - GitHub Actions dependencies pinned to immutable commit SHAs
+- JWTs must now carry an `exp` claim and a recognized `role`; a `viewer` token can no longer perform any write operation (scan trigger, AI endpoints), and `POST /api/scans/trigger` now checks `subscription_id` against an optional `OPENSHIELD_AUTHORIZED_SUBSCRIPTIONS` allowlist
 
 ## [0.3.0] - 2026-07-08
 
