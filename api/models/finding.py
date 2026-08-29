@@ -19,6 +19,7 @@ from openshield.severity import (
     score_findings,
     severity_rank,
 )
+from scanner.evaluation import EvaluationStatus, aggregate_status
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +214,8 @@ class DatabaseManager:
                 # keeps the scan header, child rows, and recomputed score in
                 # agreement instead of duplicating findings on every attempt.
                 cur.execute("DELETE FROM findings WHERE scan_id = %s", (scan_result["scan_id"],))
+                cur.execute("DELETE FROM rule_evaluations WHERE scan_id = %s", (scan_result["scan_id"],))
+                finding_id_by_key: Dict[Any, int] = {}
                 for f in findings:
                     cur.execute(
                         """
@@ -223,6 +226,7 @@ class DatabaseManager:
                              frameworks, metadata, cve_references,
                              cvss_score, exploit_available, detected_at)
                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        RETURNING id
                         """,
                         (
                             # The parent scan owns every child in this batch.
@@ -244,6 +248,39 @@ class DatabaseManager:
                             f.get("cvss_score"),
                             f.get("exploit_available", False),
                             f.get("detected_at"),
+                        ),
+                    )
+                    finding_id_by_key[(f.get("rule_id"), f.get("resource_id"))] = cur.fetchone()[0]
+
+                # Coverage rows (#263): a status for every resource a migrated
+                # rule looked at, not just its violations. A FAIL evaluation
+                # is durably linked to the finding row it corresponds to
+                # right here, in the same transaction, instead of leaving
+                # callers to infer the relationship from rule_id/resource_id.
+                evaluated_at = completed_at
+                for evaluation in scan_result.get("evaluations", []):
+                    status = evaluation.get("status")
+                    finding_id = None
+                    if status == EvaluationStatus.FAIL:
+                        finding_id = finding_id_by_key.get((evaluation.get("rule_id"), evaluation.get("resource_id")))
+                    cur.execute(
+                        """
+                        INSERT INTO rule_evaluations
+                            (scan_id, rule_id, resource_id, resource_type, status,
+                             reason_code, reason, evidence, finding_id, evaluated_at)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        """,
+                        (
+                            scan_result["scan_id"],
+                            evaluation.get("rule_id"),
+                            evaluation.get("resource_id"),
+                            evaluation.get("resource_type") or "",
+                            status,
+                            evaluation.get("reason_code"),
+                            evaluation.get("reason"),
+                            json.dumps(evaluation.get("evidence", {})),
+                            finding_id,
+                            evaluated_at,
                         ),
                     )
             conn.commit()
@@ -584,9 +621,11 @@ class DatabaseManager:
 
         controls = framework_data.get("controls", {})
 
-        # Get failure detail from the latest completed scan only. This does
-        # not change the legacy absence-implies-PASS behavior tracked by #263;
-        # it prevents the frontend from inventing MEDIUM for failed controls.
+        # Finding detail (severity/category/resource count) still comes from
+        # findings — evaluations don't carry severity. Pass/fail/unknown/error
+        # status comes from rule_evaluations, so a rule that was never run,
+        # errored, or hasn't been migrated to evaluate() yet is never silently
+        # reported as PASS just because it produced no findings (#263).
         conn = self._get_conn()
         with conn.cursor() as cur:
             cur.execute(
@@ -600,6 +639,17 @@ class DatabaseManager:
                 """
             )
             finding_rows = cur.fetchall()
+
+            cur.execute(
+                """
+                SELECT rule_id, status
+                FROM rule_evaluations
+                WHERE scan_id = (
+                    SELECT scan_id FROM scans WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1
+                )
+                """
+            )
+            evaluation_rows = cur.fetchall()
 
         failures: Dict[str, Dict[str, Any]] = {}
         for rule_id, raw_severity, category, resource_count in finding_rows:
@@ -617,10 +667,18 @@ class DatabaseManager:
                 current["severity"] = severity
                 current["category"] = category
 
+        statuses_by_rule: Dict[str, List[str]] = {}
+        for rule_id, status in evaluation_rows:
+            statuses_by_rule.setdefault(rule_id, []).append(status)
+        aggregated_status = {rule_id: aggregate_status(statuses) for rule_id, statuses in statuses_by_rule.items()}
+
         results = []
         for rule_id, control in controls.items():
             failure = failures.get(rule_id)
-            status = "FAIL" if failure else "PASS"
+            # No evaluation row at all means this rule was never run against
+            # this scan (predates rule_evaluations, or was skipped) — report
+            # UNKNOWN rather than defaulting to PASS or inferring from findings.
+            status = aggregated_status.get(rule_id, EvaluationStatus.UNKNOWN)
             results.append(
                 {
                     "rule_id": rule_id,
@@ -634,16 +692,26 @@ class DatabaseManager:
             )
 
         total = len(results)
-        passed = sum(1 for r in results if r["status"] == "PASS")
-        failed = total - passed
-        score_pct = round((passed / total) * 100) if total else 0
+        counts = {
+            "passed": sum(1 for r in results if r["status"] == EvaluationStatus.PASS),
+            "failed": sum(1 for r in results if r["status"] == EvaluationStatus.FAIL),
+            "unknown": sum(1 for r in results if r["status"] == EvaluationStatus.UNKNOWN),
+            "error": sum(1 for r in results if r["status"] == EvaluationStatus.ERROR),
+            "not_applicable": sum(1 for r in results if r["status"] == EvaluationStatus.NOT_APPLICABLE),
+        }
+        # UNKNOWN/ERROR must never improve the score: they count against the
+        # denominator (evaluated coverage) without counting as a pass.
+        # NOT_APPLICABLE controls fall outside the denominator entirely.
+        evaluated = total - counts["not_applicable"]
+        score_pct = round((counts["passed"] / evaluated) * 100) if evaluated else 0
 
         return {
             "framework": framework_data.get("framework"),
             "version": framework_data.get("version"),
+            "contract_version": "2",
             "total_controls": total,
-            "passed": passed,
-            "failed": failed,
+            "evaluated": evaluated,
+            **counts,
             "score_percent": score_pct,
             "controls": results,
         }

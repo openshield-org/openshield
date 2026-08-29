@@ -149,6 +149,30 @@ When a helper returns `None`, skip the resource and log a warning. Never create 
 
 ---
 
+## Optional: Reporting Evaluation Coverage (`evaluate()`)
+
+`scan()` only ever reports violations, so a scan with no findings for your rule is indistinguishable from "everything is compliant," "nothing of this resource type exists," and "the rule errored before it could check anything." A rule can additionally expose:
+
+```python
+from scanner.evaluation import EvaluationStatus, RuleEvaluation, subscription_scope_id
+
+def evaluate(azure_client: Any, subscription_id: str) -> List[RuleEvaluation]:
+    """Report a status for every resource this rule looked at, PASS included."""
+```
+
+to state a `PASS`/`FAIL`/`UNKNOWN`/`ERROR`/`NOT_APPLICABLE` result per resource instead of only per violation. This is additive: `scan()` keeps working unchanged, and a rule without `evaluate()` still runs — its coverage is just recorded as `UNKNOWN`/`LEGACY_RULE_NOT_MIGRATED` rather than assumed to be a pass.
+
+Rules of the contract (see `scanner/evaluation.py` and `scanner/rules/az_kv_006.py` for the reference implementation):
+
+- `resource_id` must be a real, non-empty identifier. For a subscription-level result with no single resource to blame, use `subscription_scope_id(subscription_id)`, never `""`.
+- `UNKNOWN`, `ERROR`, and `NOT_APPLICABLE` require a `reason_code` explaining why — never leave one unexplained.
+- A `FAIL` result may attach `finding=` with the same dict shape `scan()` returns; the engine deduplicates it against anything `scan()` already reported for the same `(rule_id, resource_id)`, so implementing both never double-counts.
+- If you can't tell "no resources of this type exist" apart from "the list call failed" (a real gap in some `AzureClient` methods today), report `NOT_APPLICABLE` rather than guessing `PASS`.
+
+You don't need to migrate an existing rule's `scan()` to add `evaluate()` — most rules can leave `scan()` exactly as-is.
+
+---
+
 ## Write the Remediation Playbook
 
 Create a matching bash script in `playbooks/cli/`:

@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from api.observability import RULE_ERRORS_TOTAL
 from openshield.severity import CONTRACT_VERSION, SeverityContractError, normalize_severity, score_findings
 from scanner.azure_client import AzureClient
+from scanner.evaluation import EvaluationStatus, RuleEvaluation, subscription_scope_id
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,7 @@ class ScanEngine:
         scan_id = scan_id or str(uuid.uuid4())
         started_at = datetime.now(timezone.utc).isoformat()
         findings: List[Dict[str, Any]] = []
+        evaluations: List[RuleEvaluation] = []
         detected_at = datetime.now(timezone.utc).isoformat()
 
         logger.info(
@@ -146,6 +148,25 @@ class ScanEngine:
                 RULE_ERRORS_TOTAL.labels(rule_id=rule_id).inc()
                 logger.error("Rule %s raised an exception: %s", rule_id, exc, exc_info=True)
 
+            evaluations.extend(self._evaluate_rule(rule, rule_id))
+
+        # A FAIL evaluation contributes its own finding only if scan() hasn't
+        # already reported the same (rule_id, resource_id) violation, so a
+        # rule implementing both scan() and evaluate() never double-counts.
+        existing_keys = {(f.get("rule_id"), f.get("resource_id")) for f in findings}
+        for rule_evaluation in evaluations:
+            if rule_evaluation.status != EvaluationStatus.FAIL or not rule_evaluation.finding:
+                continue
+            key = (rule_evaluation.rule_id, rule_evaluation.resource_id)
+            if key in existing_keys:
+                continue
+            finding = dict(rule_evaluation.finding)
+            finding["severity"] = normalize_severity(finding.get("severity"))
+            finding.setdefault("detected_at", detected_at)
+            finding.setdefault("scan_id", scan_id)
+            findings.append(finding)
+            existing_keys.add(key)
+
         completed_at = datetime.now(timezone.utc).isoformat()
 
         score = score_findings(findings)
@@ -161,8 +182,49 @@ class ScanEngine:
             "score": score,
             "severity_contract_version": CONTRACT_VERSION,
             "findings": findings,
+            "evaluations": [e.to_dict() for e in evaluations],
         }
 
         logger.info("Scan %s complete — %d total finding(s). Normalising results...", scan_id, len(findings))
 
         return make_serializable(result)
+
+    def _evaluate_rule(self, rule: Any, rule_id: str) -> List[RuleEvaluation]:
+        """Return this rule's coverage statements for the current scan.
+
+        A rule that exposes ``evaluate()`` reports its own PASS/FAIL/UNKNOWN
+        results. A rule that only has ``scan()`` has never stated what it
+        looked at, so its coverage is recorded as UNKNOWN rather than
+        inferred as PASS from the absence of a finding.
+        """
+        evaluate_fn = getattr(rule, "evaluate", None)
+        if not callable(evaluate_fn):
+            return [
+                RuleEvaluation(
+                    rule_id=rule_id,
+                    resource_id=subscription_scope_id(self.subscription_id),
+                    resource_type="",
+                    status=EvaluationStatus.UNKNOWN,
+                    reason_code="LEGACY_RULE_NOT_MIGRATED",
+                    reason="This rule has not been migrated to the evaluate() coverage contract yet.",
+                )
+            ]
+
+        try:
+            rule_evaluations = evaluate_fn(self.client, self.subscription_id)
+            if not isinstance(rule_evaluations, list):
+                raise TypeError(f"evaluate() must return a list, got {type(rule_evaluations)}")
+            return rule_evaluations
+        except Exception as exc:
+            RULE_ERRORS_TOTAL.labels(rule_id=rule_id).inc()
+            logger.error("Rule %s evaluate() raised an exception: %s", rule_id, exc, exc_info=True)
+            return [
+                RuleEvaluation(
+                    rule_id=rule_id,
+                    resource_id=subscription_scope_id(self.subscription_id),
+                    resource_type="",
+                    status=EvaluationStatus.ERROR,
+                    reason_code="EVALUATOR_EXCEPTION",
+                    reason=str(exc),
+                )
+            ]
