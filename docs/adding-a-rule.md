@@ -156,11 +156,12 @@ When a helper returns `None`, skip the resource and log a warning. Never create 
 ```python
 from scanner.evaluation import EvaluationStatus, RuleEvaluation, subscription_scope_id
 
+
 def evaluate(azure_client: Any, subscription_id: str) -> List[RuleEvaluation]:
     """Report a status for every resource this rule looked at, PASS included."""
 ```
 
-to state a `PASS`/`FAIL`/`UNKNOWN`/`ERROR`/`NOT_APPLICABLE` result per resource instead of only per violation. This is additive: `scan()` keeps working unchanged, and a rule without `evaluate()` still runs — its coverage is just recorded as `UNKNOWN`/`LEGACY_RULE_NOT_MIGRATED` rather than assumed to be a pass.
+to state a `PASS`/`FAIL`/`UNKNOWN`/`ERROR`/`NOT_APPLICABLE` result per resource instead of only per violation. This is additive: `scan()` keeps working unchanged, and a rule without `evaluate()` still runs, its coverage is just recorded as `UNKNOWN`/`LEGACY_RULE_NOT_MIGRATED` rather than assumed to be a pass.
 
 Rules of the contract (see `scanner/evaluation.py` and `scanner/rules/az_kv_006.py` for the reference implementation):
 

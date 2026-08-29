@@ -70,8 +70,7 @@ def upgrade() -> None:
     op.create_check_constraint(
         _REASON_CONSTRAINT,
         "rule_evaluations",
-        "status NOT IN ('UNKNOWN', 'ERROR', 'NOT_APPLICABLE') "
-        "OR (reason_code IS NOT NULL AND reason_code <> '')",
+        "status NOT IN ('UNKNOWN', 'ERROR', 'NOT_APPLICABLE') OR (reason_code IS NOT NULL AND reason_code <> '')",
     )
 
 
