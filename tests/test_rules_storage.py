@@ -232,6 +232,7 @@ def test_stor_007_sdk_enum_tls10_is_flagged(mock_azure, subscription_id):
     # SDK may return an enum object; enum_str() must extract the underlying value.
     class _FakeTlsEnum:
         value = "TLS1_0"
+
         def __str__(self):
             return "MinimumTlsVersion.TLS1_0"
 
