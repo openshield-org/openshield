@@ -50,56 +50,30 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
 
             # Azure can expose the source as either a single prefix
             # or a list of prefixes.
-            single_prefix = enum_str(
-                getattr(rule, "source_address_prefix", None)
-            )
+            single_prefix = enum_str(getattr(rule, "source_address_prefix", None))
 
-            plural_prefixes = (
-                getattr(rule, "source_address_prefixes", None) or []
-            )
+            plural_prefixes = getattr(rule, "source_address_prefixes", None) or []
 
             matched_plural_prefix = next(
-                (
-                    prefix
-                    for prefix in plural_prefixes
-                    if enum_str(prefix).lower() in allowed_sources
-                ),
+                (prefix for prefix in plural_prefixes if enum_str(prefix).lower() in allowed_sources),
                 None,
             )
 
-            source_matches = (
-                single_prefix.lower() in allowed_sources
-                or matched_plural_prefix is not None
-            )
+            source_matches = single_prefix.lower() in allowed_sources or matched_plural_prefix is not None
 
             # Azure can expose the destination port as either a single
             # port/range or a list of ports/ranges.
-            destination_port_range = enum_str(
-                getattr(rule, "destination_port_range", None)
+            destination_port_range = enum_str(getattr(rule, "destination_port_range", None))
+
+            destination_port_ranges = getattr(rule, "destination_port_ranges", None) or []
+
+            destination_port_ranges = [enum_str(port) for port in destination_port_ranges]
+
+            port_matches = destination_port_range in ("443", "*") or any(
+                port in ("443", "*") for port in destination_port_ranges
             )
 
-            destination_port_ranges = (
-                getattr(rule, "destination_port_ranges", None) or []
-            )
-
-            destination_port_ranges = [
-                enum_str(port) for port in destination_port_ranges
-            ]
-
-            port_matches = (
-                destination_port_range in ("443", "*")
-                or any(
-                    port in ("443", "*")
-                    for port in destination_port_ranges
-                )
-            )
-
-            if (
-                direction.lower() == "inbound"
-                and access.lower() == "allow"
-                and source_matches
-                and port_matches
-            ):
+            if direction.lower() == "inbound" and access.lower() == "allow" and source_matches and port_matches:
                 findings.append(
                     {
                         "rule_id": RULE_ID,
@@ -115,11 +89,7 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                         "frameworks": FRAMEWORKS,
                         "metadata": {
                             "rule_name": getattr(rule, "name", ""),
-                            "source_prefix": (
-                                single_prefix
-                                if single_prefix.lower() in allowed_sources
-                                else ""
-                            ),
+                            "source_prefix": (single_prefix if single_prefix.lower() in allowed_sources else ""),
                             "matched_source_address_prefix": matched_plural_prefix,
                         },
                     }
