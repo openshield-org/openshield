@@ -70,7 +70,13 @@ logger = logging.getLogger(__name__)
 # means the index silently matches nothing against a current subscription's
 # real assessment data, so Defender's signal is never found and every VM
 # falls back to the weaker extension-name check - accept either name.
-_ENDPOINT_PROTECTION_DISPLAY_NAME_MARKERS = ("endpoint protection", "edr solution")
+#
+# The second marker is the full recommendation title, not the bare
+# substring "edr solution": a bare substring match risks silently pulling
+# in a future, unrelated Defender recommendation that happens to contain
+# those two words, misattributing its status to this rule's endpoint-
+# protection determination.
+_ENDPOINT_PROTECTION_DISPLAY_NAME_MARKERS = ("endpoint protection", "edr solution should be installed")
 
 
 def _index_endpoint_protection_assessments(assessments: Optional[List[Any]]) -> Dict[str, List[Any]]:
@@ -219,16 +225,27 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
         # it's surfaced as indeterminate together with any other
         # non-"Succeeded" state (Failed, Canceled, ...) rather than silently
         # passed.
-        unconfirmed_names = []
-        confirmed_healthy = False
+        #
+        # Every matched extension is checked - not just the first. Records
+        # are grouped by extension name first: two API records for the same
+        # extension (e.g. a transient re-sync reporting Failed then
+        # Succeeded) are one signal, and that name is healthy if any record
+        # for it succeeded. But two *different* recognised extensions are
+        # separate signals, and the same "unconfirmed wins" precedent as the
+        # Defender-assessment branch above applies across them - a VM with
+        # IaaSAntimalware Succeeded and MDE.Linux Failed is not compliant
+        # just because one of the two came up healthy. Stopping at the first
+        # Succeeded record would silently drop the failed extension from
+        # both the verdict and unconfirmed_names.
+        states_by_name: Dict[str, List[str]] = {}
         for name, ext in matched:
             provisioning_state = (getattr(ext, "provisioning_state", None) or "").lower()
-            if provisioning_state == "succeeded":
-                confirmed_healthy = True
-                break
-            unconfirmed_names.append(name)
+            states_by_name.setdefault(name, []).append(provisioning_state)
 
-        if confirmed_healthy:
+        unconfirmed_names = [name for name, states in states_by_name.items() if "succeeded" not in states]
+        any_confirmed_healthy = any("succeeded" in states for states in states_by_name.values())
+
+        if any_confirmed_healthy and not unconfirmed_names:
             continue
 
         findings.append(
