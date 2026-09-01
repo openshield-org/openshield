@@ -111,8 +111,8 @@ def validate_framework_dir(framework_dir: "str | Path") -> List[str]:
                 failures.append(f"{prefix}: 'owner' must be null or a non-empty string")
 
             review_date = control.get("review_date")
-            if review_date is not None and not (isinstance(review_date, str) and review_date.strip()):
-                failures.append(f"{prefix}: 'review_date' must be null or a non-empty ISO date string")
+            if review_date is not None and not _is_valid_iso_date(review_date):
+                failures.append(f"{prefix}: review_date '{review_date}' is not a valid ISO date (YYYY-MM-DD)")
 
             # A control cannot be marked reviewed without an accountable owner
             # and a review date - otherwise "reviewed" is unverifiable.

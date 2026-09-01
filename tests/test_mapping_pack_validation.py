@@ -122,6 +122,16 @@ def test_reviewed_with_owner_and_date_passes(tmp_path):
     assert validate_framework_dir(tmp_path) == []
 
 
+def test_reviewed_with_malformed_review_date_fails(tmp_path):
+    """review_date must be a real ISO date, not just any non-empty string - a
+    typo'd date must not silently pass CI the way mapping_pack_published's
+    equivalent check already catches for the pack-level field."""
+    control = _control(review_status="reviewed", owner="security-team", review_date="08/22/2026")
+    _write(tmp_path, "example.json", _pack({"AZ-EX-001": control}))
+    failures = validate_framework_dir(tmp_path)
+    assert any("review_date '08/22/2026' is not a valid ISO date" in f for f in failures)
+
+
 def test_missing_rationale_fails(tmp_path):
     control = _control(rationale="")
     _write(tmp_path, "example.json", _pack({"AZ-EX-001": control}))

@@ -2,10 +2,10 @@
 
 import logging
 import os
-from flask import Blueprint, g, jsonify
+from flask import Blueprint, g, jsonify, request
 
 from api.models.finding import DatabaseManager
-from api.validation import VALIDATION_ERROR_MESSAGE, ValidationError, choice
+from api.validation import VALIDATION_ERROR_MESSAGE, ValidationError, choice, uuid_string
 
 compliance_bp = Blueprint("compliance", __name__)
 logger = logging.getLogger(__name__)
@@ -40,8 +40,16 @@ def get_compliance(framework: str):
     try:
         framework = choice(framework, "framework", SUPPORTED_FRAMEWORKS, case="lower")
 
+        # Scope to a subscription so a shared-database deployment never
+        # returns another subscription's latest scan/score. Falls back to
+        # this deployment's configured default subscription, matching the
+        # same AZURE_SUBSCRIPTION_ID fallback POST /api/scans uses.
+        subscription_id = request.args.get("subscription_id") or os.environ.get("AZURE_SUBSCRIPTION_ID")
+        if subscription_id:
+            subscription_id = uuid_string(subscription_id, "subscription_id")
+
         db = _get_db()
-        result = db.get_compliance_score(framework)
+        result = db.get_compliance_score(framework, subscription_id=subscription_id)
 
         if "error" in result:
             return jsonify(result), 500

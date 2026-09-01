@@ -278,13 +278,23 @@ class DatabaseManager:
                         status = EXCLUDED.status,
                         error_message = EXCLUDED.error_message,
                         severity_contract_version = EXCLUDED.severity_contract_version,
-                        -- The mapping snapshot captured for a scan_id's first
-                        -- successful write is its historical record and must
-                        -- stay immutable on replay (e.g. a worker retry that
-                        -- reuses the same scan_id) - only fill it in if this
-                        -- scan_id never captured one.
+                        -- The mapping-pack provenance captured for a scan_id's
+                        -- first successful write is its historical record and
+                        -- must stay immutable on replay (e.g. a worker retry
+                        -- that reuses the same scan_id) - only fill it in if
+                        -- this scan_id never captured one. But
+                        -- _scan_rule_outcomes is per-attempt execution state,
+                        -- not provenance: it always has to reflect the
+                        -- findings actually being written by *this* save, so
+                        -- it's re-merged from EXCLUDED on every write rather
+                        -- than being frozen by the COALESCE along with the
+                        -- rest of the snapshot - otherwise a rule that failed
+                        -- on attempt 1 and succeeded on a retry would keep
+                        -- reading as NOT_EVALUATED forever (or the reverse).
                         compliance_mapping_snapshot = COALESCE(
                             scans.compliance_mapping_snapshot, EXCLUDED.compliance_mapping_snapshot
+                        ) || jsonb_build_object(
+                            '_scan_rule_outcomes', EXCLUDED.compliance_mapping_snapshot -> '_scan_rule_outcomes'
                         )
                     """,
                     (
@@ -671,7 +681,7 @@ class DatabaseManager:
             "critical_cve_count": row[5],
         }
 
-    def get_compliance_score(self, framework: str) -> Dict[str, Any]:
+    def get_compliance_score(self, framework: str, subscription_id: Optional[str] = None) -> Dict[str, Any]:
         """Return technical-evidence coverage against a compliance framework mapping pack.
 
         This reports coverage from the most recent completed scan, not a
@@ -683,6 +693,11 @@ class DatabaseManager:
 
         Args:
             framework: One of the keys in FRAMEWORK_FILE_MAP (e.g. 'cis', 'nist').
+            subscription_id: When given, scopes the "latest completed scan"
+                lookup to this subscription. In a shared-database deployment
+                that stores scans for more than one Azure subscription,
+                omitting this returns whichever subscription scanned most
+                recently - not this caller's own data.
 
         Returns:
             dict with keys: framework, version, mapping_pack_version,
@@ -711,10 +726,17 @@ class DatabaseManager:
 
         conn = self._get_conn()
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                "SELECT scan_id, compliance_mapping_snapshot FROM scans "
-                "WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1"
-            )
+            if subscription_id:
+                cur.execute(
+                    "SELECT scan_id, compliance_mapping_snapshot FROM scans "
+                    "WHERE status = 'completed' AND subscription_id = %s ORDER BY started_at DESC LIMIT 1",
+                    (subscription_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT scan_id, compliance_mapping_snapshot FROM scans "
+                    "WHERE status = 'completed' ORDER BY started_at DESC LIMIT 1"
+                )
             latest_scan = cur.fetchone()
 
             if latest_scan is None:
@@ -761,7 +783,14 @@ class DatabaseManager:
                 # response still claimed the old pack's provenance.
                 controls = snapshot_for_fw["controls"]
                 stored_hash = snapshot_for_fw.get(_CONTENT_HASH_KEY)
-                if stored_hash and stored_hash != _compute_mapping_pack_content_hash(controls):
+                if not stored_hash:
+                    # No content hash was ever captured for this snapshot
+                    # (e.g. saved before the hash field shipped) - integrity
+                    # was never checked, so this must not be labelled plain
+                    # "snapshot", which would imply a verification that
+                    # never happened.
+                    mapping_provenance = "snapshot_no_hash"
+                elif stored_hash != _compute_mapping_pack_content_hash(controls):
                     # The stored snapshot no longer hashes to what it claims -
                     # corrupted or partially overwritten. Still the best
                     # historical data available, but must not be presented as
