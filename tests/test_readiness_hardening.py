@@ -115,7 +115,7 @@ def test_probe_rate_limit_prunes_expired_keys_instead_of_growing_forever(monkeyp
     assert client.get("/probe", environ_overrides={"REMOTE_ADDR": "203.0.113.5"}).status_code == 200
     # The stale hit expired and only the new one remains tracked - the key
     # was pruned and recreated, not left growing with dead timestamps.
-    assert len(observability._probe_hits[("203.0.113.5", "/probe")]) == 1
+    assert len(observability._probe_hits[("203.0.113.5", "/probe")].hits) == 1
 
 
 def test_probe_rate_limit_sweeps_stale_one_shot_addresses_globally(monkeypatch):
@@ -194,6 +194,79 @@ def test_probe_rate_limit_touching_a_key_protects_it_from_eviction(monkeypatch):
     assert ("10.0.0.1", "/probe") in observability._probe_hits
     assert ("10.0.0.2", "/probe") not in observability._probe_hits
     assert ("10.0.0.3", "/probe") in observability._probe_hits
+
+
+def test_probe_rate_limit_rejected_requests_do_not_refresh_eviction_order(monkeypatch):
+    """A caller already over budget (rejected with 429) must not get its key
+    moved to the back of the eviction order just by hammering the endpoint -
+    otherwise an attacker who never lets their own budget recover stays
+    permanently protected from eviction, while quiet legitimate keys drift
+    toward the front and get evicted in its place. Only a request that
+    actually counts against the budget may refresh a key's position."""
+    monkeypatch.setattr(observability, "_PROBE_MAX_TRACKED_KEYS", 2)
+    monkeypatch.setattr(observability, "_PROBE_SWEEP_INTERVAL", 1_000_000)
+    client = _tiny_app(max_requests=1, window_seconds=100.0).test_client()
+
+    # 10.0.0.1 spends its one-request budget, then keeps hammering - every
+    # further call is rejected (429), not counted toward the budget again.
+    assert client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.1"}).status_code == 200
+    for _ in range(5):
+        assert client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.1"}).status_code == 429
+
+    # A quiet second address takes the other slot at the cap.
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.2"})
+
+    # A 3rd distinct address arrives. If the repeated 429s had kept
+    # 10.0.0.1 "warm", 10.0.0.2 (touched once, then quiet) would be the
+    # one evicted instead - exactly backwards from what should happen.
+    client.get("/probe", environ_overrides={"REMOTE_ADDR": "10.0.0.3"})
+    assert ("10.0.0.1", "/probe") not in observability._probe_hits
+    assert ("10.0.0.2", "/probe") in observability._probe_hits
+    assert ("10.0.0.3", "/probe") in observability._probe_hits
+
+
+def test_probe_rate_limit_sweep_uses_each_keys_own_window_not_the_callers(monkeypatch):
+    """_probe_hits is one dict shared by every probe_rate_limit-decorated
+    endpoint. A sweep triggered by one endpoint's request must apply each
+    tracked key's own window_seconds, not the window of whichever endpoint
+    happened to trigger the sweep - otherwise a short-window endpoint's
+    sweep could prematurely wipe a long-window endpoint's still-valid
+    entries, or a long-window endpoint's sweep could leave a short-window
+    endpoint's genuinely-expired entries lingering."""
+    monkeypatch.setattr(observability, "_PROBE_SWEEP_INTERVAL", 1)
+    fake_now = [1000.0]
+    monkeypatch.setattr(observability.time, "monotonic", lambda: fake_now[0])
+
+    app = flask.Flask(__name__)
+
+    @app.get("/short")
+    @probe_rate_limit(5, window_seconds=1.0)
+    def short_window():
+        return {"ok": True}
+
+    @app.get("/long")
+    @probe_rate_limit(5, window_seconds=1000.0)
+    def long_window():
+        return {"ok": True}
+
+    client = app.test_client()
+
+    # Seed one key per endpoint.
+    client.get("/short", environ_overrides={"REMOTE_ADDR": "10.0.0.1"})
+    client.get("/long", environ_overrides={"REMOTE_ADDR": "10.0.0.2"})
+    assert ("10.0.0.1", "/short") in observability._probe_hits
+    assert ("10.0.0.2", "/long") in observability._probe_hits
+
+    # Advance past the short window but nowhere near the long one, then
+    # trigger a sweep via a request to the *long*-window endpoint. A sweep
+    # that used the triggering request's own window (1000s) would wrongly
+    # treat /short's entry as unexpired; using each entry's own window
+    # correctly expires it while leaving /long's entry alone.
+    fake_now[0] += 2.0
+    client.get("/long", environ_overrides={"REMOTE_ADDR": "10.0.0.3"})  # sweep interval is 1, fires every call
+
+    assert ("10.0.0.1", "/short") not in observability._probe_hits
+    assert ("10.0.0.2", "/long") in observability._probe_hits
 
 
 def test_probe_rate_limit_429_includes_retry_after_header():

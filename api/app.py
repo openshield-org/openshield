@@ -126,7 +126,21 @@ def create_app() -> Flask:
     # Trust exactly one reverse-proxy hop (Render's edge) for the client IP
     # and scheme, so request.remote_addr reflects the real caller instead of
     # collapsing every client onto Render's proxy address. Rate limiting and
-    # any other per-IP logic depend on this being accurate.
+    # any other per-IP logic (api.observability.probe_rate_limit,
+    # api.rate_limit.rate_limit) depend on this being accurate.
+    #
+    # This is a trust boundary, not just a convenience setting: x_for=1 makes
+    # Flask take the *last* entry of an inbound X-Forwarded-For header as the
+    # real client IP, on the assumption that Render's edge is the only thing
+    # capable of appending to it before the request reaches this process. If
+    # the origin were ever reachable directly - bypassing Render's edge, e.g.
+    # a misconfigured DNS record or a leaked origin IP - a direct caller's own
+    # X-Forwarded-For header would be trusted as-is, and they could set it to
+    # a fresh IP on every request. Every per-IP control in this file (the
+    # probe-endpoint limiter, the Postgres-backed rate limiter) would then
+    # bucket each request as a "new" caller, which is equivalent to no rate
+    # limiting for that path at all. Keeping the origin unreachable except
+    # through Render's edge is what this setting's correctness depends on.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # ------------------------------------------------------------------ #

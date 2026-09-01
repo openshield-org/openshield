@@ -242,28 +242,52 @@ _PROBE_MAX_TRACKED_KEYS = 10_000
 # of traffic shape or how the sweep is scheduled.
 _PROBE_SWEEP_INTERVAL = 200
 _probe_lock = threading.Lock()
-# An OrderedDict, not a plain dict: every touch (new hit or a sweep pruning
-# it survives) moves a key to the end, so the front is always the least
-# recently touched key - the correct, deterministic thing to evict first
-# when the hard cap above is reached.
-_probe_hits: "OrderedDict[Tuple[str, str], Deque[float]]" = OrderedDict()
+
+
+class _ProbeEntry:
+    """One tracked (address, path) key's rate-limit state.
+
+    window_seconds is stored per entry, not taken from whichever request
+    happens to trigger the periodic sweep: _probe_hits is one dict shared
+    across every probe_rate_limit-decorated view, so a sweep triggered by
+    /metrics's decorator (its own window_seconds closure) must not apply
+    that window to keys tracked for /ready, or vice versa. Both endpoints
+    currently default to the same 10s window, which is exactly why this
+    was dormant rather than visibly broken - the first endpoint added with
+    a different window would have hit premature resets or lingering stale
+    entries for every other endpoint's keys.
+    """
+
+    __slots__ = ("hits", "window_seconds")
+
+    def __init__(self, window_seconds: float) -> None:
+        self.hits: Deque[float] = deque()
+        self.window_seconds = window_seconds
+
+
+# An OrderedDict, not a plain dict: every touch (a request actually within
+# budget, or a sweep pruning it survives) moves a key to the end, so the
+# front is always the least recently touched key - the correct,
+# deterministic thing to evict first when the hard cap above is reached.
+_probe_hits: "OrderedDict[Tuple[str, str], _ProbeEntry]" = OrderedDict()
 _probe_call_count = 0
 
 
-def _sweep_expired_probe_hits(now: float, window_seconds: float) -> None:
+def _sweep_expired_probe_hits(now: float) -> None:
     """Remove every tracked key whose hits have all expired.
 
     Must be called with _probe_lock already held. This is the global
     cleanup pass: the per-call logic in probe_rate_limit only ever prunes
     the one key the current request touched, which does nothing for a
-    key that's never hit again.
+    key that's never hit again. Each entry's own window_seconds is used,
+    not the sweep caller's - see _ProbeEntry.
     """
-    cutoff = now - window_seconds
     for key in list(_probe_hits.keys()):
-        hits = _probe_hits[key]
-        while hits and hits[0] < cutoff:
-            hits.popleft()
-        if not hits:
+        entry = _probe_hits[key]
+        cutoff = now - entry.window_seconds
+        while entry.hits and entry.hits[0] < cutoff:
+            entry.hits.popleft()
+        if not entry.hits:
             del _probe_hits[key]
 
 
@@ -287,32 +311,39 @@ def probe_rate_limit(max_requests: int, window_seconds: float = _PROBE_WINDOW_SE
             with _probe_lock:
                 _probe_call_count += 1
                 if _probe_call_count % _PROBE_SWEEP_INTERVAL == 0:
-                    _sweep_expired_probe_hits(now, window_seconds)
+                    _sweep_expired_probe_hits(now)
 
-                hits = _probe_hits.get(key)
-                if hits is not None:
-                    cutoff = now - window_seconds
-                    while hits and hits[0] < cutoff:
-                        hits.popleft()
-                    if not hits:
+                entry = _probe_hits.get(key)
+                if entry is not None:
+                    cutoff = now - entry.window_seconds
+                    while entry.hits and entry.hits[0] < cutoff:
+                        entry.hits.popleft()
+                    if not entry.hits:
                         del _probe_hits[key]
-                        hits = None
+                        entry = None
 
-                if hits is None:
+                if entry is None:
                     if len(_probe_hits) >= _PROBE_MAX_TRACKED_KEYS:
                         # Deterministic eviction: drop the least recently
                         # touched key, not an arbitrary/insertion-order one.
                         _probe_hits.popitem(last=False)
-                    hits = deque()
+                    entry = _ProbeEntry(window_seconds)
+                    # OrderedDict places a newly-inserted key at the end,
+                    # so a brand-new entry doesn't need an explicit
+                    # move_to_end - it's already the most recent.
+                    _probe_hits[key] = entry
 
-                allowed = len(hits) < max_requests
+                allowed = len(entry.hits) < max_requests
                 if allowed:
-                    hits.append(now)
-                # Re-inserting (or just touching) moves this key to the end -
-                # it's the most recently active key, so it's the last thing
-                # eviction should reach for.
-                _probe_hits[key] = hits
-                _probe_hits.move_to_end(key)
+                    entry.hits.append(now)
+                    # Only a request that actually counted against the
+                    # budget refreshes this key's position. A rejected
+                    # request must not keep an over-budget key artificially
+                    # warm - otherwise a caller that never lets its own
+                    # budget recover (an attacker) stays permanently
+                    # protected from eviction while quiet, legitimate
+                    # keys drift toward the front and get evicted instead.
+                    _probe_hits.move_to_end(key)
 
             if not allowed:
                 return jsonify({"status": "rate_limited"}), 429, {"Retry-After": str(int(window_seconds))}
