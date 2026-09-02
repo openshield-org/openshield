@@ -1071,6 +1071,143 @@ def test_cmp_004_config_disabled_finding_unaffected_by_clean_assessment(mock_azu
     assert findings[0]["metadata"]["determination"] == "non_compliant"
 
 
+def test_cmp_004_config_ok_but_stale_pending_patch_assessment_is_indeterminate_not_high(mock_azure, subscription_id):
+    """A conclusive summary reporting pending critical/security patches is only evidence of
+    the VM's *current* state while it is recent. A >30-day-old summary may describe patches
+    that have since been installed - it must not become a confirmed HIGH override before its
+    timestamp is validated. Indeterminate LOW, same as the stale-clean case."""
+    vm = make_resource(
+        id=_vm_id("vm-stale-pending-assessment"),
+        name="vm-stale-pending-assessment",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    stale_time = datetime.now(timezone.utc) - timedelta(days=az_cmp_004.STALE_ASSESSMENT_THRESHOLD_DAYS + 15)
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-stale-pending-assessment",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=4, last_modified_time=stale_time),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["reason"] == "assessment_stale"
+    assert f["metadata"]["signal"] != "patch_assessment_override"
+
+
+def test_cmp_004_config_ok_but_pending_patch_assessment_with_no_timestamp_is_indeterminate_not_high(
+    mock_azure, subscription_id
+):
+    """A conclusive summary reporting pending patches but carrying no usable timestamp cannot
+    be proven current - absence of a timestamp must never be read as 'recent enough', and it
+    must not shortcut to a confirmed HIGH override."""
+    vm = make_resource(
+        id=_vm_id("vm-pending-no-timestamp"),
+        name="vm-pending-no-timestamp",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-pending-no-timestamp",
+        make_resource(
+            status="Succeeded", critical_and_security_patch_count=6, other_patch_count=0, last_modified_time=None
+        ),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["reason"] == "assessment_stale"
+
+
+def test_cmp_004_config_ok_and_fresh_pending_patch_assessment_still_returns_high(mock_azure, subscription_id):
+    """Regression guard for the true-positive path: a conclusive assessment within the
+    freshness threshold reporting pending critical/security patches must still produce the
+    confirmed HIGH override - the freshness gate must not swallow the real finding."""
+    vm = make_resource(
+        id=_vm_id("vm-fresh-pending-assessment"),
+        name="vm-fresh-pending-assessment",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    recent_time = datetime.now(timezone.utc) - timedelta(days=2)
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-fresh-pending-assessment",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=3, last_modified_time=recent_time),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert _REQUIRED_FIELDS.issubset(f.keys())
+    assert f["severity"] == "HIGH"
+    assert f["metadata"]["signal"] == "patch_assessment_override"
+    assert f["metadata"]["determination"] == "non_compliant"
+    assert f["metadata"]["critical_and_security_patch_count"] == 3
+
+
+def test_cmp_004_config_ok_but_materially_future_assessment_timestamp_is_indeterminate(mock_azure, subscription_id):
+    """A timestamp materially in the future is clock skew or bad data, not a just-completed
+    assessment. It must not be trusted as fresh - neither to confirm a pending-patch HIGH nor
+    to clear a zero-count pass."""
+    vm = make_resource(
+        id=_vm_id("vm-future-timestamp"),
+        name="vm-future-timestamp",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    future_time = datetime.now(timezone.utc) + timedelta(days=3)
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-future-timestamp",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=2, last_modified_time=future_time),
+    )
+    findings = az_cmp_004.scan(mock_azure, subscription_id)
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["severity"] == "LOW"
+    assert f["metadata"]["determination"] == "indeterminate"
+    assert f["metadata"]["reason"] == "assessment_stale"
+
+
+def test_cmp_004_is_fresh_tolerates_benign_clock_skew(mock_azure, subscription_id):
+    """A timestamp a few minutes ahead of now is within expected control-plane/scanner clock
+    skew and still counts as fresh - the future-timestamp guard must not be so tight it trips
+    on normal skew."""
+    vm = make_resource(
+        id=_vm_id("vm-slight-skew"),
+        name="vm-slight-skew",
+        os_profile=make_resource(
+            windows_configuration=make_resource(enable_automatic_updates=True, patch_settings=None),
+            linux_configuration=None,
+        ),
+    )
+    mock_azure.set_virtual_machines([vm])
+    slightly_ahead = datetime.now(timezone.utc) + timedelta(minutes=1)
+    mock_azure.set_vm_patch_status(
+        _RG,
+        "vm-slight-skew",
+        _patch_summary(status="Succeeded", critical_and_security_patch_count=0, last_modified_time=slightly_ahead),
+    )
+    assert az_cmp_004.scan(mock_azure, subscription_id) == []
+
+
 # ── AZ-CMP-007: management ports open without Just-In-Time (JIT) access ──────
 #
 # The rule resolves each VM's NIC -> NSG (by id, via get_network_security_groups)

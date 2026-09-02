@@ -1,7 +1,7 @@
 """AZ-CMP-004: VM without automatic OS patching enabled."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 RULE_ID = "AZ-CMP-004"
@@ -74,13 +74,20 @@ INDETERMINATE_REMEDIATION = (
     "result exists, then re-run the scan to confirm the VM's real patch state."
 )
 
+# Benign clock skew between Azure's control plane and the scanner host is
+# expected; a timestamp further ahead of "now" than this is implausible and
+# is treated as bad data, not as a brand-new assessment.
+CLOCK_SKEW_TOLERANCE = timedelta(minutes=5)
+
 logger = logging.getLogger(__name__)
 
 
 def _is_fresh(last_modified_time: Any) -> bool:
     """Return True only when last_modified_time parses to a UTC-aware timestamp
-    within the staleness threshold. Missing or unparseable data is not fresh -
-    absence of a usable timestamp must never be read as "recent enough"."""
+    that is within the staleness threshold and not materially in the future.
+    Missing or unparseable data is not fresh - absence of a usable timestamp
+    must never be read as "recent enough" - and a timestamp far ahead of now
+    is clock skew / bad data, not evidence of a just-completed assessment."""
     if isinstance(last_modified_time, datetime):
         observed = last_modified_time
     elif isinstance(last_modified_time, str):
@@ -93,6 +100,8 @@ def _is_fresh(last_modified_time: Any) -> bool:
     if observed.tzinfo is None:
         return False
     age = datetime.now(timezone.utc) - observed
+    if age < -CLOCK_SKEW_TOLERANCE:
+        return False
     return age.days <= STALE_ASSESSMENT_THRESHOLD_DAYS
 
 
@@ -198,6 +207,18 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
             findings.append(_indeterminate_finding("patch_count_unavailable", patch_summary))
             continue
 
+        # A patch count - zero or nonzero - only describes the VM's *current*
+        # patch state while the assessment behind it is recent. Azure does not
+        # re-run this on a fixed schedule, so a stale, missing, or implausible
+        # timestamp means the count could predate patches that have since been
+        # installed (a nonzero count would then be a false-positive HIGH) or
+        # that have since become available (a zero count would be a false
+        # clean pass). Gate on a usable, current timestamp before trusting the
+        # count either way.
+        if not _is_fresh(getattr(patch_summary, "last_modified_time", None)):
+            findings.append(_indeterminate_finding("assessment_stale", patch_summary))
+            continue
+
         if critical_count > 0:
             findings.append(
                 {
@@ -222,11 +243,5 @@ def scan(azure_client: Any, subscription_id: str) -> List[Dict[str, Any]]:
                     },
                 }
             )
-            continue
-
-        # Conclusive assessment says zero pending critical/security patches -
-        # only trust that as a real clean signal while it's recent.
-        if not _is_fresh(getattr(patch_summary, "last_modified_time", None)):
-            findings.append(_indeterminate_finding("assessment_stale", patch_summary))
 
     return findings
