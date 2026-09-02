@@ -862,3 +862,63 @@ def test_route_falls_back_to_env_subscription_id(client, auth_headers, monkeypat
 
     assert resp.status_code == 200
     db.get_compliance_score.assert_called_once_with("cis", subscription_id="22222222-2222-2222-2222-222222222222")
+
+
+def test_get_compliance_score_never_returns_another_subscriptions_scan(tmp_path, monkeypatch):
+    """End-to-end shape of the cross-tenant leak: a shared database holds a
+    completed scan for two subscriptions, and subscription B's scan is the
+    most recent. Calling get_compliance_score() for subscription A must read
+    A's snapshot, never B's most-recent-overall row."""
+    sub_a = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    sub_b = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    controls = {"AZ-TEST-001": _control("1.1", "direct")}
+    monkeypatch.setattr(finding_module, "FRAMEWORKS_DIR", tmp_path)
+    framework_file = "test_fw.json"
+    _write_framework(tmp_path, framework_file, controls)
+    monkeypatch.setitem(finding_module.FRAMEWORK_FILE_MAP, "testfw", framework_file)
+
+    # Row store keyed by subscription_id. B has a finding for AZ-TEST-001
+    # (would score FAIL); A is clean (would score PASS). "Latest overall"
+    # with no filter would be B.
+    rows = {
+        sub_a: {"scan_id": "scan-a", "compliance_mapping_snapshot": None},
+        sub_b: {"scan_id": "scan-b", "compliance_mapping_snapshot": None},
+    }
+    findings_by_scan = {"scan-a": [], "scan-b": [("AZ-TEST-001", "HIGH", "Storage", 1)]}
+
+    class _TenantAwareCursor:
+        def __init__(self):
+            self._scan_id = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def execute(self, sql, params=None):
+            if "FROM scans" in sql:
+                # Honour the subscription_id filter the query must carry.
+                assert "subscription_id = %s" in sql, "scan lookup is not scoped by subscription_id"
+                assert params and len(params) == 1, "subscription_id was not bound as a parameter"
+                self._row = rows.get(params[0])
+                self._scan_id = self._row["scan_id"] if self._row else None
+                self._mode = "scan"
+            else:
+                self._mode = "findings"
+
+        def fetchone(self):
+            return self._row if self._mode == "scan" else None
+
+        def fetchall(self):
+            return findings_by_scan.get(self._scan_id, []) if self._mode == "findings" else []
+
+    conn = MagicMock()
+    conn.cursor.return_value = _TenantAwareCursor()
+    db = _db()
+    with patch.object(db, "_get_conn", return_value=conn):
+        result = db.get_compliance_score("testfw", subscription_id=sub_a)
+
+    # A's own clean scan -> PASS. If B's row had leaked through we'd see FAIL.
+    assert result["controls"][0]["status"] == "PASS"
+    assert result["failed"] == 0
