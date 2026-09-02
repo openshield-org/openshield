@@ -67,6 +67,16 @@ def test_single_resource_and_policy_wrappers(client):
         assert client.get_sql_server_auditing_policy("rg", "sql") is None
 
 
+def test_sql_server_entra_only_authentication_uses_child_resource(client):
+    with patch("scanner.azure_client.SqlManagementClient") as constructor:
+        get_authentication = constructor.return_value.server_azure_ad_only_authentications.get
+        get_authentication.return_value = SimpleNamespace(azure_ad_only_authentication=True)
+        assert client.get_sql_server_azure_ad_only_authentication("rg", "sql") is True
+        get_authentication.assert_called_once_with("rg", "sql", "Default")
+        get_authentication.side_effect = RuntimeError("denied")
+        assert client.get_sql_server_azure_ad_only_authentication("rg", "sql") is None
+
+
 def test_firewall_and_peering_wrappers(client):
     with patch("scanner.azure_client.NetworkManagementClient") as constructor:
         sdk = constructor.return_value

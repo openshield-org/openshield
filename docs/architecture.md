@@ -115,10 +115,12 @@ There are 80 rule files in `scanner/rules/`. See `docs/rules-reference.md` for t
 
 | Category | Count | Rules |
 |---|---|---|
-| Storage | 5 | AZ-STOR-001 to 005 |
+| Storage | 9 | AZ-STOR-001 to 009 |
 | Network | 15 | AZ-NET-001 to 015 |
-| Identity | 15 | AZ-IDN-001 to 015 |
-| Database | 4 | AZ-DB-001 to 004 |
+| Identity | 25 | AZ-IDN-001 to 025 |
+| Database | 7 | AZ-DB-001 to 007 |
+| Cosmos DB | 2 | AZ-COSMOS-001 to 002 |
+| Managed Cache | 1 | AZ-CACHE-001 |
 | Compute | 4 | AZ-CMP-001 to 004 |
 | Key Vault | 5 | AZ-KV-001 to 005 |
 | Kubernetes | 6 | AZ-AKS-001 to 006 |

@@ -944,8 +944,31 @@ class AzureClient:
         try:
             client = SqlManagementClient(self.credential, self.subscription_id)
             return client.server_blob_auditing_policies.get(resource_group, server_name)
+        except ResourceNotFoundError:
+            return False
         except Exception as exc:
             logger.error("get_sql_server_auditing_policy(%s) failed: %s", server_name, exc)
+            return None
+
+    def get_sql_server_azure_ad_only_authentication(self, resource_group: str, server_name: str) -> Optional[bool]:
+        """Return whether Microsoft Entra-only authentication is enabled.
+
+        The setting is a child resource and is not populated on objects from
+        ``servers.list()``. ``False`` represents a confirmed absent/disabled
+        configuration; ``None`` preserves an indeterminate API failure.
+        """
+        try:
+            client = SqlManagementClient(self.credential, self.subscription_id)
+            authentication = client.server_azure_ad_only_authentications.get(resource_group, server_name, "Default")
+            return bool(getattr(authentication, "azure_ad_only_authentication", False))
+        except ResourceNotFoundError:
+            return False
+        except Exception as exc:
+            logger.error(
+                "get_sql_server_azure_ad_only_authentication(%s) failed: %s",
+                server_name,
+                exc,
+            )
             return None
 
     def get_sql_server_firewall_rules(self, resource_group: str, server_name: str) -> List[Any]:
@@ -956,6 +979,39 @@ class AzureClient:
         except Exception as exc:
             logger.error("get_sql_server_firewall_rules(%s) failed: %s", server_name, exc)
             return []
+
+    def get_sql_server_vulnerability_assessment(self, resource_group: str, server_name: str) -> Optional[Any]:
+        """Fetch the default vulnerability-assessment configuration for a SQL server."""
+        try:
+            client = SqlManagementClient(self.credential, self.subscription_id)
+            return client.server_vulnerability_assessments.get(resource_group, server_name, "default")
+        except ResourceNotFoundError:
+            return False
+        except Exception as exc:
+            logger.error("get_sql_server_vulnerability_assessment(%s) failed: %s", server_name, exc)
+            return None
+
+    def get_cosmos_accounts(self) -> Optional[List[Any]]:
+        """List Cosmos DB accounts, if the optional management SDK is available."""
+        try:
+            from azure.mgmt.cosmosdb import CosmosDBManagementClient
+
+            client = CosmosDBManagementClient(self.credential, self.subscription_id)
+            return list(client.database_accounts.list())
+        except Exception as exc:
+            logger.error("get_cosmos_accounts failed: %s", exc)
+            return None
+
+    def get_managed_caches(self) -> Optional[List[Any]]:
+        """List Azure Managed Redis/Cache accounts, if the SDK is available."""
+        try:
+            from azure.mgmt.redis import RedisManagementClient
+
+            client = RedisManagementClient(self.credential, self.subscription_id)
+            return list(client.redis.list())
+        except Exception as exc:
+            logger.error("get_managed_caches failed: %s", exc)
+            return None
 
     # ------------------------------------------------------------------ #
     # Key Vault                                                             #
@@ -1303,3 +1359,175 @@ class AzureClient:
                 exc,
             )
             return None
+
+    # ------------------------------------------------------------------ #
+    # Privileged Access & Identity (issue #258)                            #
+    # ------------------------------------------------------------------ #
+
+    def get_privileged_role_members(self) -> Optional[List[Dict[str, Any]]]:
+        """Return users assigned to top privileged directory roles.
+
+        Each item: {userId, userDisplayName, userPrincipalName, accountEnabled,
+                    lastSignInDateTime, roleId, roleName}
+
+        Requires RoleManagement.Read.Directory and AuditLog.Read.All.
+        Returns None on permission failure so rules return no findings.
+        """
+        _PRIVILEGED_ROLE_IDS = {
+            "62e90394-69f5-4237-9190-012177145e10": "Global Administrator",
+            "e8611ab8-c189-46e8-94e1-60213ab1f814": "Privileged Role Administrator",
+            "194ae4cb-b126-40b2-bd5b-6091b380977d": "Security Administrator",
+            "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3": "Application Administrator",
+            "29232cdf-9323-42fd-ade2-1d097af3e4de": "Exchange Administrator",
+            "f28a1f50-f6e7-4571-818b-6a12f2af6b6c": "SharePoint Administrator",
+        }
+        url = (
+            "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments"
+            "?$expand=principal($select=id,displayName,userPrincipalName,accountEnabled,signInActivity)"
+            "&$filter=roleDefinitionId ne null&$top=100"
+        )
+        raw = self._get_graph_collection(url, "get_privileged_role_members")
+        if raw is None:
+            return None
+        members = []
+        for assignment in raw:
+            role_def_id = (assignment.get("roleDefinitionId") or "").split("/")[-1].lower()
+            role_name = _PRIVILEGED_ROLE_IDS.get(role_def_id)
+            if not role_name:
+                continue
+            principal = assignment.get("principal") or {}
+            user_id = principal.get("id") or assignment.get("principalId", "")
+            if not user_id:
+                continue
+            sign_in = principal.get("signInActivity") or {}
+            members.append(
+                {
+                    "userId": user_id,
+                    "userDisplayName": principal.get("displayName", user_id),
+                    "userPrincipalName": principal.get("userPrincipalName", ""),
+                    "accountEnabled": principal.get("accountEnabled", True),
+                    "lastSignInDateTime": sign_in.get("lastSignInDateTime"),
+                    "roleId": role_def_id,
+                    "roleName": role_name,
+                }
+            )
+        return members
+
+    def get_privileged_users_mfa_methods(self) -> Optional[List[Dict[str, Any]]]:
+        """Return authentication method types registered for admin users.
+
+        Each item: {userId, userDisplayName, userPrincipalName, authMethodTypes: [...]}
+
+        Requires UserAuthenticationMethod.Read.All.
+        Returns None on permission failure.
+        """
+        url = (
+            "https://graph.microsoft.com/v1.0/reports/authenticationMethods"
+            "/userRegistrationDetails?$filter=isAdmin eq true&$top=100"
+        )
+        raw = self._get_graph_collection(url, "get_privileged_users_mfa_methods")
+        if raw is None:
+            return None
+        return [
+            {
+                "userId": item.get("id", ""),
+                "userDisplayName": item.get("userDisplayName", item.get("userPrincipalName", "")),
+                "userPrincipalName": item.get("userPrincipalName", ""),
+                "authMethodTypes": item.get("methodsRegistered") or [],
+            }
+            for item in raw
+        ]
+
+    def get_pim_role_assignments(self) -> Optional[List[Dict[str, Any]]]:
+        """Return PIM eligible and active role assignment schedules.
+
+        Queries both roleAssignmentSchedules (Active assignments) and
+        roleEligibilitySchedules (Eligible assignments) and combines them.
+
+        Each item: {principalId, principalType, roleId, assignmentType} where
+        assignmentType is 'Active' or 'Eligible' and principalType is one of
+        'user', 'group', or 'servicePrincipal'.
+
+        Requires RoleManagement.Read.Directory.
+        Returns None on permission failure.
+        """
+        results = []
+        active_url = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignmentSchedules?$top=100"
+        active_raw = self._get_graph_collection(active_url, "get_pim_role_assignments/active")
+        if active_raw is None:
+            return None
+        for item in active_raw:
+            role_def_id = (item.get("roleDefinitionId") or "").split("/")[-1].lower()
+            results.append(
+                {
+                    "principalId": item.get("principalId", ""),
+                    "principalType": item.get("principalType", "user"),
+                    "roleId": role_def_id,
+                    "assignmentType": "Active",
+                }
+            )
+        eligible_url = "https://graph.microsoft.com/v1.0/roleManagement/directory/roleEligibilitySchedules?$top=100"
+        eligible_raw = self._get_graph_collection(eligible_url, "get_pim_role_assignments/eligible")
+        if eligible_raw is None:
+            return None
+        for item in eligible_raw:
+            role_def_id = (item.get("roleDefinitionId") or "").split("/")[-1].lower()
+            results.append(
+                {
+                    "principalId": item.get("principalId", ""),
+                    "principalType": item.get("principalType", "user"),
+                    "roleId": role_def_id,
+                    "assignmentType": "Eligible",
+                }
+            )
+        return results
+
+    def get_identity_protection_policies(self) -> Optional[Dict[str, Any]]:
+        """Detect risk-based protection via Conditional Access risk conditions.
+
+        Rather than querying the unreliable identityProtection/policies endpoints,
+        this method inspects Conditional Access policies for risk-based conditions,
+        which is the recommended approach for modern tenants.
+
+        Returns dict with keys: userRiskPolicy, signInRiskPolicy — each {isEnabled: bool}.
+        Returns None on permission failure.
+        """
+        policies = self.get_conditional_access_policies()
+        if policies is None:
+            return None
+        user_risk_covered = any(
+            p.get("state") == "enabled" and (p.get("conditions") or {}).get("userRiskLevels") for p in policies
+        )
+        sign_in_risk_covered = any(
+            p.get("state") == "enabled" and (p.get("conditions") or {}).get("signInRiskLevels") for p in policies
+        )
+        return {
+            "userRiskPolicy": {"isEnabled": user_risk_covered},
+            "signInRiskPolicy": {"isEnabled": sign_in_risk_covered},
+        }
+
+    def get_privileged_groups(self) -> Optional[List[Dict[str, Any]]]:
+        """Return Entra ID groups that are assignable to directory roles.
+
+        Each item: {id, displayName, ownerCount}
+
+        Requires GroupMember.Read.All and RoleManagement.Read.Directory.
+        Returns None on permission failure.
+        """
+        url = (
+            "https://graph.microsoft.com/v1.0/groups"
+            "?$filter=isAssignableToRole eq true"
+            "&$select=id,displayName&$expand=owners($select=id)&$top=100"
+        )
+        raw = self._get_graph_collection(url, "get_privileged_groups")
+        if raw is None:
+            return None
+        return [
+            {
+                "id": grp.get("id", ""),
+                "displayName": grp.get("displayName", ""),
+                "ownerCount": len(grp.get("owners") or []),
+            }
+            for grp in raw
+            if grp.get("id")
+        ]
