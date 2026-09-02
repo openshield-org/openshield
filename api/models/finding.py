@@ -214,7 +214,6 @@ class DatabaseManager:
                 # keeps the scan header, child rows, and recomputed score in
                 # agreement instead of duplicating findings on every attempt.
                 cur.execute("DELETE FROM findings WHERE scan_id = %s", (scan_result["scan_id"],))
-                cur.execute("DELETE FROM rule_evaluations WHERE scan_id = %s", (scan_result["scan_id"],))
                 finding_id_by_key: Dict[Any, int] = {}
                 for f in findings:
                     cur.execute(
@@ -257,8 +256,14 @@ class DatabaseManager:
                 # is durably linked to the finding row it corresponds to
                 # right here, in the same transaction, instead of leaving
                 # callers to infer the relationship from rule_id/resource_id.
+                #
+                # Upserted rather than replaced wholesale: a retried/replayed
+                # scan result must converge on the same rows instead of a
+                # delete-then-reinsert racing a concurrent reader that could
+                # briefly see zero coverage for a scan that already has some.
                 evaluated_at = completed_at
-                for evaluation in scan_result.get("evaluations", []):
+                evaluations = scan_result.get("evaluations", [])
+                for evaluation in evaluations:
                     status = evaluation.get("status")
                     finding_id = None
                     if status == EvaluationStatus.FAIL:
@@ -269,6 +274,14 @@ class DatabaseManager:
                             (scan_id, rule_id, resource_id, resource_type, status,
                              reason_code, reason, evidence, finding_id, evaluated_at)
                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        ON CONFLICT (scan_id, rule_id, resource_id) DO UPDATE SET
+                            resource_type = EXCLUDED.resource_type,
+                            status = EXCLUDED.status,
+                            reason_code = EXCLUDED.reason_code,
+                            reason = EXCLUDED.reason,
+                            evidence = EXCLUDED.evidence,
+                            finding_id = EXCLUDED.finding_id,
+                            evaluated_at = EXCLUDED.evaluated_at
                         """,
                         (
                             scan_result["scan_id"],
@@ -283,6 +296,27 @@ class DatabaseManager:
                             evaluated_at,
                         ),
                     )
+
+                # A rule/resource that no longer appears (a rule removed from
+                # this scan's set, a resource that's gone) must not leave a
+                # stale coverage row behind once the current set is upserted.
+                if evaluations:
+                    cur.execute(
+                        """
+                        DELETE FROM rule_evaluations
+                        WHERE scan_id = %s
+                          AND (rule_id, resource_id) NOT IN (
+                              SELECT * FROM unnest(%s::text[], %s::text[])
+                          )
+                        """,
+                        (
+                            scan_result["scan_id"],
+                            [evaluation.get("rule_id") for evaluation in evaluations],
+                            [evaluation.get("resource_id") for evaluation in evaluations],
+                        ),
+                    )
+                else:
+                    cur.execute("DELETE FROM rule_evaluations WHERE scan_id = %s", (scan_result["scan_id"],))
             conn.commit()
         except Exception:
             # psycopg2 connections remain in an aborted transaction after any

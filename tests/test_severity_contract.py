@@ -176,9 +176,7 @@ def test_persistence_canonicalizes_alias_and_records_contract_version():
 
     scan_parameters = cursor.execute.call_args_list[0].args[1]
     delete_parameters = cursor.execute.call_args_list[1].args[1]
-    # index 2 is the DELETE FROM rule_evaluations that accompanies the
-    # findings replacement (see DatabaseManager.save_scan).
-    finding_parameters = cursor.execute.call_args_list[3].args[1]
+    finding_parameters = cursor.execute.call_args_list[2].args[1]
     assert scan_parameters[4] == 1
     assert scan_parameters[5] == 100
     assert scan_parameters[10] == CONTRACT_VERSION

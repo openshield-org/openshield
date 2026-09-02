@@ -291,9 +291,49 @@ def test_save_scan_persists_evaluations_and_links_fail_finding_id():
     assert unknown_call_params[8] is None  # never linked to a finding
 
 
-def test_save_scan_deletes_prior_evaluations_before_reinsert():
-    """A worker retry must replace prior rule_evaluations atomically, exactly
-    like it already does for findings."""
+def test_save_scan_evaluations_upsert_on_conflict_instead_of_delete_first():
+    """A retried/replayed scan result must converge on the same rows via
+    ON CONFLICT, not a delete-then-reinsert that could momentarily leave a
+    concurrent reader seeing zero coverage for an already-covered scan."""
+    db = _db()
+    cursor = _cursor()
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+
+    result = {
+        "scan_id": "00000000-0000-0000-0000-000000000000",
+        "subscription_id": _SUB,
+        "started_at": "2026-08-29T00:00:00+00:00",
+        "findings": [],
+        "evaluations": [
+            {
+                "rule_id": "AZ-TEST-008",
+                "resource_id": subscription_scope_id(_SUB),
+                "resource_type": "",
+                "status": "PASS",
+            }
+        ],
+    }
+
+    with patch.object(db, "_get_conn", return_value=conn):
+        db.save_scan(result)
+
+    insert_calls = [c for c in cursor.execute.call_args_list if "INSERT INTO rule_evaluations" in c.args[0]]
+    assert len(insert_calls) == 1
+    assert "ON CONFLICT (scan_id, rule_id, resource_id) DO UPDATE" in insert_calls[0].args[0]
+
+    delete_calls = [
+        c for c in cursor.execute.call_args_list if c.args[0].strip().startswith("DELETE FROM rule_evaluations")
+    ]
+    assert len(delete_calls) == 1
+    # delete-absent, scoped by the current evaluation set, not a blanket delete.
+    assert "NOT IN" in delete_calls[0].args[0]
+    assert delete_calls[0].args[1] == (result["scan_id"], ["AZ-TEST-008"], [subscription_scope_id(_SUB)])
+
+
+def test_save_scan_deletes_all_prior_evaluations_when_scan_reports_none():
+    """A scan whose evaluations list is genuinely empty this time must still
+    clear out any stale rows from a prior attempt for the same scan_id."""
     db = _db()
     cursor = _cursor()
     conn = MagicMock()
