@@ -10,8 +10,15 @@ from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from api.models.finding import DatabaseManager
-from api.observability import configure_logging, get_request_id, init_app, init_sentry
+from api.models.finding import DatabaseManager, get_pool_stats
+from api.observability import (
+    configure_logging,
+    get_request_id,
+    init_app,
+    init_sentry,
+    probe_rate_limit,
+    set_pool_stats_provider,
+)
 
 load_dotenv()
 
@@ -41,6 +48,14 @@ _GENERATE_CMD = 'python -c "import secrets; print(secrets.token_urlsafe(32))"'
 # not touch write authorization.
 _KNOWN_ROLES = {"viewer", "operator", "admin"}
 _WRITE_ROLES = {"operator", "admin"}
+
+# Generous enough for legitimate manual or automated readiness checks from
+# one source, but bounded well under the default pool size
+# (DB_POOL_MAX_CONN=10) so a single caller can never claim more than half
+# the pool's capacity by itself, even if every allowed request in the
+# window lands at once. See probe_rate_limit's docstring for why this is
+# in-memory rather than the shared Postgres-backed rate_limit().
+_READY_MAX_REQUESTS_PER_WINDOW = 5
 
 
 def _is_production() -> bool:
@@ -111,7 +126,21 @@ def create_app() -> Flask:
     # Trust exactly one reverse-proxy hop (Render's edge) for the client IP
     # and scheme, so request.remote_addr reflects the real caller instead of
     # collapsing every client onto Render's proxy address. Rate limiting and
-    # any other per-IP logic depend on this being accurate.
+    # any other per-IP logic (api.observability.probe_rate_limit,
+    # api.rate_limit.rate_limit) depend on this being accurate.
+    #
+    # This is a trust boundary, not just a convenience setting: x_for=1 makes
+    # Flask take the *last* entry of an inbound X-Forwarded-For header as the
+    # real client IP, on the assumption that Render's edge is the only thing
+    # capable of appending to it before the request reaches this process. If
+    # the origin were ever reachable directly - bypassing Render's edge, e.g.
+    # a misconfigured DNS record or a leaked origin IP - a direct caller's own
+    # X-Forwarded-For header would be trusted as-is, and they could set it to
+    # a fresh IP on every request. Every per-IP control in this file (the
+    # probe-endpoint limiter, the Postgres-backed rate limiter) would then
+    # bucket each request as a "new" caller, which is equivalent to no rate
+    # limiting for that path at all. Keeping the origin unreachable except
+    # through Render's edge is what this setting's correctness depends on.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # ------------------------------------------------------------------ #
@@ -121,6 +150,7 @@ def create_app() -> Flask:
     # every later before_request handler (including JWT auth) and to the
     # error handlers. Also mounts the public /metrics endpoint.
     init_app(app)
+    set_pool_stats_provider(get_pool_stats)
 
     # ------------------------------------------------------------------ #
     # Configuration & Security                                             #
@@ -269,6 +299,7 @@ def create_app() -> Flask:
         return jsonify({"status": "ok"})
 
     @app.get("/ready")
+    @probe_rate_limit(_READY_MAX_REQUESTS_PER_WINDOW)
     def ready():
         """Readiness probe: 200 when the database is reachable, else 503."""
         try:
