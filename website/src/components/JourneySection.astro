@@ -1,0 +1,20 @@
+---
+import { url } from '../lib/base';
+const GITHUB = 'https://github.com/openshield-org/openshield';
+---
+
+<section class="sec-rule" id="start">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>New here? Run it in this order.</h2>
+      <a class="sec-link" href="https://openshieldlearn.netlify.app/learn/" target="_blank" rel="noopener">Learn portal &#8594;</a>
+    </div>
+    <div class="journey">
+      <a class="jcard" href={`${GITHUB}/blob/dev/docs/azure-setup.md`} target="_blank" rel="noopener"><span class="jno">01</span><h3>Point at your subscription</h3><p>az login, four environment variables, the built-in Reader role. Nothing writes to your cloud.</p><span class="jlink">azure-setup.md <span class="ar">&#8594;</span></span></a>
+      <a class="jcard" href={`${GITHUB}/#quick-start`} target="_blank" rel="noopener"><span class="jno">02</span><h3>Run your first scan</h3><p>One command imports every rule module and scores your posture from 0 to 100.</p><span class="jlink">Quickstart <span class="ar">&#8594;</span></span></a>
+      <a class="jcard" href={url('/rules/')}><span class="jno">03</span><h3>Read your findings</h3><p>Every finding names the control it violates and carries the exact CLI command that fixes it.</p><span class="jlink">Rules reference <span class="ar">&#8594;</span></span></a>
+      <a class="jcard" href="https://openshield-gules.vercel.app" target="_blank" rel="noopener"><span class="jno">04</span><h3>Watch it live</h3><p>The React dashboard shows findings, drift and compliance from your own PostgreSQL.</p><span class="jlink">Live dashboard <span class="ar">&#8594;</span></span></a>
+      <a class="jcard" href={`${GITHUB}/blob/dev/docs/adding-a-rule.md`} target="_blank" rel="noopener"><span class="jno">05</span><h3>Ship your own rule</h3><p>Add a misconfiguration check in under 30 minutes. Students and first-timers welcome.</p><span class="jlink">adding-a-rule.md <span class="ar">&#8594;</span></span></a>
+    </div>
+  </div>
+</section>

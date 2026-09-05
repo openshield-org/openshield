@@ -1,1 +1,4 @@
-.vercel
+# Astro build output
+dist/
+.astro/
+node_modules/
