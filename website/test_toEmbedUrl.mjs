@@ -36,6 +36,7 @@ const sandbox = {
   document: {
     createElement: () => stubElement(),
     getElementById: () => null,
+    querySelector: () => null,
     querySelectorAll: () => [],
     documentElement: { classList: { contains: () => false } },
     addEventListener() {},
