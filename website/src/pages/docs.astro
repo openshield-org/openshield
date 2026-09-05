@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import { repoData } from '../lib/repoData';
+
+const { docs } = repoData;
+const GITHUB = 'https://github.com/openshield-org/openshield';
+
+const sections = ['Guides and references', 'Deployment', 'Validation reports'];
+const grouped = sections
+  .map((section) => ({ section, items: docs.filter((d) => d.section === section) }))
+  .filter((g) => g.items.length > 0);
+---
+
+<Base title="Docs · OpenShield" description="Guides, references and validation reports for OpenShield, from Azure setup to adding your own rule." active="docs">
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Documentation.</h1>
+      <p class="sub">
+        {docs.length} documents live in the repository under <a href={`${GITHUB}/tree/dev/docs`} target="_blank" rel="noopener" style="text-decoration:underline;text-underline-offset:3px">docs/</a>,
+        indexed here at build time. Start with Azure setup, run your first scan, then read your findings.
+      </p>
+    </div>
+
+    <section style="padding-top:20px">
+      {grouped.map((group) => (
+        <div class="doc-group">
+          <h3>{group.section}</h3>
+          <div class="doc-list">
+            {group.items.map((doc) => (
+              <a href={`${GITHUB}/blob/dev/docs/${doc.file}`} target="_blank" rel="noopener">
+                <span>{doc.title}</span>
+                <span class="ar">&#8594;</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  </div>
+</Base>

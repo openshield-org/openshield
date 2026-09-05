@@ -1,0 +1,65 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { url } from '../../lib/base';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+function fmtDate(d: Date): string {
+  return d
+    .toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    .toUpperCase();
+}
+
+const all = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+const idx = all.findIndex((p) => p.id === post.id);
+const newer = idx > 0 ? all[idx - 1] : null;
+const older = idx < all.length - 1 ? all[idx + 1] : null;
+
+const postUrl = new URL(url(`/blog/${post.id}/`), Astro.site).href;
+const postJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.pubDate.toISOString(),
+  dateModified: post.data.pubDate.toISOString(),
+  author: { '@type': 'Organization', name: post.data.author },
+  publisher: { '@type': 'Organization', name: 'OpenShield' },
+  mainEntityOfPage: postUrl,
+  url: postUrl,
+  ...(post.data.tags.length ? { keywords: post.data.tags.join(', ') } : {}),
+};
+---
+
+<Base title={`${post.data.title} · OpenShield Blog`} description={post.data.description} active="blog" jsonLd={postJsonLd}>
+  <article class="post-page">
+    <div class="wrap">
+      <div class="ph-kicker">{(post.data.tags[0] ?? 'Post').toUpperCase()}</div>
+      <h1>{post.data.title}</h1>
+      <div class="byline">{fmtDate(post.data.pubDate)} / {post.data.author.toUpperCase()}</div>
+      <div class="prose">
+        <Content />
+      </div>
+      <div class="post-nav">
+        {older ? (
+          <a href={url(`/blog/${older.id}/`)}>&#8592; {older.data.title}</a>
+        ) : <span />}
+        {newer ? (
+          <a href={url(`/blog/${newer.id}/`)}>{newer.data.title} &#8594;</a>
+        ) : <a href={url('/blog/')}>All articles &#8594;</a>}
+      </div>
+    </div>
+  </article>
+</Base>

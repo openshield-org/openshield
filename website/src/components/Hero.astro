@@ -1,0 +1,37 @@
+---
+import { url } from '../lib/base';
+import { repoData, orbRules, domainOrder } from '../lib/repoData';
+
+const GITHUB = 'https://github.com/openshield-org/openshield';
+const { ruleCount, domainCount, sampleScan } = repoData;
+---
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-copy">
+      <div class="kicker">OpenShield / CSPM for Azure</div>
+      <h1>Open source security posture for Azure. <span class="alt">Written in the open.</span></h1>
+      <div class="claims">
+        <div class="claim"><span class="ar">&#8594;</span><span>{ruleCount} misconfiguration rules across {domainCount} Azure domains, each one a plain Python file you can read, audit and extend.</span></div>
+        <div class="claim"><span class="ar">&#8594;</span><span>Every finding maps itself to CIS, NIST, ISO 27001 and SOC 2 controls automatically.</span></div>
+        <div class="claim"><span class="ar">&#8594;</span><span>Read-only scanning with the built-in Reader role. Your data never leaves your tenant.</span></div>
+      </div>
+      <div class="hero-cta">
+        <a class="btn btn-accent" href={url('/docs/')}>Read the quickstart <span class="ar">&#8594;</span></a>
+        <a class="btn btn-ghostline" href={GITHUB} target="_blank" rel="noopener">Star on GitHub</a>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <canvas id="heroCanvas" role="img" aria-label={`Interactive 3D map of an Azure subscription: a central core connects ${domainCount} domain hubs and ${ruleCount} rule nodes while a scan pulse sweeps the estate. Click a node to inspect a rule.`}></canvas>
+      <div class="hero-fallback" id="heroFallback">{ruleCount} RULE NODES / WEBGL UNAVAILABLE IN THIS BROWSER</div>
+      <div class="hero-cap"><span id="ruleInfo"><b>AZURE SUBSCRIPTION</b> / {domainCount} DOMAINS / {ruleCount} RULES</span><span>DRAG TO ROTATE / CLICK TO FOCUS</span></div>
+      <div class="hero-legend" id="heroLegend"></div>
+    </div>
+  </div>
+  <script type="application/json" id="orb-data" set:html={JSON.stringify({ rules: orbRules, domains: domainOrder })} />
+</header>
+
+<script>
+  import { initOrb } from '../lib/orbScene';
+  initOrb();
+</script>
