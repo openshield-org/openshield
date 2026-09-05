@@ -73,10 +73,17 @@ export function initOrb(): void {
     return c;
   };
 
-  legend.innerHTML = DOMAINS.map(
-    (d, i) =>
-      `<span class="lg"><i style="background:hsl(${Math.round(domHue(i))},50%,62%)"></i>${d.toUpperCase()} ${counts[d] || 0}</span>`,
-  ).join('');
+  legend.replaceChildren(
+    ...DOMAINS.map((d, i) => {
+      const span = document.createElement('span');
+      span.className = 'lg';
+      const dot = document.createElement('i');
+      dot.style.background = `hsl(${Math.round(domHue(i))},50%,62%)`;
+      span.appendChild(dot);
+      span.appendChild(document.createTextNode(`${d.toUpperCase()} ${counts[d] || 0}`));
+      return span;
+    }),
+  );
 
   const N = RULES.length;
   const D = DOMAINS.length;
@@ -236,7 +243,12 @@ export function initOrb(): void {
     marker.position.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
     (marker.material as THREE.MeshBasicMaterial).color.set(sevCol[r.severity] || '#f2f0ec');
     marker.visible = true;
-    info.innerHTML = `<b>${r.id}</b> / ${r.name} / <em style="color:${sevCol[r.severity] || '#a7a7b0'}">${r.severity}</em>`;
+    const idEl = document.createElement('b');
+    idEl.textContent = r.id;
+    const sevEl = document.createElement('em');
+    sevEl.style.color = sevCol[r.severity] || '#a7a7b0';
+    sevEl.textContent = r.severity;
+    info.replaceChildren(idEl, document.createTextNode(` / ${r.name} / `), sevEl);
   };
 
   const ray = new THREE.Raycaster();
